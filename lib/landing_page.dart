@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login_view.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({Key? key}) : super(key: key);
@@ -11,7 +12,7 @@ class LandingPage extends StatelessWidget {
         backgroundColor: const Color(0xFF2C2C2C), // Gris oscuro de tu diseño
         title: Row(
           children: [
-            // --- CAMBIO 1: AQUÍ PUSIMOS TU LOGO ---
+            // Colocamos el Logo
             Image.asset(
               'assets/images/logo_metroswap.png',
               height: 40, 
@@ -35,8 +36,10 @@ class LandingPage extends StatelessWidget {
           const SizedBox(width: 15),
           ElevatedButton(
             onPressed: () {
-              // ¡Aquí conectaremos tu Login más adelante!
-              print("Yendo al Login...");
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder : (context) => const LoginView()),
+                );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF6B00), // Naranja Unimet
@@ -51,12 +54,12 @@ class LandingPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- 1. BANNER PRINCIPAL (Hero) ---
+            // Banner principal
             Container(
               height: 250,
               width: double.infinity,
               decoration: const BoxDecoration(
-                // --- CAMBIO 2: AQUÍ PUSIMOS TU FOTO DE ESTUDIANTES ---
+                // Aqui agregamos la foto de los estudiantes
                 image: DecorationImage(
                   image: AssetImage('assets/images/fondo_estudiantes.jpg'),
                   fit: BoxFit.cover,
@@ -78,7 +81,7 @@ class LandingPage extends StatelessWidget {
               ),
             ),
 
-            // --- 2. SECCIÓN DE INFORMACIÓN (Misión, Visión, Objetivo) ---
+            // Sección de información (misión, visión, objetivo)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 20),
               // Wrap hace que si la pantalla es pequeña (teléfono), los cuadros se pongan uno debajo del otro
@@ -103,7 +106,7 @@ class LandingPage extends StatelessWidget {
               ),
             ),
 
-            // --- 3. FOOTER (Pie de página) ---
+            // Pie de pagina
             Container(
               width: double.infinity,
               color: const Color(0xFF2C2C2C),
@@ -120,7 +123,7 @@ class LandingPage extends StatelessWidget {
     );
   }
 
-  // --- WIDGET PERSONALIZADO PARA LAS COLUMNAS ---
+  
   // Hice esta función para no repetir el mismo código 3 veces
   Widget _buildInfoColumn({required String title, required String text}) {
     return SizedBox(
