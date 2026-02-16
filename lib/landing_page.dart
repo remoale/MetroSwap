@@ -9,18 +9,20 @@ class LandingPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5), // Color gris clarito de fondo
       appBar: AppBar(
+        // --- AQUÍ AGRANDAMOS LA FRANJA GRIS DE ARRIBA ---
+        toolbarHeight: 85, 
         backgroundColor: const Color(0xFF2C2C2C), // Gris oscuro de tu diseño
         title: Row(
           children: [
             // Colocamos el Logo
             Image.asset(
               'assets/images/logo_metroswap.png',
-              height: 40, 
+              height: 45, // Lo subí un poquitico para que vaya acorde a la franja más grande
             ),
             const SizedBox(width: 10),
             const Text(
               'MetroSwap',
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -28,10 +30,11 @@ class LandingPage extends StatelessWidget {
           OutlinedButton(
             onPressed: () {},
             style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               side: const BorderSide(color: Colors.white),
               foregroundColor: Colors.white,
             ),
-            child: const Text('Conócenos'),
+            child: const Text('Conócenos', style: TextStyle(fontSize: 16)),
           ),
           const SizedBox(width: 15),
           ElevatedButton(
@@ -42,12 +45,13 @@ class LandingPage extends StatelessWidget {
               );
             },
             style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               backgroundColor: const Color(0xFFFF6B00), // Naranja Unimet
               foregroundColor: Colors.white,
             ),
-            child: const Text('Acceder'),
+            child: const Text('Acceder', style: TextStyle(fontSize: 16)),
           ),
-          const SizedBox(width: 20), // Espacio al borde derecho
+          const SizedBox(width: 30), // Espacio al borde derecho
         ],
       ),
       
@@ -62,26 +66,25 @@ class LandingPage extends StatelessWidget {
               child: IntrinsicHeight(
                 child: Column(
                   children: [
-                    // --- 1. Banner principal ---
+                    // --- 1. BANNER PRINCIPAL (TAMAÑO EQUILIBRADO) ---
                     Container(
-                      height: 250,
+                      height: 350, // --- AQUÍ REDUJIMOS LA IMAGEN PARA QUE NO SE VEA TAN EXAGERADA ---
                       width: double.infinity,
                       decoration: const BoxDecoration(
-                        // Aquí agregamos la foto de los estudiantes
                         image: DecorationImage(
                           image: AssetImage('assets/images/fondo_estudiantes.jpg'),
                           fit: BoxFit.cover,
+                          alignment: Alignment.center, 
                         ),
                       ),
                       child: Container(
-                        // Esto le pone una capa oscura a la foto para que el texto blanco se lea bien
                         color: Colors.black.withOpacity(0.5),
                         child: const Center(
                           child: Text(
                             'Bienvenido a MetroSwap',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 40,
+                              fontSize: 55, // Mantenemos el título imponente
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -89,15 +92,14 @@ class LandingPage extends StatelessWidget {
                       ),
                     ),
 
-                    // --- 2. Sección de información (misión, visión, objetivo) ---
-                    // Expanded hace que esta sección rellene todo el espacio sobrante
+                    // --- 2. SECCIÓN DE INFORMACIÓN ---
                     Expanded(
                       child: Container(
-                        alignment: Alignment.center, // Centra los bloques si hay mucho espacio
-                        padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 20),
+                        alignment: Alignment.center, 
+                        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
                         child: Wrap(
-                          spacing: 40, // Espacio horizontal entre columnas
-                          runSpacing: 40, // Espacio vertical si se colapsan
+                          spacing: 80, 
+                          runSpacing: 60, 
                           alignment: WrapAlignment.center,
                           children: [
                             _buildInfoColumn(
@@ -117,7 +119,7 @@ class LandingPage extends StatelessWidget {
                       ),
                     ),
 
-                    // --- 3. Pie de pagina ---
+                    // --- 3. PIE DE PÁGINA ---
                     Container(
                       width: double.infinity,
                       color: const Color(0xFF2C2C2C),
@@ -138,30 +140,35 @@ class LandingPage extends StatelessWidget {
     );
   }
 
-  // Hice esta función para no repetir el mismo código 3 veces
+  // --- WIDGET PERSONALIZADO PARA LAS COLUMNAS ---
   Widget _buildInfoColumn({required String title, required String text}) {
     return SizedBox(
-      width: 300, // Ancho fijo para cada columna de texto
+      width: 380, 
       child: Column(
         children: [
-          // El "botón" gris oscuro curvo
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 40),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 50), 
             decoration: BoxDecoration(
               color: const Color(0xFF333333),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(25),
             ),
             child: Text(
               title,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.bold, 
+                fontSize: 18 
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-          // El texto descriptivo
+          const SizedBox(height: 25),
           Text(
             text,
             textAlign: TextAlign.justify,
-            style: const TextStyle(fontSize: 15, height: 1.5),
+            style: const TextStyle(
+              fontSize: 17, 
+              height: 1.6, 
+            ),
           ),
         ],
       ),
