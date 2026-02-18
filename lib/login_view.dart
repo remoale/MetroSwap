@@ -8,7 +8,7 @@ class LoginView extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
-          // --- LADO IZQUIERDO: FORMULARIO ---
+          // Lado izquierdo del formulario
           Expanded(
             flex: 1,
             child: Container(
@@ -94,18 +94,18 @@ class LoginView extends StatelessWidget {
             ),
           ),
           
-          // --- LADO DERECHO: LOGO GIGANTE Y FOOTER ---
+          // Lado derecho: Logo grande y pie de pagina
           Expanded(
             flex: 3,
             child: Container(
               color: const Color(0xFFE5E5E5),
-              // REDUJIMOS EL PADDING HORIZONTAL DE 50 A 20 PARA DARLE MÁS ESPACIO AL LOGO
+              // Reduje el paddin horizontal de 50 a 20 para darle más espacio al logo
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 50.0),
               child: Column(
                 children: [
                   const Spacer(),
                   
-                  // --- AQUÍ EL LOGO CRECERÁ LIBREMENTE ---
+                  // Aqui el logo crecera libremente 
                   Expanded(
                     flex: 6,
                     child: Container(

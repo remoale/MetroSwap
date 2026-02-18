@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// Importamos tu nueva pantalla. Asegúrate de que el nombre del archivo sea correcto.
 import 'landing_page.dart'; 
 
 void main() {
@@ -12,14 +11,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MetroSwap', // Cambiamos el nombre de la app
-      debugShowCheckedModeBanner: false, // Quitamos la etiqueta de "DEBUG" de la esquina
+      title: 'MetroSwap', 
+      debugShowCheckedModeBanner: false, 
       theme: ThemeData(
-        // Le damos los colores base de la app
+        // Le di los colores base de la app
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B00)), 
         useMaterial3: true,
       ),
-      // ¡Aquí está la magia! Le decimos que la pantalla de inicio es tu LandingPage
+      // Pantalla de inicio es la LandingPage
       home: const LandingPage(), 
     );
   }

@@ -9,12 +9,12 @@ class LandingPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5), // Color gris clarito de fondo
       appBar: AppBar(
-        // --- AQUÍ AGRANDAMOS LA FRANJA GRIS DE ARRIBA ---
+        // Aqui agrande la franja gris de arriba 
         toolbarHeight: 85, 
-        backgroundColor: const Color(0xFF2C2C2C), // Gris oscuro de tu diseño
+        backgroundColor: const Color(0xFF2C2C2C), // Gris oscuro del diseño
         title: Row(
           children: [
-            // Colocamos el Logo
+            // coloque el Logo
             Image.asset(
               'assets/images/logo_metroswap.png',
               height: 45, // Lo subí un poquitico para que vaya acorde a la franja más grande
@@ -55,7 +55,7 @@ class LandingPage extends StatelessWidget {
         ],
       ),
       
-      // --- AQUÍ ESTÁ LA MAGIA PARA QUE NO SE VEA CORTADA ---
+      // Para que no se vea cortada la pagina 
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
@@ -66,9 +66,9 @@ class LandingPage extends StatelessWidget {
               child: IntrinsicHeight(
                 child: Column(
                   children: [
-                    // --- 1. BANNER PRINCIPAL (TAMAÑO EQUILIBRADO) ---
+                    // Banner principal
                     Container(
-                      height: 350, // --- AQUÍ REDUJIMOS LA IMAGEN PARA QUE NO SE VEA TAN EXAGERADA ---
+                      height: 350, // Reduje la imagen para que no se vea tan grande
                       width: double.infinity,
                       decoration: const BoxDecoration(
                         image: DecorationImage(
@@ -84,7 +84,7 @@ class LandingPage extends StatelessWidget {
                             'Bienvenido a MetroSwap',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 55, // Mantenemos el título imponente
+                              fontSize: 55, // Se mantiene el título imponente
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -92,7 +92,7 @@ class LandingPage extends StatelessWidget {
                       ),
                     ),
 
-                    // --- 2. SECCIÓN DE INFORMACIÓN ---
+                    // Sección de información 
                     Expanded(
                       child: Container(
                         alignment: Alignment.center, 
@@ -119,7 +119,7 @@ class LandingPage extends StatelessWidget {
                       ),
                     ),
 
-                    // --- 3. PIE DE PÁGINA ---
+                    // Pie de página
                     Container(
                       width: double.infinity,
                       color: const Color(0xFF2C2C2C),
@@ -140,7 +140,7 @@ class LandingPage extends StatelessWidget {
     );
   }
 
-  // --- WIDGET PERSONALIZADO PARA LAS COLUMNAS ---
+  // Widget personalizados
   Widget _buildInfoColumn({required String title, required String text}) {
     return SizedBox(
       width: 380, 
