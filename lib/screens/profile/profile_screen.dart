@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../services/firestore_service.dart'; 
+import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart';
+import '../../widgets/profile_avatar.dart'; 
+import '../../widgets/profile_info_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -11,47 +13,48 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _firestore = FirestoreService();
+  final controller = ProfileController();
   UserModel? user;
 
   @override 
   void initState() {
      super.initState(); 
-     loadUser();
+     load();
   }
 
-  Future<void> loadUser() async {
-    final data = await _firestore.getUser(widget.uid);
+  Future<void> load() async {
+    final data = await controller.loadUser(widget.uid);
     setState(() => user = data);
   }
 
   @override 
   Widget build(BuildContext context) {
-     if (user == null) return const Center(child: CircularProgressIndicator());
-
-     return Scaffold(
-      appBar: AppBar(title: const Text("Perfil"))
-      body: Column(
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: user!.photoUrl != null
-                ? NetworkImage(user!.photoUrl!)
-                : null,
-            child: user!.photoUrl == null ? const Icon(Icons.person) : null,
+     if (user == null) {
+       return const Scaffold(
+        body: Center(child: CircularProgressIndicator())
+        );
+      }
+      return Scaffold(
+        appBar: AppBar(title: const Text("Mi Perfil")),
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              ProfileAvatar(imageUrl: user!.photoUrl, size: 70),
+              const SizedBox(height: 20),
+              Text(user!.name, style: const TextStyle(fontSize: 22)), 
+              Text(user!.email, style: const TextStyle(color: Colors.grey)),
+              const SizedBox(height: 20),
+              ProfileInfoCard(
+                title: "Editar Perfil",
+                icon: Icons.edit,
+                onTap: () {
+                  Navigator.pushNamed(context, '/edit-profile', arguments: user); 
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          Text(user!.name, style: const TextStyle(fontSize: 20)),
-          Text(user!.email),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/edit-profile', arguments: user); 
-            }, 
-            child: const Text("Editar Perfil"), 
-          )
-        ],
-      ), 
-    );
+        ),
+      );
   }
-}
+}   

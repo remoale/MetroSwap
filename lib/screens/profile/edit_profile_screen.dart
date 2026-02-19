@@ -1,49 +1,45 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../services/firestore_service.dart';
-import '../../services/storage_service.dart';
-import '../../models/user_model.dart';
+import '../../controllers/profile_controller.dart'; 
+import '../../models/user_model.dart'; 
+import '../../widgets/profile_avatar.dart'; 
+import '../../widgets/primary_button.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
-  const EditProfileScreen({required this.user});
+  const EditProfileScreen({super.key, required this.user});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  final _firestore = FirestoreService();
-  final _storage = StorageService();
-  final _picker = ImagePicker();
+  final controller = ProfileController();
+  final picker = ImagePicker();
 
-  late TextEditingController nameCtrl;
+  late UserModel editableUser;
   File? newImage;
 
   @override
   void initState() {
     super.initState();
-    nameCtrl = TextEditingController(text: widget.user.name);
+    editableUser = widget.user.clone(); //Aquí se usa el PROTOTYPE
   }
 
   Future<void> pickImage() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) setState(() => newImage = File(picked.path));
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => newImage = File(picked.path));
+    }
   }
 
   Future<void> save() async {
-    String? photoUrl = widget.user.photoUrl;
-
     if (newImage != null) {
-      photoUrl = await _storage.uploadProfileImage(widget.user.uid, newImage!);
+      editableUser.photoUrl = await controller.uploadImage(editableUser.uid, newImage!);
     }
 
-    await _firestore.updateUser(widget.user.uid, {
-      'name': nameCtrl.text,
-      'photoUrl': photoUrl,
-    });
-
+    await controller.updateUser(editableUser);
     Navigator.pop(context);
   }
 
@@ -55,27 +51,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            GestureDetector(
+            ProfileAvatar(
+              imageUrl: editableUser.photoUrl,
+              localImage: newImage,
+              size: 70,
               onTap: pickImage,
-              child: CircleAvatar(
-                radius: 50,
-                backgroundImage: newImage != null
-                    ? FileImage(newImage!)
-                    : widget.user.photoUrl != null
-                        ? NetworkImage(widget.user.photoUrl!)
-                        : null,
-                child: widget.user.photoUrl == null && newImage == null
-                    ? const Icon(Icons.camera_alt)
-                    : null,
-              ),
             ),
             const SizedBox(height: 20),
-            TextField(
-              controller: nameCtrl,
+            TextField( 
               decoration: const InputDecoration(labelText: "Nombre"),
+              onChanged: (value) => editableUser.name = value,
+              controller: TextEditingController(text: editableUser.name),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(onPressed: save, child: const Text("Guardar"))
+            PrimaryButton(text: "Guardar Cambios", onPressed: save),
           ],
         ),
       ),
