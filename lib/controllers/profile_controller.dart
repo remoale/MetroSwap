@@ -9,9 +9,9 @@ class ProfileController {
 
   ProfileController({
     FirestoreService? firestore,
-     StorageService? storage,
-  }) : _firestore = firestore ?? FirestoreService(),
-       _storage = storage ?? StorageService();
+    StorageService? storage,
+  }) : _firestore = firestore ?? FirestoreService(), 
+  _storage = storage ?? StorageService();
 
   Future<UserModel?> loadUser(String uid) async {
     final user = await _firestore.getUser(uid);
