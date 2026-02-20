@@ -4,11 +4,18 @@ import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
 class ProfileController {
-  final _firestore = FirestoreService();
-  final _storage = StorageService();
+  final FirestoreService _firestore;
+  final StorageService _storage;
+
+  ProfileController({
+    FirestoreService? firestore,
+     StorageService? storage,
+  }) : _firestore = firestore ?? FirestoreService(),
+       _storage = storage ?? StorageService();
 
   Future<UserModel?> loadUser(String uid) async {
-    return await _firestore.getUser(uid);
+    final user = await _firestore.getUser(uid);
+    return user?.clone(); // Devuelve una copia para evitar mutaciones directas 
   }
 
   Future<String?> uploadImage(String uid, File file) async {
