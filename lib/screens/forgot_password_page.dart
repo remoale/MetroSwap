@@ -23,8 +23,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             backgroundColor: Colors.green,
           ),
         );
-        // Opcional: Regresar al login después de unos segundos
-        // Future.delayed(const Duration(seconds: 2), () => Navigator.of(context).pop());
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -47,20 +45,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Usamos un Row para dividir la pantalla en dos columnas
       body: Row(
         children: [
-          // --- COLUMNA IZQUIERDA (Formulario) ---
           Expanded(
             flex: 1,
             child: Container(
-              color: const Color(0xFF333333), // Fondo oscuro
+              color: const Color(0xFF333333),
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Botón para regresar
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Colors.white70),
                     onPressed: () => Navigator.of(context).pop(),
@@ -68,32 +63,27 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     alignment: Alignment.centerLeft,
                   ),
                   const SizedBox(height: 20),
-                  
-                  // Título
                   const Text(
                     '¿OLVIDASTE LA CONTRASEÑA?',
                     style: TextStyle(
-                      color: Colors.white, // Texto blanco
-                      fontSize: 16, // Un poco más grande
+                      color: Colors.white,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  
-                  // Texto explicativo (opcional, pero ayuda)
                   const Text(
                     'Ingresa tu correo institucional para recibir un enlace de recuperación.',
                     style: TextStyle(color: Colors.white60, fontSize: 12),
                   ),
                   const SizedBox(height: 30),
 
-                  // Campo de texto (InputDecoration decorador)
                   TextField(
                     controller: _emailController,
                     decoration: InputDecoration(
                       hintText: 'Correo institucional',
                       filled: true,
-                      fillColor: Colors.white, // Fondo blanco para el input
+                      fillColor: Colors.white,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8.0),
                         borderSide: BorderSide.none,
@@ -103,18 +93,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         vertical: 15.0,
                       ),
                     ),
-                    style: const TextStyle(color: Colors.black), // Texto negro al escribir
+                    style: const TextStyle(color: Colors.black),
                   ),
                   const SizedBox(height: 25),
 
-                  // Botón de "Enviar correo"
                   SizedBox(
                     width: double.infinity,
                     height: 45,
                     child: ElevatedButton(
                       onPressed: resetPassword,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6B00), // Naranja
+                        backgroundColor: const Color(0xFFFF6B00),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.0),
                         ),
@@ -134,16 +123,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
           ),
 
-          // --- COLUMNA DERECHA (Logo grande) ---
           Expanded(
             flex: 3,
             child: Container(
-              color: const Color(0xFFE5E5E5), // Fondo gris claro
+              color: const Color(0xFFE5E5E5),
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 50.0),
               child: Column(
                 children: [
                   const Spacer(),
-                  // Logo grande centrado
                   Expanded(
                     flex: 6,
                     child: Container(
@@ -156,7 +143,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                   ),
                   const Spacer(),
-                  // Pie de pagina
                   const Padding(
                     padding: EdgeInsets.only(bottom: 10.0),
                     child: Text(

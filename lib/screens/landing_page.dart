@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login_view.dart';
+import 'package:metroswap/screens/login_view.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -7,17 +7,15 @@ class LandingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // Color gris clarito de fondo
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        // Aqui agrande la franja gris de arriba 
         toolbarHeight: 85, 
-        backgroundColor: const Color(0xFF2C2C2C), // Gris oscuro del diseño
+        backgroundColor: const Color(0xFF2C2C2C),
         title: Row(
           children: [
-            // coloque el Logo
             Image.asset(
               'assets/images/logo_metroswap.png',
-              height: 45, // Lo subí un poquitico para que vaya acorde a la franja más grande
+              height: 45,
             ),
             const SizedBox(width: 10),
             const Text(
@@ -46,29 +44,28 @@ class LandingPage extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              backgroundColor: const Color(0xFFFF6B00), // Naranja Unimet
+              backgroundColor: const Color(0xFFFF6B00),
               foregroundColor: Colors.white,
             ),
             child: const Text('Acceder', style: TextStyle(fontSize: 16)),
           ),
-          const SizedBox(width: 30), // Espacio al borde derecho
+          const SizedBox(width: 30),
         ],
       ),
-      
-      // Para que no se vea cortada la pagina 
+
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                minHeight: constraints.maxHeight, // Mínimo ocupa toda la pantalla disponible
+                minHeight: constraints.maxHeight,
               ),
               child: IntrinsicHeight(
                 child: Column(
                   children: [
                     // Banner principal
                     Container(
-                      height: 350, // Reduje la imagen para que no se vea tan grande
+                      height: 350,
                       width: double.infinity,
                       decoration: const BoxDecoration(
                         image: DecorationImage(
@@ -84,7 +81,7 @@ class LandingPage extends StatelessWidget {
                             'Bienvenido a MetroSwap',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 55, // Se mantiene el título imponente
+                              fontSize: 55,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -92,7 +89,7 @@ class LandingPage extends StatelessWidget {
                       ),
                     ),
 
-                    // Sección de información 
+                    // Seccion de informacion.
                     Expanded(
                       child: Container(
                         alignment: Alignment.center, 
@@ -119,7 +116,7 @@ class LandingPage extends StatelessWidget {
                       ),
                     ),
 
-                    // Pie de página
+                    // Pie de pagina.
                     Container(
                       width: double.infinity,
                       color: const Color(0xFF2C2C2C),
@@ -140,7 +137,7 @@ class LandingPage extends StatelessWidget {
     );
   }
 
-  // Widget personalizados
+  // Widget auxiliar para bloques informativos.
   Widget _buildInfoColumn({required String title, required String text}) {
     return SizedBox(
       width: 380, 

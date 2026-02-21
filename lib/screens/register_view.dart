@@ -8,7 +8,7 @@ class RegisterView extends StatefulWidget {
 }
 
 class _RegisterViewState extends State<RegisterView>{
-  //SE CREARON CONTROLADORES PARA CADA CAMPO
+  // Controladores de los campos del formulario.
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _apellidoController = TextEditingController();
   final TextEditingController _carnetController = TextEditingController();
@@ -19,7 +19,7 @@ class _RegisterViewState extends State<RegisterView>{
   @override
   Widget build (BuildContext context){
     return Scaffold (
-      backgroundColor: Colors.white,//fondo
+      backgroundColor: Colors.white,
       appBar:AppBar (
         title: const Text("Crear cuenta"),
         backgroundColor: const Color.fromARGB(255, 244, 88, 41) ,
@@ -32,7 +32,7 @@ class _RegisterViewState extends State<RegisterView>{
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text (
-                "Unete a MetroSwap" ,
+                "Únete a MetroSwap" ,
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),textAlign: TextAlign.center,),
                 const SizedBox(height: 8),
                 const Text ('Regístrate con tu correo UNIMET para intercambiar material.',
@@ -44,17 +44,9 @@ class _RegisterViewState extends State<RegisterView>{
               
               
               _crearCampoTexto('Apellido', 'Ej: Pérez', _apellidoController, false),
-              
-              // 3. Campo Carnet
               _crearCampoTexto('Carnet', 'Ej: 202112345', _carnetController, false),
-              
-              // 4. Campo Teléfono
               _crearCampoTexto('Teléfono', 'Ej: 0414-1234567', _telefonoController, false),
-              
-              // 5. Campo Correo Institucional
               _crearCampoTexto('Correo Institucional', 'Ej: jperez@correo.unimet.edu.ve', _correoController, false),
-              
-              // 6. Campo Contraseña (oculta el texto)
               _crearCampoTexto('Contraseña', 'Mínimo 6 caracteres', _passwordController, true),
 
               const SizedBox(height: 20),
@@ -64,7 +56,7 @@ class _RegisterViewState extends State<RegisterView>{
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.orange, // Cambia al color de tu Figma
+                  backgroundColor: Colors.orange,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
               ),
@@ -85,7 +77,7 @@ class _RegisterViewState extends State<RegisterView>{
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TextField(
         controller: controlador,
-        obscureText: esPassword, // Si es true, oculta el texto (para la contraseña)
+        obscureText: esPassword, // Si es true, oculta el texto de la contraseña.
         decoration: InputDecoration(
           labelText: titulo,
           hintText: pista,

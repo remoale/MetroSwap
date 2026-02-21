@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:metroswap/views/register_view.dart';
-import 'auth_service.dart';
-import 'landing_page.dart';
-import 'forgot_password_page.dart';
+import 'package:metroswap/auth_service.dart';
+import 'package:metroswap/screens/forgot_password_page.dart';
+import 'package:metroswap/screens/landing_page.dart';
+import 'package:metroswap/screens/register_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -16,7 +16,6 @@ class _LoginViewState extends State<LoginView> {
     return Scaffold(
       body: Row(
         children: [
-          // Lado izquierdo del formulario
           Expanded(
             flex: 1,
             child: Container(
@@ -57,7 +56,6 @@ class _LoginViewState extends State<LoginView> {
 
                   TextButton(
                     onPressed: () {
-                      // Navegamos a la nueva pantalla (Añadiendo una hoja al patrón Composite)
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -113,7 +111,7 @@ class _LoginViewState extends State<LoginView> {
                           {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const LandingPage()), /// AQUI DEBE IR EL HOMEPAGE PERO POR AHORA ESTA ASI DE PRUEBA
+                              MaterialPageRoute(builder: (context) => const LandingPage()),
                               );
                           }
                         } catch (e) {
@@ -128,7 +126,7 @@ class _LoginViewState extends State<LoginView> {
                                 action: SnackBarAction(
                                   label: 'OK',
                                   textColor: Colors.white,
-                                  onPressed: () {}, // Permite al usuario cerrarlo manualmente
+                                  onPressed: () {},
                                 )
                               )
                             );
@@ -145,18 +143,14 @@ class _LoginViewState extends State<LoginView> {
             ),
           ),
           
-          // Lado derecho: Logo grande y pie de pagina
           Expanded(
             flex: 3,
             child: Container(
               color: const Color(0xFFE5E5E5),
-              // Reduje el paddin horizontal de 50 a 20 para darle más espacio al logo
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 50.0),
               child: Column(
                 children: [
                   const Spacer(),
-                  
-                  // Aqui el logo crecera libremente 
                   Expanded(
                     flex: 6,
                     child: Container(
@@ -164,7 +158,6 @@ class _LoginViewState extends State<LoginView> {
                       alignment: Alignment.center,
                       child: Image.asset(
                         'assets/images/logo_grande.png',
-                        // QUITAMOS EL 'width: 500' PARA QUE NO TENGA LÍMITE FIJO
                         fit: BoxFit.contain,
                       ),
                     ),
