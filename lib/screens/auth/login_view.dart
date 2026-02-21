@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:metroswap/auth_service.dart';
-import 'package:metroswap/screens/forgot_password_page.dart';
+import 'package:metroswap/services/auth_service.dart';
+import 'package:metroswap/screens/auth/forgot_password_page.dart';
 import 'package:metroswap/screens/landing_page.dart';
-import 'package:metroswap/screens/register_view.dart';
+import 'package:metroswap/screens/auth/register_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:metroswap/screens/login_view.dart';
+import 'package:metroswap/screens/auth/login_view.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
