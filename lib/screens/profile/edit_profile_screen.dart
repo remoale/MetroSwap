@@ -5,6 +5,7 @@ import '../../controllers/profile_controller.dart';
 import '../../models/user_model.dart'; 
 import '../../widgets/profile_avatar.dart'; 
 import '../../widgets/primary_button.dart';
+import '../../widgets/custom_textfield.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -21,10 +22,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late UserModel editableUser;
   File? newImage;
 
+  late TextEditingController nameCtrl;
+  late TextEditingController phoneCtrl;
+  late TextEditingController careerCtrl;
+  late TextEditingController booksCtrl;
+
   @override
   void initState() {
     super.initState();
     editableUser = widget.user.clone(); //Aquí se usa el PROTOTYPE
+
+    nameCtrl = TextEditingController(text: editableUser.name); 
+    phoneCtrl = TextEditingController(text: editableUser.phone ?? ""); 
+    careerCtrl = TextEditingController(text: editableUser.career ?? ""); 
+    booksCtrl = TextEditingController( 
+      text: editableUser.books?.join(", ") ?? "",
+    );
   }
 
   Future<void> pickImage() async {
@@ -35,6 +48,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> save() async {
+    editableUser.name = nameCtrl.text; 
+    editableUser.phone = phoneCtrl.text; 
+    editableUser.career = careerCtrl.text; 
+    
+    // Convertir libros separados por coma a lista 
+    editableUser.books = booksCtrl.text 
+    .split(",") 
+    .map((e) => e.trim()) 
+    .where((e) => e.isNotEmpty) 
+    .toList();
+    
     if (newImage != null) {
       editableUser.photoUrl = await controller.uploadImage(editableUser.uid, newImage!);
     }
@@ -47,7 +71,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Editar Perfil")),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
@@ -58,12 +82,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               onTap: pickImage,
             ),
             const SizedBox(height: 20),
-            TextField( 
-              decoration: const InputDecoration(labelText: "Nombre"),
-              onChanged: (value) => editableUser.name = value,
-              controller: TextEditingController(text: editableUser.name),
+            
+            CustomTextField(controller: nameCtrl, label: "Nombre"),
+            const SizedBox(height: 15),
+
+            CustomTextField(
+              controller: phoneCtrl, 
+              label: "Teléfono",
+              keyboardType: TextInputType.phone,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
+            
+            CustomTextField(controller: careerCtrl, label: "Carrera"),
+            const SizedBox(height: 15),
+
+            CustomTextField(
+              controller: booksCtrl, 
+              label: "Libros (separados por coma)",
+            ),
+            const SizedBox(height: 25),
+
             PrimaryButton(text: "Guardar Cambios", onPressed: save),
           ],
         ),

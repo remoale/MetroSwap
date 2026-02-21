@@ -3,35 +3,57 @@ class UserModel {
   String name;
   String email;
   String? photoUrl;
+  String? phone;
+  String? career;
+  List<String>? books;
+
 
   UserModel({
     required this.uid,
     required this.name,
     required this.email,
     this.photoUrl,
+    this.phone,
+    this.career,
+    this.books,
   });
 
-  // PROTOTYPE → permite clonar el objeto sin acoplarlo
+  // PROTOTYPE: permite clonar el objeto sin acoplarlo
   UserModel clone() {
     return UserModel(
       uid: uid,
       name: name,
       email: email,
       photoUrl: photoUrl,
+      phone: phone,
+      career: career,
+      books: books != null ? List<String>.from(books!) : null,
     );
   }
 
-  Map<String, dynamic> toMap() => {
-        'uid': uid,
-        'name': name,
-        'email': email,
-        'photoUrl': photoUrl,
-      };
+  // MAPPER: convierte el objeto a un mapa para Firestore
+  Map<String, dynamic> toMap() {
+        return {
+          'uid': uid,
+          'name': name,
+          'email': email,
+          'photoUrl': photoUrl,
+          'phone': phone,
+          'career': career, 
+          'books': books,
+        };
+      }
 
-  factory UserModel.fromMap(Map<String, dynamic> map) => UserModel(
-        uid: map['uid'],
-        name: map['name'],
-        email: map['email'],
-        photoUrl: map['photoUrl'],
-      );
+  //Crea un modelo desde Firestore
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      uid: map['uid'],
+      name: map['name'],
+      email: map['email'],
+      photoUrl: map['photoUrl'],
+      phone: map['phone'],
+      career: map['career'],
+      books: map['books'] != null ? List<String>.from(map['books']) : null,
+    );
+  }
 }

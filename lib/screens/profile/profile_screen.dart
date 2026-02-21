@@ -6,7 +6,7 @@ import '../../widgets/profile_info_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
-  const ProfileScreen({required this.uid});
+  const ProfileScreen({super.key, required this.uid});
 
   @override 
   State<ProfileScreen> createState() => _ProfileScreenState(); 
@@ -19,10 +19,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override 
   void initState() {
      super.initState(); 
-     load();
+     loadUser();
   }
 
-  Future<void> load() async {
+  Future<void> loadUser() async {
     final data = await controller.loadUser(widget.uid);
     setState(() => user = data);
   }
@@ -34,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: Center(child: CircularProgressIndicator())
         );
       }
+
       return Scaffold(
         appBar: AppBar(title: const Text("Mi Perfil")),
         body: Padding(
@@ -52,6 +53,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Navigator.pushNamed(context, '/edit-profile', arguments: user); 
                 },
               ),
+              ProfileInfoCard(
+                title: "Mis Libros",
+                icon: Icons.book,
+                onTap: () { 
+                // Navegar a pantalla de libros
+                },
+              ),
+
+              ProfileInfoCard(
+                title: "Cerrar Sesión",
+                icon: Icons.logout,
+                onTap: () {
+                  // Llamar a logout
+                },
+              ),
+
             ],
           ),
         ),
