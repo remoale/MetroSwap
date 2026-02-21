@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:metroswap/views/register_view.dart';
 class LoginView extends StatelessWidget {
   const LoginView({Key? key}) : super(key: key);
 
@@ -72,7 +72,11 @@ class LoginView extends StatelessWidget {
                     width: double.infinity,
                     height: 45,
                     child: OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () {Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const RegisterView()),
+  );
+},
                       style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white60), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                       child: const Text('Registrarse', style: TextStyle(color: Colors.white)),
                     ),

@@ -39,10 +39,10 @@ class _RegisterViewState extends State<RegisterView>{
                 style: TextStyle(fontSize: 16, color: Colors.grey),
                 textAlign: TextAlign.center,),
                 const SizedBox(height:30),
-                 // 1. Campo Nombre
+                 
               _crearCampoTexto('Nombre', 'Ej: Juan', _nombreController, false),
               
-              // 2. Campo Apellido
+              
               _crearCampoTexto('Apellido', 'Ej: Pérez', _apellidoController, false),
               
               // 3. Campo Carnet
