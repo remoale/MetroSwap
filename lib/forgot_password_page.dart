@@ -31,7 +31,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.message}'),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.red.shade700,
           ),
         );
       }
@@ -150,13 +150,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       width: double.infinity,
                       alignment: Alignment.center,
                       child: Image.asset(
-                        'assets/images/logo_grande.png', // Asegúrate que esta ruta sea correcta
+                        'assets/images/logo_grande.png', 
                         fit: BoxFit.contain,
                       ),
                     ),
                   ),
                   const Spacer(),
-                  // Pie de página
+                  // Pie de pagina
                   const Padding(
                     padding: EdgeInsets.only(bottom: 10.0),
                     child: Text(

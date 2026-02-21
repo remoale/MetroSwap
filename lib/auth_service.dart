@@ -16,7 +16,7 @@ class AuthService {
       {
         // Si no, cerramos la sesión de Google inmediatamente
       await _googleSignIn.signOut();
-      throw 'Solo se permiten correos @unimet.edu.ve o @correo.unimet.edu.ve';
+      throw Exception('Solo se permiten correos de dominio unimet: @unimet.edu.ve o @correo.unimet.edu.ve');
       }
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
@@ -33,6 +33,9 @@ class AuthService {
       
       return userCredential.user;
     } catch (e) {
+      if (e.toString().contains('Solo se permiten correos')) {
+        rethrow;
+      }
       return null;
     }
   }

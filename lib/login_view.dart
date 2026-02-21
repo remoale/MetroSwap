@@ -117,11 +117,20 @@ class _LoginViewState extends State<LoginView> {
                               );
                           }
                         } catch (e) {
-                          if (context.mounted) {
+                            if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(e.toString()),
-                                backgroundColor: Colors.redAccent,),
+                                content: Text(
+                                  e.toString().replaceAll('Exception: ', ''),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold,),
+                                ),
+                                backgroundColor: Colors.red.shade700, 
+                                action: SnackBarAction(
+                                  label: 'OK',
+                                  textColor: Colors.white,
+                                  onPressed: () {}, // Permite al usuario cerrarlo manualmente
+                                )
+                              )
                             );
                           }
                         }
