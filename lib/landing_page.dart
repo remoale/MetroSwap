@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'login_view.dart';
 
 class LandingPage extends StatelessWidget {
-  const LandingPage({Key? key}) : super(key: key);
+  const LandingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +78,7 @@ class LandingPage extends StatelessWidget {
                         ),
                       ),
                       child: Container(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         child: const Center(
                           child: Text(
                             'Bienvenido a MetroSwap',

@@ -60,7 +60,7 @@ class _RegisterViewState extends State<RegisterView>{
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: (){
-                  print ("boton presionado: ${_correoController.text}");
+                  debugPrint("boton presionado: ${_correoController.text}");
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
