@@ -29,6 +29,13 @@
             {
               "client_id": "614391071848-ltl8o0l941276poedpqob4in300tq7nd.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "614391071848-79cmp9ik5qn4vdifidg2b37jhj9ql4pa.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.metroswap"
+              }
             }
           ]
         }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:metroswap/views/register_view.dart';
 import 'auth_service.dart';
 import 'landing_page.dart';
+import 'forgot_password_page.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({Key? key}) : super(key: key);
@@ -55,10 +56,19 @@ class _LoginViewState extends State<LoginView> {
                   const SizedBox(height: 10),
 
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      // Navegamos a la nueva pantalla (Añadiendo una hoja al patrón Composite)
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ForgotPasswordPage(),
+                        ),
+                      );
+                    },
                     style: TextButton.styleFrom(padding: EdgeInsets.zero),
                     child: const Text('¿OLVIDASTE LA CONTRASEÑA?', style: TextStyle(color: Colors.white60, fontSize: 10)),
                   ),
+                  
                   const SizedBox(height: 20),
 
                   SizedBox(
