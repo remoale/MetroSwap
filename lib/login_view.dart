@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/views/register_view.dart';
-class LoginView extends StatelessWidget {
-  const LoginView({Key? key}) : super(key: key);
+import 'auth_service.dart';
+import 'landing_page.dart';
 
+class LoginView extends StatefulWidget {
+  const LoginView({Key? key}) : super(key: key);
+  @override
+  State<LoginView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,7 +94,28 @@ class LoginView extends StatelessWidget {
                     width: double.infinity,
                     height: 45,
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () async
+                      {
+                        final authService = AuthService();
+                        try {
+                          final user = await authService.signInWithGoogle();
+                          if (user != null && context.mounted) 
+                          {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const LandingPage()), /// AQUI DEBE IR EL HOMEPAGE PERO POR AHORA ESTA ASI DE PRUEBA
+                              );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(e.toString()),
+                                backgroundColor: Colors.redAccent,),
+                            );
+                          }
+                        }
+                      },
                       icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 30),
                       label: const Text('Continuar con Google', style: TextStyle(color: Colors.white)),
                       style: OutlinedButton.styleFrom(backgroundColor: Colors.blue.shade700, side: BorderSide.none, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
