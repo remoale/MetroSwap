@@ -105,6 +105,10 @@ class AuthService {
       if (e.toString().contains('Solo se permiten correos')) {
         rethrow;
       }
+
+      if (e.toString().contains('popup_closed')) {
+        throw Exception("El inicio de sesion fue cancelado.");
+      }
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
