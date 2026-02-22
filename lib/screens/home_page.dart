@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
 
 class HomePage extends StatefulWidget {
@@ -71,10 +72,12 @@ class _HomePageState extends State<HomePage> {
                   IconButton(
                     icon: const Icon(Icons.account_circle, color: Colors.white70, size: 35),
                     onPressed: () {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) return;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ProfileScreen(),
+                          builder: (context) => ProfileScreen(uid: user.uid),
                         ),
                       );
                     },

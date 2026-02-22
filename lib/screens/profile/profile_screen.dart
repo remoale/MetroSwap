@@ -6,7 +6,7 @@ import '../../models/user_model.dart';
 import '../../services/storage_service.dart';
 import 'edit_profile_screen.dart';
 import '../../widgets/profile_avatar.dart'; 
-import '../landing_page.dart';
+import '../home_page.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -264,7 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const LandingPage(),
+                  builder: (_) => const HomePage(),
                 ),
               );
             },
