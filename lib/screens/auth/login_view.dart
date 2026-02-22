@@ -47,7 +47,7 @@ class _LoginViewState extends State<LoginView> {
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const Homepage()),
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
     } on Exception catch (e) {
@@ -68,7 +68,7 @@ class _LoginViewState extends State<LoginView> {
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const Homepage()),
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
     } on Exception catch (e) {

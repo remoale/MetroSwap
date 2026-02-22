@@ -1,123 +1,187 @@
 import 'package:flutter/material.dart';
 
-class Homepage extends StatelessWidget {
-  const Homepage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE0E0E0),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2E2E2E),
-        elevation: 0,
-        title: const Row(
-          children: [
-            Icon(Icons.swap_horizontal_circle, color: Colors.orange, size: 30),
-            SizedBox(width: 8),
-            Text('MetroSwap',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () {},
-              child: const Text('Publicar', style: TextStyle(color: Colors.white))),
-          TextButton(
-              onPressed: () {},
-              child: const Text('Conócenos', style: TextStyle(color: Colors.white))),
-          const Icon(Icons.notifications_none, color: Colors.white),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10),
-            child: CircleAvatar(
-                backgroundColor: Colors.grey,
-                child: Icon(Icons.person, color: Colors.white)),
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFE4E1E6), // Color de fondo gris claro/lila
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // SECCIÓN SUPERIOR CON IMAGEN Y BUSCADOR
-            Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  height: 250,
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(
-                          'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=1000'),
-                      fit: BoxFit.cover,
-                      colorFilter:
-                          ColorFilter.mode(Colors.black45, BlendMode.darken),
-                    ),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Todo lo que necesitas para tu trimestre',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w300),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -25,
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Buscar por título, material o materia...',
-                        filled: true,
-                        fillColor: Colors.white,
-                        suffixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 20),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 50),
-
-            // SECCIÓN DE CATEGORÍAS
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            // --- 1. CABECERA (Header) ---
+            Container(
+              height: 70,
+              color: const Color(0xFF333333),
+              padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Row(
                 children: [
-                  Expanded(
-                    child: _buildCategoryCard('Libros',
-                        'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=500'),
+                  // Logo y Título
+                  Row(
+                    children: [
+                      // Usamos tu logo local
+                      Image.asset(
+                        'assets/images/logo_metroswap.png',
+                        height: 60, // Ajusta el tamaño si es necesario
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'MetroSwap',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: _buildCategoryCard('Materiales',
-                        'https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=500'),
+                  const Spacer(),
+                  // Botones del menú (sin lógica aún)
+                  OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white70),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    child: const Text('Publicar'),
+                  ),
+                  const SizedBox(width: 15),
+                  OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white70),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    child: const Text('Conócenos'),
+                  ),
+                  const SizedBox(width: 25),
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none, color: Colors.white, size: 28),
+                    onPressed: () {},
+                  ),
+                  const SizedBox(width: 10),
+                  IconButton(
+                    icon: const Icon(Icons.account_circle, color: Colors.white70, size: 35),
+                    onPressed: () {
+                      // AQUÍ IRÁ LA LÓGICA DEL PERFIL
+                      print("Clic en perfil");
+                    },
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 40),
+            // --- 2. SECCIÓN HERO Y BARRA DE BÚSQUEDA ---
+            SizedBox(
+              height: 330,
+              child: Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  // Imagen de fondo local con filtro oscuro
+                  Container(
+                    height: 300,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        // Usamos AssetImage para la imagen local (.jpg según tu explorador)
+                        image: const AssetImage('assets/images/fondo_estudiantes.jpg'),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withOpacity(0.5), // Un poco más oscuro para que resalte el texto
+                          BlendMode.darken,
+                        ),
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'Todo lo que necesitas para tu trimestre',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                  ),
+                  
+                  // Barra de búsqueda flotante
+                  Positioned(
+                    bottom: 0,
+                    child: Container(
+                      width: 600,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Buscar por titulo, material o materia..',
+                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+                          suffixIcon: const Padding(
+                            padding: EdgeInsets.only(right: 15.0),
+                            child: Icon(Icons.search, color: Colors.black54),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-            // FOOTER
+            // --- 3. CATEGORÍAS (Libros y Materiales) ---
+            const SizedBox(height: 80),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Tarjeta Libros con imagen local
+                _buildCategoryCard(
+                  title: 'Libros',
+                  imagePath: 'assets/images/libros.png',
+                ),
+                const SizedBox(width: 180), // Espacio entre las tarjetas
+                // Tarjeta Materiales con imagen local
+                _buildCategoryCard(
+                  title: 'Materiales',
+                  imagePath: 'assets/images/materiales.png',
+                ),
+              ],
+            ),
+            const SizedBox(height: 100),
+
+            // --- 4. FOOTER (Pie de página) ---
             Container(
-              padding: const EdgeInsets.all(20),
-              color: const Color(0xFF2E2E2E),
               width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              decoration: const BoxDecoration(
+                color: Color(0xFF333333),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
               child: const Text(
                 '© 2026 MetroSwap - Universidad Metropolitana.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ),
           ],
@@ -126,23 +190,36 @@ class Homepage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryCard(String title, String imageUrl) {
+  // Widget actualizado para usar Image.asset
+  Widget _buildCategoryCard({required String title, required String imagePath}) {
     return Column(
       children: [
-        Container(
-          height: 150,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            image: DecorationImage(
-                image: NetworkImage(imageUrl), fit: BoxFit.cover),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          // Cambiamos Image.network por Image.asset
+          child: Image.asset(
+            imagePath,
+            width: 300,
+            height: 200,
+            fit: BoxFit.cover,
           ),
         ),
-        const SizedBox(height: 10),
-        Text(title,
-            style: const TextStyle(
-                fontSize: 22,
-                color: Colors.black54, // Cambiado de grey a black54 para mejor visibilidad
-                fontWeight: FontWeight.w400)),
+        const SizedBox(height: 15),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white, // Color blanco para que resalte en el fondo gris
+            fontSize: 32,
+            fontWeight: FontWeight.w300,
+            shadows: [
+              Shadow(
+                color: Colors.black26,
+                blurRadius: 2,
+                offset: Offset(1, 1),
+              )
+            ]
+          ),
+        ),
       ],
     );
   }
