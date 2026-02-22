@@ -33,23 +33,25 @@ class UserModel {
 
   // MAPPER: convierte el objeto a un mapa para Firestore
   Map<String, dynamic> toMap() {
-        return {
-          'uid': uid,
-          'name': name,
-          'email': email,
-          'photoUrl': photoUrl,
-          'phone': phone,
-          'career': career, 
-          'books': books,
-        };
-      }
+    return {
+      'uid': uid,
+      'name': name,
+      'displayName': name,
+      'email': email,
+      'photoUrl': photoUrl,
+      'phone': phone,
+      'career': career,
+      'books': books,
+    };
+  }
 
   //Crea un modelo desde Firestore
   factory UserModel.fromMap(Map<String, dynamic> map) {
+    final rawName = map['name'] ?? map['displayName'];
     return UserModel(
-      uid: map['uid'],
-      name: map['name'],
-      email: map['email'],
+      uid: (map['uid'] ?? '').toString(),
+      name: (rawName ?? 'Usuario').toString(),
+      email: (map['email'] ?? '').toString(),
       photoUrl: map['photoUrl'],
       phone: map['phone'],
       career: map['career'],

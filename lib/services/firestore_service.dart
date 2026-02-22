@@ -10,6 +10,7 @@ class FirestoreService {
     await _firestore.collection('users').doc(user.uid).set({
       'uid': user.uid,
       'email': user.email,
+      'name': user.displayName,
       'displayName': user.displayName,
       'photoUrl': user.photoURL,
       'lastLoginAt': FieldValue.serverTimestamp(),

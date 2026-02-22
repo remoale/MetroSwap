@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart';
+import 'edit_profile_screen.dart';
 import '../../widgets/profile_avatar.dart'; 
 import '../../widgets/profile_info_card.dart';
 
@@ -15,6 +16,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final controller = ProfileController();
   UserModel? user;
+  bool isLoading = true;
 
   @override 
   void initState() {
@@ -24,14 +26,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> loadUser() async {
     final data = await controller.loadUser(widget.uid);
-    setState(() => user = data);
+    if (!mounted) return;
+    setState(() {
+      user = data;
+      isLoading = false;
+    });
   }
 
   @override 
   Widget build(BuildContext context) {
-     if (user == null) {
+     if (isLoading) {
        return const Scaffold(
         body: Center(child: CircularProgressIndicator())
+        );
+      }
+
+      if (user == null) {
+        return Scaffold(
+          appBar: AppBar(title: const Text("Mi Perfil")),
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("No se pudo cargar el perfil."),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() => isLoading = true);
+                    loadUser();
+                  },
+                  child: const Text("Reintentar"),
+                ),
+              ],
+            ),
+          ),
         );
       }
 
@@ -50,7 +78,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: "Editar Perfil",
                 icon: Icons.edit,
                 onTap: () {
-                  Navigator.pushNamed(context, '/edit-profile', arguments: user); 
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProfileScreen(user: user!),
+                    ),
+                  );
                 },
               ),
               ProfileInfoCard(
