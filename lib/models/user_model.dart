@@ -7,6 +7,7 @@ class UserModel {
   String? career;
   String? studentId;
   List<String>? books;
+  bool isAdmin;
 
   UserModel({
     required this.uid,
@@ -17,6 +18,7 @@ class UserModel {
     this.career,
     this.studentId,
     this.books,
+    this.isAdmin = false,
   });
 
   // PROTOTYPE: permite clonar el objeto sin acoplarlo
@@ -30,6 +32,7 @@ class UserModel {
       career: career,
       studentId: studentId,
       books: books != null ? List<String>.from(books!) : null,
+      isAdmin: isAdmin,
     );
   }
 
@@ -45,6 +48,7 @@ class UserModel {
       'career': career,
       'studentId': studentId,
       'books': books,
+      'isAdmin': isAdmin,
     };
   }
 
@@ -61,6 +65,7 @@ class UserModel {
       career: map['career'],
       studentId: (map['studentId'] ?? map['carnet'])?.toString(),
       books: map['books'] != null ? List<String>.from(map['books']) : null,
+      isAdmin: map['isAdmin']?? false,
     );
   }
 }

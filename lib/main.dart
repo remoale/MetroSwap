@@ -4,6 +4,7 @@ import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:metroswap/screens/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +49,7 @@ class AuthGate extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
-          return const HomeScreen();
+          return const HomePage();
         }
 
         return const LandingScreen();
