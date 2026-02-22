@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/user_model.dart';
+import 'storage_service.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final StorageService _storage = StorageService();
 
   Future<void> upsertUserProfile(User user) async {
     final data = <String, dynamic>{
@@ -20,7 +22,16 @@ class FirestoreService {
       data['displayName'] = user.displayName;
     }
     if (user.photoURL != null && user.photoURL!.trim().isNotEmpty) {
-      data['photoUrl'] = user.photoURL;
+      final photoFromStorage = await _storage.ensureProfileImageFromRemoteUrlIfMissing(
+        uid: user.uid,
+        remoteUrl: user.photoURL!,
+      );
+      data['photoUrl'] = photoFromStorage ?? user.photoURL;
+    } else {
+      final photoFromStorage = await _storage.getProfileImageDownloadUrl(user.uid);
+      if (photoFromStorage != null) {
+        data['photoUrl'] = photoFromStorage;
+      }
     }
 
     await _firestore.collection('users').doc(user.uid).set(data, SetOptions(merge: true));

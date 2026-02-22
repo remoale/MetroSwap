@@ -34,6 +34,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> loadUser() async {
     final data = await controller.loadUser(widget.uid);
+    if (data != null) {
+      final resolvedPhotoUrl = await storage.getProfileImageDownloadUrl(widget.uid) ??
+          await storage.resolveImageUrl(data.photoUrl);
+      data.photoUrl = resolvedPhotoUrl;
+    }
+
     Uint8List? imageBytes;
     if (!kIsWeb) {
       imageBytes = await storage.getProfileImageBytes(widget.uid);

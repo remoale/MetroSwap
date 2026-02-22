@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart'; 
@@ -93,6 +94,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return;
       }
       editableUser.photoUrl = uploadedUrl;
+      try {
+        await FirebaseAuth.instance.currentUser?.updatePhotoURL(uploadedUrl);
+      } catch (_) {}
     }
 
     await controller.updateUser(editableUser);
