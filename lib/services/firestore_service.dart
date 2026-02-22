@@ -1,29 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/user_model.dart'; // Asegúrate de que esta ruta sea la correcta
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../models/user_model.dart';
 
 class FirestoreService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Obtener los datos de un usuario por su ID
+  Future<void> upsertUserProfile(User user) async {
+    await _firestore.collection('users').doc(user.uid).set({
+      'uid': user.uid,
+      'email': user.email,
+      'displayName': user.displayName,
+      'photoUrl': user.photoURL,
+      'lastLoginAt': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   Future<UserModel?> getUser(String uid) async {
     try {
-      var snapshot = await _db.collection('users').doc(uid).get();
-      if (snapshot.exists) {
-        return UserModel.fromMap(snapshot.data()!);
-      }
-      return null;
-    } catch (e) {
-      print("Error al obtener usuario: $e");
+      final snapshot = await _firestore.collection('users').doc(uid).get();
+      if (!snapshot.exists) return null;
+      return UserModel.fromMap(snapshot.data()!);
+    } catch (_) {
       return null;
     }
   }
 
-  // Actualizar los datos del usuario (nombre, foto, etc.)
   Future<void> updateUser(String uid, Map<String, dynamic> data) async {
-    try {
-      await _db.collection('users').doc(uid).update(data);
-    } catch (e) {
-      print("Error al actualizar usuario: $e");
-    }
+    await _firestore.collection('users').doc(uid).set(data, SetOptions(merge: true));
   }
 }

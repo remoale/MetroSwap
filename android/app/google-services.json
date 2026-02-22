@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "614391071848",
+    "project_id": "metroswap-73a05",
+    "storage_bucket": "metroswap-73a05.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614391071848:android:8e52650293ec4003cce7dd",
+        "android_client_info": {
+          "package_name": "com.example.metroswap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "614391071848-ltl8o0l941276poedpqob4in300tq7nd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFR1QNpaLEUSScEfOPa2YIQNMpYIEw2vY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "614391071848-ltl8o0l941276poedpqob4in300tq7nd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "614391071848-79cmp9ik5qn4vdifidg2b37jhj9ql4pa.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.metroswap"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
