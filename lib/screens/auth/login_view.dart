@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/screens/auth/forgot_password_page.dart';
 import 'package:metroswap/screens/auth/register_view.dart';
-import 'package:metroswap/screens/landing_page.dart';
+import 'package:metroswap/screens/home_page.dart';
 import 'package:metroswap/services/auth_service.dart';
 
 class LoginView extends StatefulWidget {
@@ -47,7 +47,7 @@ class _LoginViewState extends State<LoginView> {
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LandingPage()),
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
     } on Exception catch (e) {
@@ -68,7 +68,7 @@ class _LoginViewState extends State<LoginView> {
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LandingPage()),
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
     } on Exception catch (e) {
