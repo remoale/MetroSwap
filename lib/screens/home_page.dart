@@ -15,7 +15,7 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- 1. CABECERA (Header) ---
+            // Cabecera
             Container(
               height: 70,
               color: const Color(0xFF333333),
@@ -25,7 +25,7 @@ class _HomePageState extends State<HomePage> {
                   // Logo y Título
                   Row(
                     children: [
-                      // Usamos tu logo local
+                      // Usamos el logo
                       Image.asset(
                         'assets/images/logo_metroswap.png',
                         height: 60, // Ajusta el tamaño si es necesario
@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   const Spacer(),
-                  // Botones del menú (sin lógica aún)
+                  // Botones del menú 
                   OutlinedButton(
                     onPressed: () {},
                     style: OutlinedButton.styleFrom(
@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // --- 2. SECCIÓN HERO Y BARRA DE BÚSQUEDA ---
+            // Hero y barra de busqueda
             SizedBox(
               height: 330,
               child: Stack(
@@ -92,7 +92,7 @@ class _HomePageState extends State<HomePage> {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        // Usamos AssetImage para la imagen local (.jpg según tu explorador)
+                        // Usamos AssetImage para la imagen local
                         image: const AssetImage('assets/images/fondo_estudiantes.jpg'),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // --- 3. CATEGORÍAS (Libros y Materiales) ---
+            // Libros y materiales 
             const SizedBox(height: 80),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -158,7 +158,7 @@ class _HomePageState extends State<HomePage> {
                   imagePath: 'assets/images/libros.png',
                 ),
                 const SizedBox(width: 180), // Espacio entre las tarjetas
-                // Tarjeta Materiales con imagen local
+                
                 _buildCategoryCard(
                   title: 'Materiales',
                   imagePath: 'assets/images/materiales.png',
@@ -167,7 +167,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 100),
 
-            // --- 4. FOOTER (Pie de página) ---
+      
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 30),
@@ -190,13 +190,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget actualizado para usar Image.asset
+ 
   Widget _buildCategoryCard({required String title, required String imagePath}) {
     return Column(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          // Cambiamos Image.network por Image.asset
+        
           child: Image.asset(
             imagePath,
             width: 300,
