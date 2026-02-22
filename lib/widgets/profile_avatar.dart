@@ -1,38 +1,56 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class ProfileAvatar extends StatelessWidget {
   final String? imageUrl;
-  final File? localImage;
+  final Uint8List? localImageBytes;
   final double size;
   final VoidCallback? onTap;
 
   const ProfileAvatar({
     super.key,
     this.imageUrl,
-    this.localImage,
+    this.localImageBytes,
     this.size = 60,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider? provider;
-    
-    if (localImage != null) {
-      provider = FileImage(localImage!);
-    } else if (imageUrl != null) {
-      provider = NetworkImage(imageUrl!);
+    final normalizedUrl = imageUrl?.trim();
+
+    Widget avatarChild = const Icon(Icons.person, size: 40);
+
+    if (localImageBytes != null) {
+      avatarChild = ClipOval(
+        child: Image.memory(
+          localImageBytes!,
+          width: size * 2,
+          height: size * 2,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else if (normalizedUrl != null && normalizedUrl.isNotEmpty) {
+      avatarChild = ClipOval(
+        child: Image.network(
+          normalizedUrl,
+          width: size * 2,
+          height: size * 2,
+          fit: BoxFit.cover,
+          webHtmlElementStrategy: kIsWeb
+              ? WebHtmlElementStrategy.prefer
+              : WebHtmlElementStrategy.never,
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.person, size: 40),
+        ),
+      );
     }
-    
+
     return GestureDetector(
       onTap: onTap,
       child: CircleAvatar(
         radius: size,
-        backgroundImage: provider,
-        child: provider == null
-            ? const Icon(Icons.person, size: 40)
-            : null,
+        child: avatarChild,
       ),
     );
   }

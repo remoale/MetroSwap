@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../controllers/profile_controller.dart'; 
@@ -18,9 +18,11 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final controller = ProfileController();
   final picker = ImagePicker();
+  bool _isSaving = false;
 
   late UserModel editableUser;
-  File? newImage;
+  XFile? newImage;
+  Uint8List? newImageBytes;
 
   late TextEditingController nameCtrl;
   late TextEditingController phoneCtrl;
@@ -43,11 +45,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> pickImage() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() => newImage = File(picked.path));
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        newImage = picked;
+        newImageBytes = bytes;
+      });
     }
   }
 
   Future<void> save() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
     editableUser.name = nameCtrl.text; 
     editableUser.phone = phoneCtrl.text; 
     editableUser.career = careerCtrl.text; 
@@ -60,11 +69,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     .toList();
     
     if (newImage != null) {
-      editableUser.photoUrl = await controller.uploadImage(editableUser.uid, newImage!);
+      final uploadedUrl = await controller.uploadImage(editableUser.uid, newImage!);
+      if (uploadedUrl == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo subir la foto de perfil.')),
+        );
+        setState(() => _isSaving = false);
+        return;
+      }
+      editableUser.photoUrl = uploadedUrl;
     }
 
     await controller.updateUser(editableUser);
-    Navigator.pop(context);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    Navigator.pop(context, true);
   }
 
   @override
@@ -77,7 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             ProfileAvatar(
               imageUrl: editableUser.photoUrl,
-              localImage: newImage,
+              localImageBytes: newImageBytes,
               size: 70,
               onTap: pickImage,
             ),
@@ -102,7 +122,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 25),
 
-            PrimaryButton(text: "Guardar Cambios", onPressed: save),
+            PrimaryButton(
+              text: "Guardar Cambios",
+              loading: _isSaving,
+              onPressed: save,
+            ),
           ],
         ),
       ),

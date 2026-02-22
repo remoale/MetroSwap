@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
@@ -13,18 +13,19 @@ class ProfileController {
   }) : _firestore = firestore ?? FirestoreService(), 
   _storage = storage ?? StorageService();
 
-  // Carga los datos del usuario desde Firestore.
+  // Cargar los datos del usuario desde Firestore
   Future<UserModel?> loadUser(String uid) async {
     final user = await _firestore.getUser(uid);
-    return user?.clone(); // PROTOTYPE: Devuelve una copia del usuario para evitar modificaciones directas.
+    if (user == null) return null;
+    return user.clone(); // PROTOTYPE: Devuelve una copia del usuario para evitar modificaciones directas.
   }
 
-  // Sube una nueva imagen de perfil y devuelve la URL.
-  Future<String?> uploadImage(String uid, File file) async {
+  // Subir una imagen de perfil y devolver la URL
+  Future<String?> uploadImage(String uid, XFile file) async {
     return await _storage.uploadProfileImage(uid, file);
   }
 
-  // Actualiza los datos del usuario en Firestore.
+  // Actualizar los datos del usuario en Firestore
   Future<void> updateUser(UserModel user) async {
     await _firestore.updateUser(user.uid, user.toMap());
   }

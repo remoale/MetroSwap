@@ -48,11 +48,12 @@ class UserModel {
   //Crea un modelo desde Firestore
   factory UserModel.fromMap(Map<String, dynamic> map) {
     final rawName = map['name'] ?? map['displayName'];
+    final rawPhoto = map['photoUrl'] ?? map['photoURL'];
     return UserModel(
       uid: (map['uid'] ?? '').toString(),
       name: (rawName ?? 'Usuario').toString(),
       email: (map['email'] ?? '').toString(),
-      photoUrl: map['photoUrl'],
+      photoUrl: rawPhoto?.toString(),
       phone: map['phone'],
       career: map['career'],
       books: map['books'] != null ? List<String>.from(map['books']) : null,
