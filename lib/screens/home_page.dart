@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:metroswap/screens/profile/profile_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -70,8 +71,12 @@ class _HomePageState extends State<HomePage> {
                   IconButton(
                     icon: const Icon(Icons.account_circle, color: Colors.white70, size: 35),
                     onPressed: () {
-                      // AQUÍ IRÁ LA LÓGICA DEL PERFIL
-                      print("Clic en perfil");
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
