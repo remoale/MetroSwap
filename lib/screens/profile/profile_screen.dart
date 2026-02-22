@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart';
 import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart';
 import '../../services/storage_service.dart';
+import '../../services/auth_service.dart';
 import 'edit_profile_screen.dart';
 import '../../widgets/profile_avatar.dart'; 
 import '../home_page.dart';
+import '../landing_page.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -19,6 +21,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final controller = ProfileController();
   final storage = StorageService();
+  final authService = AuthService();
   UserModel? user;
   Uint8List? profileImageBytes;
   bool isLoading = true;
@@ -236,6 +239,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
   }
 
+  Future<void> _handleSignOut() async {
+    await authService.signOut();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LandingPage()),
+      (route) => false,
+    );
+  }
+
   Widget _buildTopBar(BuildContext context) {
     return Container(
       height: 85,
@@ -276,6 +289,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             child: const Text("Inicio"),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton.icon(
+            onPressed: _handleSignOut,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF5C00),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text("Cerrar sesion"),
           ),
         ],
       ),
