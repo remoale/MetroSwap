@@ -25,10 +25,9 @@ class _HomePageState extends State<HomePage> {
                   // Logo y Título
                   Row(
                     children: [
-                      // Usamos tu logo local
                       Image.asset(
                         'assets/images/logo_metroswap.png',
-                        height: 60, // Ajusta el tamaño si es necesario
+                        height: 60, 
                         fit: BoxFit.contain,
                       ),
                       const SizedBox(width: 10),
@@ -43,7 +42,6 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   const Spacer(),
-                  // Botones del menú (sin lógica aún)
                   OutlinedButton(
                     onPressed: () {},
                     style: OutlinedButton.styleFrom(
