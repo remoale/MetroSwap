@@ -83,13 +83,16 @@ class _RegisterViewState extends State<RegisterView> {
       );
 
       // Guarda los datos extra en la base de datos de Firestore
-      await FirebaseFirestore.instance.collection('usuarios').doc(userCredential.user!.uid).set({
-        'nombre': nombre,
-        'carrera': carrera,
-        'carnet': carnet,
-        'telefono': telefono,
-        'correo': correo,
-        'fechaRegistro': FieldValue.serverTimestamp(),
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+        'displayName': nombre, 
+        'email': correo,       
+        'studentId': carnet,   
+        'phone': telefono,     
+        'career': carrera,
+        'photoUrl': '',       
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastLoginAt': FieldValue.serverTimestamp(),
+        'uid': userCredential.user!.uid,
       });
 
       debugPrint("Usuario creado exitosamente: ${userCredential.user!.uid}");
@@ -143,6 +146,10 @@ class _RegisterViewState extends State<RegisterView> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                        IconButton(
+                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
                         Image.asset(
                         "assets/images/logo_metroswap.png", 
                         height: 60, 
