@@ -5,7 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart'; 
 import '../../widgets/profile_avatar.dart'; 
-import '../landing_page.dart';
+import '../../widgets/metroswap_brand.dart';
+import '../landing_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -253,20 +254,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
-          Image.asset(
-            "assets/images/logo_metroswap.png",
-            height: 45,
-          ),
-          const SizedBox(width: 10),
           const Expanded(
-            child: Text(
-              "MetroSwap",
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 26,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MetroSwapBrand(),
             ),
           ),
           OutlinedButton(
@@ -274,7 +265,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const LandingPage(),
+                  builder: (_) => const LandingScreen(),
                 ),
               );
             },
@@ -423,3 +414,4 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return normalized;
   }
 }
+

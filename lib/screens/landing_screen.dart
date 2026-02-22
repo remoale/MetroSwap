@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:metroswap/screens/auth/login_view.dart';
+import 'package:metroswap/screens/about/about_screen.dart';
+import 'package:metroswap/screens/auth/login_screen.dart';
+import 'package:metroswap/widgets/metroswap_brand.dart';
 
-class LandingPage extends StatelessWidget {
-  const LandingPage({super.key});
+class LandingScreen extends StatelessWidget {
+  const LandingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -11,22 +13,17 @@ class LandingPage extends StatelessWidget {
       appBar: AppBar(
         toolbarHeight: 85, 
         backgroundColor: const Color(0xFF2C2C2C),
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/logo_metroswap.png',
-              height: 45,
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'MetroSwap',
-              style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+        title: const MetroSwapBrand(),
         actions: [
           OutlinedButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AboutScreen(),
+                ),
+              );
+            },
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               side: const BorderSide(color: Colors.white),
@@ -39,7 +36,7 @@ class LandingPage extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context, 
-                MaterialPageRoute(builder : (context) => const LoginView()),
+                MaterialPageRoute(builder : (context) => const LoginScreen()),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -172,3 +169,4 @@ class LandingPage extends StatelessWidget {
     );
   }
 }
+

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:metroswap/screens/profile/profile_screen.dart';
+import 'package:metroswap/widgets/metroswap_footer.dart';
+import 'package:metroswap/widgets/metroswap_navbar.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,73 +18,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             // Cabecera
-            Container(
-              height: 70,
-              color: const Color(0xFF333333),
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Row(
-                children: [
-                  // Logo y Título
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/logo_metroswap.png',
-                        height: 60, 
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'MetroSwap',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white70),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                    ),
-                    child: const Text('Publicar'),
-                  ),
-                  const SizedBox(width: 15),
-                  OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white70),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                    ),
-                    child: const Text('Conócenos'),
-                  ),
-                  const SizedBox(width: 25),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_none, color: Colors.white, size: 28),
-                    onPressed: () {},
-                  ),
-                  const SizedBox(width: 10),
-                  IconButton(
-                    icon: const Icon(Icons.account_circle, color: Colors.white70, size: 35),
-                    onPressed: () {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user == null) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProfileScreen(uid: user.uid),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+            const MetroSwapNavbar(),
 
             // Hero y barra de busqueda
             SizedBox(
@@ -174,22 +108,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 100),
 
       
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              decoration: const BoxDecoration(
-                color: Color(0xFF333333),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: const Text(
-                '© 2026 MetroSwap - Universidad Metropolitana.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-            ),
+            const MetroSwapFooter(),
           ],
         ),
       ),
@@ -230,3 +149,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+

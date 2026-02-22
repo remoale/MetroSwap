@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:metroswap/screens/home_page.dart';
+import 'package:metroswap/screens/home_screen.dart';
+import 'package:metroswap/widgets/metroswap_brand.dart';
 
-class RegisterView extends StatefulWidget {
-  const RegisterView({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<RegisterView> createState() => _RegisterViewState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterViewState extends State<RegisterView> {
+class _RegisterScreenState extends State<RegisterScreen> {
   // Controladores para capturar la información
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _carreraController = TextEditingController();
@@ -97,11 +98,11 @@ class _RegisterViewState extends State<RegisterView> {
 
       debugPrint("Usuario creado exitosamente: ${userCredential.user!.uid}");
 
-      // Navegar al HomePage y evitar que regrese a esta pantalla
+      // Navegar al HomeScreen y evitar que regrese a esta pantalla
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -133,10 +134,9 @@ class _RegisterViewState extends State<RegisterView> {
       backgroundColor: grisFondoPajina,
       body: Column(
         children: [
-          // --- HEADER CON BOTÓN CENTRADO ---
           Container(
             color: grisOscuroHeader,
-            height: 80,
+            height: 85,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Stack(
               alignment: Alignment.center,
@@ -146,33 +146,36 @@ class _RegisterViewState extends State<RegisterView> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                        IconButton(
+                      IconButton(
                         icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                         onPressed: () => Navigator.pop(context),
                       ),
-                        Image.asset(
-                        "assets/images/logo_metroswap.png", 
-                        height: 60, 
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(width: 10), 
-                      const Text(
-                        "MetroSwap",
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 24),
-                      ),
+                      const MetroSwapBrand(),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: naranjaM,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    "Crea tu cuenta",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Crea tu cuenta",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 22,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 110,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: naranjaM,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -307,3 +310,4 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 }
+

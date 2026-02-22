@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:metroswap/screens/auth/forgot_password_page.dart';
-import 'package:metroswap/screens/auth/register_view.dart';
-import 'package:metroswap/screens/home_page.dart';
+import 'package:metroswap/screens/auth/forgot_password_screen.dart';
+import 'package:metroswap/screens/auth/register_screen.dart';
+import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/services/auth_service.dart';
 
-class LoginView extends StatefulWidget {
-  const LoginView({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<LoginView> createState() => _LoginViewState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginViewState extends State<LoginView> {
+class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -47,7 +47,7 @@ class _LoginViewState extends State<LoginView> {
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       }
     } on Exception catch (e) {
@@ -68,7 +68,7 @@ class _LoginViewState extends State<LoginView> {
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       }
     } on Exception catch (e) {
@@ -154,7 +154,7 @@ class _LoginViewState extends State<LoginView> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ForgotPasswordPage(),
+                          builder: (context) => const ForgotPasswordScreen(),
                         ),
                       );
                     },
@@ -214,7 +214,7 @@ class _LoginViewState extends State<LoginView> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const RegisterView(),
+                                  builder: (context) => const RegisterScreen(),
                                 ),
                               );
                             },
@@ -294,3 +294,4 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 }
+

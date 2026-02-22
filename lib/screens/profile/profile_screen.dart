@@ -7,8 +7,9 @@ import '../../services/storage_service.dart';
 import '../../services/auth_service.dart';
 import 'edit_profile_screen.dart';
 import '../../widgets/profile_avatar.dart'; 
-import '../home_page.dart';
-import '../landing_page.dart';
+import '../../widgets/metroswap_brand.dart';
+import '../home_screen.dart';
+import '../landing_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -250,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LandingPage()),
+      MaterialPageRoute(builder: (_) => const LandingScreen()),
       (route) => false,
     );
   }
@@ -262,20 +263,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
-          Image.asset(
-            "assets/images/logo_metroswap.png",
-            height: 45,
-          ),
-          const SizedBox(width: 10),
           const Expanded(
-            child: Text(
-              "MetroSwap",
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 26,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MetroSwapBrand(),
             ),
           ),
           OutlinedButton(
@@ -283,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const HomePage(),
+                  builder: (_) => const HomeScreen(),
                 ),
               );
             },
@@ -406,3 +397,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return count > 0 ? "$count libro(s)" : "Sin publicaciones";
   }
 }
+

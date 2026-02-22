@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:metroswap/screens/home_page.dart';
-import 'package:metroswap/screens/landing_page.dart';
+import 'package:metroswap/screens/home_screen.dart';
+import 'package:metroswap/screens/landing_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
@@ -48,11 +48,12 @@ class AuthGate extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
-          return const HomePage();
+          return const HomeScreen();
         }
 
-        return const LandingPage();
+        return const LandingScreen();
       },
     );
   }
 }
+
