@@ -298,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
         _buildInfoLabelValue(
           "Carnet:",
-          _buildCarnetValue(user!.carnet, user!.uid),
+          _buildStudentIdValue(user!.studentId, user!.uid),
         ),
       ],
     );
@@ -358,8 +358,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return normalized;
   }
 
-  String _buildCarnetValue(String? carnet, String uid) {
-    final normalized = carnet?.trim();
+  String _buildStudentIdValue(String? studentId, String uid) {
+    final normalized = studentId?.trim();
     if (normalized != null && normalized.isNotEmpty) {
       return normalized;
     }

@@ -12,7 +12,7 @@ class RegisterView extends StatefulWidget {
 class _RegisterViewState extends State<RegisterView> {
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _apellidoController = TextEditingController();
-  final TextEditingController _carnetController = TextEditingController();
+  final TextEditingController _studentIdController = TextEditingController();
   final TextEditingController _telefonoController = TextEditingController();
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -23,7 +23,7 @@ class _RegisterViewState extends State<RegisterView> {
   void dispose() {
     _nombreController.dispose();
     _apellidoController.dispose();
-    _carnetController.dispose();
+    _studentIdController.dispose();
     _telefonoController.dispose();
     _correoController.dispose();
     _passwordController.dispose();
@@ -114,7 +114,7 @@ class _RegisterViewState extends State<RegisterView> {
               const SizedBox(height: 30),
               _crearCampoTexto('Nombre', 'Ej: Juan', _nombreController, false),
               _crearCampoTexto('Apellido', 'Ej: Pérez', _apellidoController, false),
-              _crearCampoTexto('Carnet', 'Ej: 202112345', _carnetController, false),
+              _crearCampoTexto('Carnet', 'Ej: 202112345', _studentIdController, false),
               _crearCampoTexto('Teléfono', 'Ej: 0414-1234567', _telefonoController, false),
               _crearCampoTexto(
                 'Correo Institucional',

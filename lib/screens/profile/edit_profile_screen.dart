@@ -26,7 +26,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController nameCtrl;
   late TextEditingController phoneCtrl;
   late TextEditingController careerCtrl;
-  late TextEditingController carnetCtrl;
+  late TextEditingController studentIdCtrl;
   late TextEditingController booksCtrl;
 
   @override
@@ -37,8 +37,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     nameCtrl = TextEditingController(text: editableUser.name); 
     phoneCtrl = TextEditingController(text: editableUser.phone ?? ""); 
     careerCtrl = TextEditingController(text: editableUser.career ?? ""); 
-    carnetCtrl = TextEditingController(
-      text: _fallbackCarnet(editableUser.carnet, editableUser.uid),
+    studentIdCtrl = TextEditingController(
+      text: _fallbackStudentId(editableUser.studentId, editableUser.uid),
     );
     booksCtrl = TextEditingController( 
       text: editableUser.books?.join(", ") ?? "",
@@ -50,7 +50,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     nameCtrl.dispose();
     phoneCtrl.dispose();
     careerCtrl.dispose();
-    carnetCtrl.dispose();
+    studentIdCtrl.dispose();
     booksCtrl.dispose();
     super.dispose();
   }
@@ -73,7 +73,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     editableUser.name = nameCtrl.text; 
     editableUser.phone = phoneCtrl.text; 
     editableUser.career = careerCtrl.text; 
-    editableUser.carnet = _normalizeOptional(carnetCtrl.text);
+    editableUser.studentId = _normalizeOptional(studentIdCtrl.text);
     
     // Convertir libros separados por coma a lista 
     editableUser.books = booksCtrl.text 
@@ -306,7 +306,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SizedBox(height: 16),
         _buildFieldLabel("Carnet:"),
         _buildEditableField(
-          controller: carnetCtrl,
+          controller: studentIdCtrl,
           hintText: "Carnet...",
         ),
       ],
@@ -396,17 +396,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  String _buildCarnetValue(String uid) {
+  String _buildDefaultStudentId(String uid) {
     if (uid.length <= 8) {
       return uid.toUpperCase();
     }
     return uid.substring(0, 8).toUpperCase();
   }
 
-  String _fallbackCarnet(String? carnet, String uid) {
-    final normalized = _normalizeOptional(carnet);
+  String _fallbackStudentId(String? studentId, String uid) {
+    final normalized = _normalizeOptional(studentId);
     if (normalized == null) {
-      return _buildCarnetValue(uid);
+      return _buildDefaultStudentId(uid);
     }
     return normalized;
   }

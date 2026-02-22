@@ -5,8 +5,8 @@ class UserModel {
   String? photoUrl;
   String? phone;
   String? career;
+  String? studentId;
   List<String>? books;
-
 
   UserModel({
     required this.uid,
@@ -15,6 +15,7 @@ class UserModel {
     this.photoUrl,
     this.phone,
     this.career,
+    this.studentId,
     this.books,
   });
 
@@ -27,6 +28,7 @@ class UserModel {
       photoUrl: photoUrl,
       phone: phone,
       career: career,
+      studentId: studentId,
       books: books != null ? List<String>.from(books!) : null,
     );
   }
@@ -41,6 +43,7 @@ class UserModel {
       'photoUrl': photoUrl,
       'phone': phone,
       'career': career,
+      'studentId': studentId,
       'books': books,
     };
   }
@@ -56,6 +59,7 @@ class UserModel {
       photoUrl: rawPhoto?.toString(),
       phone: map['phone'],
       career: map['career'],
+      studentId: (map['studentId'] ?? map['carnet'])?.toString(),
       books: map['books'] != null ? List<String>.from(map['books']) : null,
     );
   }
