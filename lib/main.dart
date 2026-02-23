@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:metroswap/screens/home_screen.dart';
+import 'package:metroswap/screens/home_screen.dart'; // Mantenemos este
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'package:metroswap/screens/home_page.dart';
+// Borramos el import de home_page.dart porque ya no lo usaremos
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +25,6 @@ class MyApp extends StatelessWidget {
       title: 'MetroSwap', 
       debugShowCheckedModeBanner: false, 
       theme: ThemeData(
-        // Tema base de la aplicacion.
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B00)), 
         useMaterial3: true,
       ),
@@ -48,8 +47,9 @@ class AuthGate extends StatelessWidget {
           );
         }
 
+        // Si el usuario está logueado, lo enviamos al HomeScreen (el unificado)
         if (snapshot.hasData) {
-          return const HomePage();
+          return const HomeScreen(); 
         }
 
         return const LandingScreen();
@@ -57,4 +57,3 @@ class AuthGate extends StatelessWidget {
     );
   }
 }
-

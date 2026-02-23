@@ -2,41 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE4E1E6), // Color de fondo gris claro/lila
+      backgroundColor: const Color(0xFFE4E1E6),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Cabecera
-            const MetroSwapNavbar(),
+            // El Navbar unificado con el botón secreto
+            const MetroSwapNavbar(developmentNav: true, heading: 'Inicio'),
 
-            // Hero y barra de busqueda
+            // Hero y barra de búsqueda
             SizedBox(
               height: 330,
               child: Stack(
                 alignment: Alignment.topCenter,
                 children: [
-                  // Imagen de fondo local con filtro oscuro
                   Container(
                     height: 300,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        // Usamos AssetImage para la imagen local
                         image: const AssetImage('assets/images/fondo_estudiantes.jpg'),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
-                          Colors.black.withOpacity(0.5), // Un poco más oscuro para que resalte el texto
+                          Colors.black.withOpacity(0.5),
                           BlendMode.darken,
                         ),
                       ),
@@ -51,8 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  
-                  // Barra de búsqueda flotante
                   Positioned(
                     bottom: 0,
                     child: Container(
@@ -69,13 +60,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      child: TextField(
+                      child: const TextField( 
                         decoration: InputDecoration(
                           hintText: 'Buscar por titulo, material o materia..',
-                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+                          hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-                          suffixIcon: const Padding(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+                          suffixIcon: Padding(
                             padding: EdgeInsets.only(right: 15.0),
                             child: Icon(Icons.search, color: Colors.black54),
                           ),
@@ -87,18 +78,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Libros y materiales 
+            // Categorías
             const SizedBox(height: 80),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Tarjeta Libros con imagen local
                 _buildCategoryCard(
                   title: 'Libros',
                   imagePath: 'assets/images/libros.png',
                 ),
-                const SizedBox(width: 180), // Espacio entre las tarjetas
-                
+                const SizedBox(width: 180),
                 _buildCategoryCard(
                   title: 'Materiales',
                   imagePath: 'assets/images/materiales.png',
@@ -107,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 100),
 
-      
+            // Footer unificado
             const MetroSwapFooter(),
           ],
         ),
@@ -115,13 +104,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
- 
   Widget _buildCategoryCard({required String title, required String imagePath}) {
     return Column(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
-        
           child: Image.asset(
             imagePath,
             width: 300,
@@ -133,20 +120,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           title,
           style: const TextStyle(
-            color: Colors.white, // Color blanco para que resalte en el fondo gris
+            color: Color(0xFF333333),
             fontSize: 32,
             fontWeight: FontWeight.w300,
-            shadows: [
-              Shadow(
-                color: Colors.black26,
-                blurRadius: 2,
-                offset: Offset(1, 1),
-              )
-            ]
           ),
         ),
       ],
     );
   }
 }
-

@@ -17,12 +17,6 @@ class LandingScreen extends StatelessWidget {
         actions: [
           OutlinedButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AboutScreen(),
-                ),
-              );
             },
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
