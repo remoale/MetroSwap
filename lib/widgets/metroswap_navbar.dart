@@ -157,7 +157,7 @@ class MetroSwapNavbar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  icon: const Icon(Icons.logout, size: 18),
+                  icon: const Icon(Icons.exit_to_app, size: 18),
                   label: const Text("Cerrar sesion"),
                 ),
               ],
