@@ -93,7 +93,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              const MetroSwapNavbar(developmentNav: true, heading: 'Mi Perfil'),
+              const MetroSwapNavbar(
+                developmentNav: true,
+                heading: 'Mi Perfil',
+                showLogoutButton: true,
+                showNotificationsButton: false,
+                showProfileButton: false,
+              ),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
