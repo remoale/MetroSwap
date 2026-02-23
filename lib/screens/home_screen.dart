@@ -12,10 +12,8 @@ class HomeScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // El Navbar unificado con el botón secreto
             const MetroSwapNavbar(developmentNav: true, heading: 'Inicio'),
 
-            // Hero y barra de búsqueda
             SizedBox(
               height: 330,
               child: Stack(
@@ -29,7 +27,7 @@ class HomeScreen extends StatelessWidget {
                         image: const AssetImage('assets/images/fondo_estudiantes.jpg'),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
-                          Colors.black.withOpacity(0.5),
+                          Colors.black.withValues(alpha: 0.5),
                           BlendMode.darken,
                         ),
                       ),
@@ -54,7 +52,7 @@ class HomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -78,7 +76,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
-            // Categorías
             const SizedBox(height: 80),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -96,7 +93,6 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 100),
 
-            // Footer unificado
             const MetroSwapFooter(),
           ],
         ),
@@ -120,9 +116,16 @@ class HomeScreen extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF333333),
+            color: Colors.white,
             fontSize: 32,
             fontWeight: FontWeight.w300,
+            shadows: [
+              Shadow(
+                color: Colors.black26,
+                blurRadius: 2,
+                offset: Offset(1, 1),
+              )
+            ],
           ),
         ),
       ],

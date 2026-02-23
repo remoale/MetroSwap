@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart'; 
 import '../../widgets/profile_avatar.dart'; 
-import '../../widgets/metroswap_brand.dart';
-import '../landing_screen.dart';
+import '../../widgets/metroswap_navbar.dart';
+import '../../widgets/metroswap_footer.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -17,6 +17,29 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  static const List<String> _unimetCareers = [
+    'Ciencias Administrativas',
+    'Comunicación Social y Empresarial',
+    'Contaduría Pública',
+    'Derecho',
+    'Economía Empresarial',
+    'Educación',
+    'Estudios Internacionales',
+    'Estudios Liberales',
+    'Estudios simultáneos',
+    'Idiomas Modernos',
+    'Ingeniería Civil',
+    'Ingeniería de Sistemas',
+    'Ingeniería Eléctrica',
+    'Ingeniería Mecánica',
+    'Ingeniería Producción',
+    'Ingeniería Química',
+    'Matemáticas Industriales',
+    'Psicología',
+    'TSU en Desarrollo de Sistemas Inteligentes',
+    'Turismo Sostenible',
+  ];
+
   final controller = ProfileController();
   final picker = ImagePicker();
   bool _isSaving = false;
@@ -30,6 +53,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController careerCtrl;
   late TextEditingController studentIdCtrl;
   late TextEditingController booksCtrl;
+  String? selectedCareer;
 
   @override
   void initState() {
@@ -45,6 +69,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     booksCtrl = TextEditingController( 
       text: editableUser.books?.join(", ") ?? "",
     );
+    if (_isStudentRole(editableUser.role)) {
+      final currentCareer = editableUser.career?.trim();
+      if (currentCareer != null && _unimetCareers.contains(currentCareer)) {
+        selectedCareer = currentCareer;
+      }
+    }
   }
 
   @override
@@ -74,7 +104,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     editableUser.name = nameCtrl.text; 
     editableUser.phone = phoneCtrl.text; 
-    editableUser.career = careerCtrl.text; 
+    editableUser.career = _resolveCareerForRole(
+      editableUser.role,
+      selectedCareer: selectedCareer,
+      fallbackCareer: careerCtrl.text,
+    );
     editableUser.studentId = _normalizeOptional(studentIdCtrl.text);
     
     // Convertir libros separados por coma a lista 
@@ -113,7 +147,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopBar(context),
+            const MetroSwapNavbar(developmentNav: true, heading: 'Editar Perfil'),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -231,54 +265,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 },
               ),
             ),
-            Container(
-              width: double.infinity,
-              color: const Color(0xFF2C2C2C),
-              padding: const EdgeInsets.all(20),
-              child: const Text(
-                "© 2026 MetroSwap - Universidad Metropolitana.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70),
-              ),
-            ),
+            const MetroSwapFooter(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context) {
-    return Container(
-      height: 85,
-      color: const Color(0xFF2C2C2C),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: MetroSwapBrand(),
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const LandingScreen(),
-                ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white, width: 1.4),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text("Inicio"),
-          ),
-        ],
       ),
     );
   }
@@ -294,15 +283,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         const SizedBox(height: 16),
         _buildFieldLabel("Carrera:"),
-        _buildEditableField(
-          controller: careerCtrl,
-          hintText: "Carrera...",
-        ),
+        _buildCareerField(),
         const SizedBox(height: 16),
         _buildFieldLabel("Carnet:"),
         _buildEditableField(
           controller: studentIdCtrl,
-          hintText: "Carnet...",
+          hintText: "20261234567",
         ),
       ],
     );
@@ -352,6 +338,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       keyboardType: keyboardType,
       decoration: _fieldDecoration(hintText),
     );
+  }
+
+  Widget _buildCareerField() {
+    if (_isStudentRole(editableUser.role)) {
+      return DropdownButtonFormField<String>(
+        initialValue: selectedCareer,
+        isExpanded: true,
+        decoration: _fieldDecoration("Selecciona tu carrera"),
+        items: _unimetCareers
+            .map(
+              (career) => DropdownMenuItem<String>(
+                value: career,
+                child: Text(
+                  career,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: (value) {
+          selectedCareer = value;
+        },
+      );
+    }
+
+    return _buildReadOnlyField(editableUser.career?.trim().isNotEmpty == true
+        ? editableUser.career!
+        : "No especificada");
   }
 
   Widget _buildReadOnlyField(String value) {
@@ -412,6 +426,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return null;
     }
     return normalized;
+  }
+
+  bool _isStudentRole(String? role) {
+    return role?.trim().toLowerCase() == UserModel.roleStudent;
+  }
+
+  String? _resolveCareerForRole(
+    String? role, {
+    String? selectedCareer,
+    String? fallbackCareer,
+  }) {
+    final normalizedRole = role?.trim().toLowerCase();
+    if (normalizedRole == UserModel.roleAdmin) return 'Administrador';
+    if (normalizedRole == UserModel.roleProfessor) return 'Profesor';
+    if (normalizedRole == UserModel.roleStudent) return selectedCareer;
+    final normalizedCareer = fallbackCareer?.trim();
+    if (normalizedCareer == null || normalizedCareer.isEmpty) return null;
+    return normalizedCareer;
   }
 }
 

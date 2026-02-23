@@ -22,7 +22,7 @@ class AuthService {
   Future<User?> registerWithEmailAndPassword({
     required String email,
     required String password,
-    required String displayName,
+    required String name,
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
     if (!isInstitutionalEmail(normalizedEmail)) {
@@ -38,7 +38,7 @@ class AuthService {
       );
       final user = userCredential.user;
       if (user != null) {
-        await user.updateDisplayName(displayName.trim());
+        await user.updateDisplayName(name.trim());
         await _firestoreService.upsertUserProfile(user);
       }
       return user;

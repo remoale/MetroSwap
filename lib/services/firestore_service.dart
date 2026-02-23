@@ -5,21 +5,44 @@ import '../models/user_model.dart';
 import 'storage_service.dart';
 
 class FirestoreService {
+  static const String _adminEmail = 'administrador.metroswap@correo.unimet.edu.ve';
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final StorageService _storage = StorageService();
 
+  String _resolveRoleFromEmail(String? email) {
+    final normalized = email?.trim().toLowerCase() ?? '';
+    if (normalized == _adminEmail) {
+      return 'admin';
+    }
+    if (normalized.endsWith('@unimet.edu.ve')) {
+      return 'profesor';
+    }
+    return 'estudiante';
+  }
+
+  String? _resolveCareerForRole(String role) {
+    if (role == 'admin') return 'Administrador';
+    if (role == 'profesor') return 'Profesor';
+    return null;
+  }
+
   Future<void> upsertUserProfile(User user) async {
+    final role = _resolveRoleFromEmail(user.email);
+    final roleCareer = _resolveCareerForRole(role);
     final data = <String, dynamic>{
       'uid': user.uid,
       'email': user.email,
+      'role': role,
       'lastLoginAt': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
     };
+    if (roleCareer != null) {
+      data['career'] = roleCareer;
+    }
 
-    // No sobrescribir datos de perfil con null en inicios de sesion por email.
     if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
       data['name'] = user.displayName;
-      data['displayName'] = user.displayName;
     }
     if (user.photoURL != null && user.photoURL!.trim().isNotEmpty) {
       final photoFromStorage = await _storage.ensureProfileImageFromRemoteUrlIfMissing(

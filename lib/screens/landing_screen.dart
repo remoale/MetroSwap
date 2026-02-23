@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:metroswap/screens/about/about_screen.dart';
 import 'package:metroswap/screens/auth/login_screen.dart';
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
@@ -12,6 +11,8 @@ class LandingScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         toolbarHeight: 85, 
+        automaticallyImplyLeading: false,
+        titleSpacing: 24,
         backgroundColor: const Color(0xFF2C2C2C),
         title: const MetroSwapBrand(),
         actions: [

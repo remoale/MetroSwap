@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:metroswap/screens/home_screen.dart'; // Mantenemos este
+import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-// Borramos el import de home_page.dart porque ya no lo usaremos
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

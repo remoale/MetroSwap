@@ -12,7 +12,8 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // Controladores para capturar la información
+  static const String _adminEmail = 'administrador.metroswap@correo.unimet.edu.ve';
+
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _carreraController = TextEditingController();
   final TextEditingController _carnetController = TextEditingController();
@@ -20,16 +21,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Estado de carga para el botón
   bool _isLoading = false;
 
-  // Paleta de colores basada en tu diseño
   final Color naranjaM = const Color(0xFFFF6B00);
   final Color grisOscuroHeader = const Color(0xFF2E2E2E);
   final Color grisFondoPajina = const Color(0xFFD1CED6);
   final Color cuadroGrisFormulario = const Color(0xFF333333);
 
-  // --- FUNCIÓN PARA MOSTRAR ERRORES ---
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -40,17 +38,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // --- LÓGICA DE VALIDACIÓN Y REGISTRO EN FIREBASE ---
+  String _resolveRoleFromEmail(String email) {
+    final normalized = email.trim().toLowerCase();
+    if (normalized == _adminEmail) {
+      return 'admin';
+    }
+    if (normalized.endsWith('@unimet.edu.ve')) {
+      return 'profesor';
+    }
+    return 'estudiante';
+  }
+
+  String _resolveCareerForRole(String role, String enteredCareer) {
+    if (role == 'admin') return 'Administrador';
+    if (role == 'profesor') return 'Profesor';
+    return enteredCareer.trim();
+  }
+
   Future<void> _validarYRegistrar() async {
     final nombre = _nombreController.text.trim();
-    final carrera = _carreraController.text.trim();
+    final carreraIngresada = _carreraController.text.trim();
     final carnet = _carnetController.text.trim();
     final telefono = _telefonoController.text.trim();
-    final correo = _correoController.text.trim();
+    final correo = _correoController.text.trim().toLowerCase();
     final password = _passwordController.text;
+    final role = _resolveRoleFromEmail(correo);
+    final carrera = _resolveCareerForRole(role, carreraIngresada);
 
-    // 1. Validaciones locales
-    if (nombre.isEmpty || carrera.isEmpty || carnet.isEmpty || telefono.isEmpty || correo.isEmpty || password.isEmpty) {
+    if (nombre.isEmpty || carnet.isEmpty || telefono.isEmpty || correo.isEmpty || password.isEmpty) {
+      _showError("Por favor, llena todos los campos.");
+      return;
+    }
+
+    if (role == 'estudiante' && carrera.isEmpty) {
       _showError("Por favor, llena todos los campos.");
       return;
     }
@@ -65,31 +85,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final esSoloNumeros = RegExp(r'^[0-9]+$');
-    if (!esSoloNumeros.hasMatch(carnet) || !esSoloNumeros.hasMatch(telefono)) {
-      _showError("El carnet y teléfono deben contener solo números, sin puntos ni guiones.");
+    final formatoCarnet = RegExp(r'^\d{6,15}$');
+    if (!formatoCarnet.hasMatch(carnet)) {
+      _showError("El carnet debe tener entre 6 y 15 dígitos numéricos.");
       return;
     }
 
-    // 2. Intentar registrar en Firebase
+    final esSoloNumeros = RegExp(r'^[0-9]+$');
+    if (!esSoloNumeros.hasMatch(telefono)) {
+      _showError("El teléfono debe contener solo números, sin puntos ni guiones.");
+      return;
+    }
+
     setState(() {
-      _isLoading = true; // Activa el circulito de carga
+      _isLoading = true;
     });
 
     try {
-      // Crea el usuario en Firebase Authentication
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: correo,
         password: password,
       );
 
-      // Guarda los datos extra en la base de datos de Firestore
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'displayName': nombre, 
+        'name': nombre, 
         'email': correo,       
         'studentId': carnet,   
         'phone': telefono,     
         'career': carrera,
+        'role': role,
         'photoUrl': '',       
         'createdAt': FieldValue.serverTimestamp(),
         'lastLoginAt': FieldValue.serverTimestamp(),
@@ -98,7 +122,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       debugPrint("Usuario creado exitosamente: ${userCredential.user!.uid}");
 
-      // Navegar al HomeScreen y evitar que regrese a esta pantalla
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -106,7 +129,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      // 3. Manejo de errores de Authentication
       if (e.code == 'email-already-in-use') {
         _showError("Ya existe una cuenta registrada con este correo.");
       } else if (e.code == 'invalid-email') {
@@ -117,12 +139,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _showError("Error de registro: ${e.message}");
       }
     } catch (e) {
-      // Manejo de errores de Firestore (como el permission-denied)
       _showError("Ocurrió un error inesperado: $e");
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false; // Detiene la animación cargue bien o mal
+          _isLoading = false;
         });
       }
     }
@@ -137,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Container(
             color: grisOscuroHeader,
             height: 85,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -180,8 +201,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ],
             ),
           ),
-
-          // --- CUERPO DEL REGISTRO ---
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 60.0, vertical: 40),
@@ -190,7 +209,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Columna Izquierda
                       Expanded(
                         child: _buildFormCard([
                           _buildInputField("Nombre completo:", _nombreController, false),
@@ -199,7 +217,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ]),
                       ),
                       const SizedBox(width: 40),
-                      // Columna Derecha
                       Expanded(
                         child: _buildFormCard([
                           _buildInputField("Correo Unimet:", _correoController, false),
@@ -212,7 +229,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 50),
 
-                  // BOTÓN REGISTRARSE DINÁMICO
                   SizedBox(
                     height: 60,
                     child: ElevatedButton(
@@ -238,8 +254,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-
-          // --- PIE DE PÁGINA ---
           Container(
             width: double.infinity,
             color: const Color(0xFF2C2C2C),
@@ -254,8 +268,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-
-  // WIDGETS REUTILIZABLES
   Widget _buildFormCard(List<Widget> children) {
     return Container(
       padding: const EdgeInsets.all(35),
@@ -264,7 +276,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

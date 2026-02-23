@@ -4,12 +4,10 @@ import 'package:flutter/foundation.dart';
 import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart';
 import '../../services/storage_service.dart';
-import '../../services/auth_service.dart';
 import 'edit_profile_screen.dart';
 import '../../widgets/profile_avatar.dart'; 
-import '../../widgets/metroswap_brand.dart';
-import '../home_screen.dart';
-import '../landing_screen.dart';
+import '../../widgets/metroswap_navbar.dart';
+import '../../widgets/metroswap_footer.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -22,7 +20,6 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final controller = ProfileController();
   final storage = StorageService();
-  final authService = AuthService();
   UserModel? user;
   Uint8List? profileImageBytes;
   bool isLoading = true;
@@ -96,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              _buildTopBar(context),
+              const MetroSwapNavbar(developmentNav: true, heading: 'Mi Perfil'),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -230,79 +227,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
               ),
-              Container(
-                width: double.infinity,
-                color: const Color(0xFF2C2C2C),
-                padding: const EdgeInsets.all(20),
-                child: const Text(
-                  "© 2026 MetroSwap - Universidad Metropolitana.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ),
+              const MetroSwapFooter(),
             ],
           ),
         ),
       );
-  }
-
-  Future<void> _handleSignOut() async {
-    await authService.signOut();
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LandingScreen()),
-      (route) => false,
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context) {
-    return Container(
-      height: 85,
-      color: const Color(0xFF2C2C2C),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: MetroSwapBrand(),
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const HomeScreen(),
-                ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white, width: 1.4),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text("Inicio"),
-          ),
-          const SizedBox(width: 10),
-          ElevatedButton.icon(
-            onPressed: _handleSignOut,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF5C00),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.logout, size: 18),
-            label: const Text("Cerrar sesion"),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildLeftInfo() {
