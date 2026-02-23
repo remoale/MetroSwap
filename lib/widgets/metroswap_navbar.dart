@@ -68,6 +68,7 @@ class MetroSwapNavbar extends StatelessWidget {
     final normalizedHeading = heading.toLowerCase();
     final isHome = normalizedHeading == 'inicio';
     final isNotifications = normalizedHeading == 'notificaciones';
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
 
     return Container(
       height: 85,
@@ -135,7 +136,11 @@ class MetroSwapNavbar extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => isLoggedIn
+                            ? const HomeScreen()
+                            : const LandingScreen(),
+                      ),
                     );
                   },
                   style: OutlinedButton.styleFrom(
@@ -161,7 +166,7 @@ class MetroSwapNavbar extends StatelessWidget {
                   label: const Text("Cerrar sesion"),
                 ),
               ],
-              if (showNotificationsButton) ...[
+              if (showNotificationsButton && isLoggedIn) ...[
                 const SizedBox(width: 25),
                 IconButton(
                   icon: const Icon(Icons.notifications_none, color: Colors.white, size: 28),
@@ -175,7 +180,7 @@ class MetroSwapNavbar extends StatelessWidget {
                         },
                 ),
               ],
-              if (showProfileButton) ...[
+              if (showProfileButton && isLoggedIn) ...[
                 const SizedBox(width: 10),
                 IconButton(
                   icon: const Icon(Icons.account_circle, color: Colors.white70, size: 35),

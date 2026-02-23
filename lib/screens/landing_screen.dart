@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:metroswap/screens/about/about_screen.dart';
 import 'package:metroswap/screens/auth/login_screen.dart';
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
@@ -18,6 +19,10 @@ class LandingScreen extends StatelessWidget {
         actions: [
           OutlinedButton(
             onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AboutScreen()),
+              );
             },
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
