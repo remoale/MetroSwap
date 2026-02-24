@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/screens/auth/login_screen.dart';
+// ¡AQUÍ IMPORTAMOS TU NUEVA PANTALLA!
+import 'package:metroswap/screens/about/about_screen.dart'; 
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
 class LandingScreen extends StatelessWidget {
@@ -8,7 +10,6 @@ class LandingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // CAMBIO 1: Todo el fondo ahora es blanco puro para eliminar el doble tono
       backgroundColor: Colors.white, 
       appBar: AppBar(
         toolbarHeight: 85, 
@@ -18,7 +19,13 @@ class LandingScreen extends StatelessWidget {
         title: const MetroSwapBrand(),
         actions: [
           OutlinedButton(
-            onPressed: () {}, 
+            // ¡AQUÍ AGREGAMOS LA NAVEGACIÓN AL BOTÓN!
+            onPressed: () {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (context) => const AboutScreen()),
+              );
+            }, 
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               side: const BorderSide(color: Colors.white),
@@ -78,7 +85,6 @@ class LandingScreen extends StatelessWidget {
             ),
 
             // 2. Sección de Misión, Visión y Objetivo
-            // CAMBIO 2: Sin color de fondo específico para que use el blanco del Scaffold
             Container(
               padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
               child: Wrap(
@@ -94,7 +100,6 @@ class LandingScreen extends StatelessWidget {
             ),
 
             // 3. Sección: ¿Cómo funciona?
-            // CAMBIO 3: Quitamos el color blanco manual para evitar el corte visual
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
