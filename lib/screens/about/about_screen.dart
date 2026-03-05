@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+import 'package:metroswap/widgets/metroswap_footer.dart'; // 1. Agregamos esta línea
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -77,16 +78,7 @@ class AboutScreen extends StatelessWidget {
           ),
 
           // 3. Footer
-          Container(
-            width: double.infinity,
-            color: const Color(0xFF333333),
-            padding: const EdgeInsets.all(20),
-            child: const Text(
-              '© 2026 MetroSwap - Universidad Metropolitana.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70),
-            ),
-          ),
+          const MetroSwapFooter(), // 2. ¡Reemplazamos el Container por nuestro widget mágico!
         ],
       ),
     );

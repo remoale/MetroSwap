@@ -11,7 +11,7 @@ import 'package:metroswap/screens/publish/publish_screen.dart';
 import 'package:metroswap/services/auth_service.dart';
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
-class MetroSwapNavbar extends StatelessWidget {
+class MetroSwapNavbar extends StatefulWidget {
   final bool developmentNav;
   final String heading;
   final bool showLogoutButton;
@@ -27,7 +27,22 @@ class MetroSwapNavbar extends StatelessWidget {
     this.showProfileButton = true,
   });
 
-  Future<void> _navigateToAdmin(BuildContext context) async {
+  @override
+  State<MetroSwapNavbar> createState() => _MetroSwapNavbarState();
+}
+
+class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
+  bool _isAdmin = false;
+  final Color _colorOriginal = const Color(0xFF2C2C2C);
+  final Color _colorAdmin = const Color(0xFFC93C20); // Tu color terracota
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarRolAdmin();
+  }
+
+  Future<void> _verificarRolAdmin() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       try {
@@ -36,19 +51,24 @@ class MetroSwapNavbar extends StatelessWidget {
             .doc(currentUser.uid)
             .get();
 
-        final data = doc.data();
-        final isAdminUser = data?['role']?.toString().toLowerCase() == 'admin';
-        if (doc.exists && isAdminUser) {
-          if (context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AdminScreen()),
-            );
-          }
+        if (doc.exists && mounted) {
+          final isAdminUser = doc.data()?['role']?.toString().toLowerCase() == 'admin';
+          setState(() {
+            _isAdmin = isAdminUser;
+          });
         }
       } catch (e) {
-        debugPrint("Error verificando admin: $e");
+        debugPrint("Error verificando admin en Navbar: $e");
       }
+    }
+  }
+
+  void _navigateToAdmin(BuildContext context) {
+    if (_isAdmin) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminScreen()),
+      );
     }
   }
 
@@ -65,14 +85,14 @@ class MetroSwapNavbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalizedHeading = heading.toLowerCase();
+    final normalizedHeading = widget.heading.toLowerCase();
     final isHome = normalizedHeading == 'inicio';
     final isNotifications = normalizedHeading == 'notificaciones';
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
 
     return Container(
       height: 85,
-      color: const Color(0xFF2C2C2C),
+      color: _isAdmin ? _colorAdmin : _colorOriginal, 
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: [
@@ -82,12 +102,33 @@ class MetroSwapNavbar extends StatelessWidget {
               color: Colors.white,
             ),
           ),
+          // *** NUEVO CÓDIGO AQUÍ: Mensaje de "Bienvenido admin" ***
+          if (_isAdmin) ...[
+            const SizedBox(width: 15), // Separación del logo
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2), // Un fondo semi-transparente elegante
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'Bienvenido admin',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
+          
           if (!isHome) ...[
             const SizedBox(width: 24),
             Expanded(
               child: Center(
                 child: Text(
-                  heading,
+                  widget.heading,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -151,12 +192,12 @@ class MetroSwapNavbar extends StatelessWidget {
                   child: const Text('Inicio'),
                 ),
               ],
-              if (showLogoutButton) ...[
+              if (widget.showLogoutButton) ...[
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: () => _handleSignOut(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5C00),
+                    backgroundColor: _isAdmin ? const Color(0xFF2C2C2C) : const Color(0xFFFF5C00),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -166,7 +207,7 @@ class MetroSwapNavbar extends StatelessWidget {
                   label: const Text("Cerrar sesion"),
                 ),
               ],
-              if (showNotificationsButton && isLoggedIn) ...[
+              if (widget.showNotificationsButton && isLoggedIn) ...[
                 const SizedBox(width: 25),
                 IconButton(
                   icon: const Icon(Icons.notifications_none, color: Colors.white, size: 28),
@@ -180,7 +221,7 @@ class MetroSwapNavbar extends StatelessWidget {
                         },
                 ),
               ],
-              if (showProfileButton && isLoggedIn) ...[
+              if (widget.showProfileButton && isLoggedIn) ...[
                 const SizedBox(width: 10),
                 IconButton(
                   icon: const Icon(Icons.account_circle, color: Colors.white70, size: 35),
