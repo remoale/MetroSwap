@@ -15,18 +15,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
   static const String _adminEmail = 'administrador.metroswap@correo.unimet.edu.ve';
 
   final TextEditingController _nombreController = TextEditingController();
-  final TextEditingController _carreraController = TextEditingController();
   final TextEditingController _carnetController = TextEditingController();
   final TextEditingController _telefonoController = TextEditingController();
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  // Desplegable de carreras
+  final List<String> _carrerasUnimet =[
+  'Ciencias Administrativas',
+    'Comunicación Social y Empresarial',
+    'Contaduría Pública',
+    'Derecho',
+    'Economía Empresarial',
+    'Educación',
+    'Estudios Internacionales',
+    'Estudios Liberales',
+    'Estudios simultáneos',
+    'Idiomas Modernos',
+    'Ingeniería Civil',
+    'Ingeniería de Sistemas',
+    'Ingeniería Eléctrica',
+    'Ingeniería Mecánica',
+    'Ingeniería Producción',
+    'Ingeniería Química',
+    'Matemáticas Industriales',
+    'Psicología',
+    'TSU en Desarrollo de Sistemas Inteligentes',
+    'Turismo Sostenible',  
+  ];
+  String? _carreraSeleccionada;
   bool _isLoading = false;
 
   final Color naranjaM = const Color(0xFFFF6B00);
   final Color grisOscuroHeader = const Color(0xFF2E2E2E);
   final Color grisFondoPajina = const Color(0xFFD1CED6);
   final Color cuadroGrisFormulario = const Color(0xFF333333);
+
+  @override 
+  void dispose(){
+    _nombreController.dispose();
+    _carnetController.dispose();
+   _telefonoController.dispose();
+  _correoController.dispose();
+   _passwordController.dispose();
+   super.dispose();
+  }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -49,21 +82,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return 'estudiante';
   }
 
-  String _resolveCareerForRole(String role, String enteredCareer) {
+  String _resolveCareerForRole(String role) {
     if (role == 'admin') return 'Administrador';
     if (role == 'profesor') return 'Profesor';
-    return enteredCareer.trim();
+    return _carreraSeleccionada ?? "";
   }
 
   Future<void> _validarYRegistrar() async {
     final nombre = _nombreController.text.trim();
-    final carreraIngresada = _carreraController.text.trim();
     final carnet = _carnetController.text.trim();
     final telefono = _telefonoController.text.trim();
     final correo = _correoController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final role = _resolveRoleFromEmail(correo);
-    final carrera = _resolveCareerForRole(role, carreraIngresada);
+    final carrera  = _resolveCareerForRole(role);
 
     if (nombre.isEmpty || carnet.isEmpty || telefono.isEmpty || correo.isEmpty || password.isEmpty) {
       _showError("Por favor, llena todos los campos.");
@@ -212,7 +244,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Expanded(
                         child: _buildFormCard([
                           _buildInputField("Nombre completo:", _nombreController, false),
-                          _buildInputField("Carrera:", _carreraController, false),
+                          _buildDropdownField("Carrera:"),
                           _buildInputField("Teléfono:", _telefonoController, false, esNumero: true),
                         ]),
                       ),
@@ -268,6 +300,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
+
+  Widget _buildDropdownField(String label){
+    return Padding (
+      padding: const EdgeInsets.only(bottom : 25.0),
+      child : Column (
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text (label,style: const TextStyle(color: Colors.white,fontSize: 16)),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+          value : _carreraSeleccionada,
+          dropdownColor : const Color(0xFF444444),
+          style: const TextStyle(color:Colors.white,fontSize: 16),
+          decoration :InputDecoration(
+            filled:true,
+            fillColor: naranjaM,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 15,vertical: 15),
+            border: OutlineInputBorder(borderRadius:BorderRadius.circular(8),borderSide: BorderSide.none ),
+            ),
+            hint :const Text("Seleccionar carrera", style: TextStyle(color: Colors.white60)),
+            icon : const Icon (Icons.arrow_drop_down,color :Colors.white),
+            items:  _carrerasUnimet.map((c)=> DropdownMenuItem(value: c , child :Text(c))).toList(),
+            onChanged : (val)=> setState(()=> _carreraSeleccionada= val),
+            ),
+            ],
+            ),
+        );
+      
+  }
   Widget _buildFormCard(List<Widget> children) {
     return Container(
       padding: const EdgeInsets.all(35),
@@ -288,6 +349,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
+
 
   Widget _buildInputField(String label, TextEditingController controller, bool isPassword, {bool esNumero = false}) {
     return Padding(
