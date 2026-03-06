@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../services/paypal_sdk_service.dart';
+import '../../controllers/payment_controller.dart';
 import '../../widgets/primary_button.dart';
 
 class PayPalSDKPaymentScreen extends StatefulWidget {
@@ -13,13 +13,13 @@ class PayPalSDKPaymentScreen extends StatefulWidget {
 }
 
 class _PayPalSDKPaymentScreenState extends State<PayPalSDKPaymentScreen> {
-  final paypal = PayPalSDKService();
+  final PaymentController _controller = PaymentController();
   bool loading = false;
 
   Future<void> pay() async {
     setState(() => loading = true);
 
-    final url = await paypal.createOrder(widget.amount);
+    final url = await _controller.createPayment(widget.amount);
 
     setState(() => loading = false);
 
