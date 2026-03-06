@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/payment_controller.dart';
 import '../../widgets/primary_button.dart';
+import 'payment_confirmation_screen.dart';
 
 class PayPalSDKPaymentScreen extends StatefulWidget {
   final double amount;
@@ -25,6 +26,15 @@ class _PayPalSDKPaymentScreenState extends State<PayPalSDKPaymentScreen> {
 
     if (url != null) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentConfirmationScreen(amount: widget.amount),
+          ),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error creando orden PayPal")),
