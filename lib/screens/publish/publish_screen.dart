@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:metroswap/screens/publish/Sucess_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
@@ -166,9 +167,12 @@ class _PublishScreenState extends State<PublishScreen>{
                     shape:RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                     onPressed: (){
-                      print("Publicado");
-                    }
-                    child: const Text ("Publicar"),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context)=> const SuccessScreen()),
+                        );
+                    },
+                      child:const Text ("Publicar"),
               ),
               );
 
