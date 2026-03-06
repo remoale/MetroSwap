@@ -3,6 +3,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/payment_controller.dart';
 import '../../widgets/primary_button.dart';
 import 'payment_confirmation_screen.dart';
+import 'payment_cancel_screen.dart';
+import 'package:uni_links/uni_links.dart';
+import 'dart:async';
+
 
 class PayPalSDKPaymentScreen extends StatefulWidget {
   final double amount;
@@ -16,6 +20,39 @@ class PayPalSDKPaymentScreen extends StatefulWidget {
 class _PayPalSDKPaymentScreenState extends State<PayPalSDKPaymentScreen> {
   final PaymentController _controller = PaymentController();
   bool loading = false;
+
+  StreamSubscription? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = linkStream.listen((String? link) {
+      if (link == null) return;
+
+      if (link.contains("paypal-success")) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentConfirmationScreen(amount: widget.amount),
+          ),
+        );
+      } 
+      if (link.contains("paypal-cancel")) {
+        Navigator.pushReplacement(
+          context,
+           MaterialPageRoute(
+            builder: (context) => const PaymentCancelScreen()
+          ),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
 
   Future<void> pay() async {
     setState(() => loading = true);

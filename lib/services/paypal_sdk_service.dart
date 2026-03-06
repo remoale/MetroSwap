@@ -31,8 +31,8 @@ class PayPalSDKService {
           ),
         ],
         applicationContext: ApplicationContext(
-          returnUrl: "https://tuapp.com/success",
-          cancelUrl: "https://tuapp.com/cancel",
+          returnUrl: "myapp://paypal-success",
+          cancelUrl: "myapp://paypal-cancel",
         ),
       );
 
