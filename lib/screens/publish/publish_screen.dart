@@ -105,7 +105,7 @@ class _PublishScreenState extends State<PublishScreen>{
                 _buildLabel ("Método"),
                 _buildDropdown(
                   value : _selectedMethod,
-                  items:["Intercambio","Venta","Donacion"]
+                  items:["Intercambio","Venta","Donacion"],
                   onChanged: (val)=> setState(() => _selectedMethod=val),
                     
                   ),
@@ -119,7 +119,57 @@ class _PublishScreenState extends State<PublishScreen>{
       _buildLabel("Descripcion detallada"),
       _buildTextField("", maxLines:4),
       
+      const SizedBox (height:30),
+
+      _buildPublishButton(),
+
     ],
+    );
   }
+  //creacion de widgets
+
+  Widget _buildLabel (String text)=>Padding(
+    padding: const EdgeInsets.only(bottom:8.0),
+    child: Text (text,style :const TextStyle(fontWeight: FontWeight.w500)),
+    );
+
+    Widget _buildTextField (String hint,{int maxLines =1})=> Container(
+      decoration : BoxDecoration(color: Colors.white,borderRadius: BorderRadius.circular(5)),
+      child : TextField(
+        maxLines: maxLines,
+        decoration : InputDecoration(hintText: hint,border: InputBorder.none,contentPadding: const EdgeInsets.all(12)),
+      ),
+      );
+      
+      Widget _buildDropdown({ required String? value, required List<String>items, required ValueChanged<String?> onChanged})=>
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(color: Colors.white,borderRadius: BorderRadius.circular(5)),
+          child :DropdownButtonHideUnderline(
+            child: DropdownButton<String>
+            ( value :value,
+            hint: const Text ("Seleccionar"),
+            isExpanded:true,
+            items : items.map((i)=> DropdownMenuItem(value :i ,child :Text(i))).toList(),
+             onChanged: onChanged,
+             ),
+        ),
+              );
+
+              Widget _buildPublishButton()=>SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style :ElevatedButton.styleFrom(
+                    backgroundColor:const Color (0xFF2E2E2E),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape:RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                    onPressed: (){
+                      print("Publicado");
+                    }
+                    child: const Text ("Publicar"),
+              ),
+              );
 
 }
