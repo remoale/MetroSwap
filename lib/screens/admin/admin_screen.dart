@@ -124,7 +124,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // COLUMNA IZQUIERDA (KPIs)
+                        // COLUMNA IZQUIERDA (KPIs y Gráfico Semanal)
                         Expanded(
                           flex: 5,
                           child: Column(
@@ -147,18 +147,123 @@ class _AdminScreenState extends State<AdminScreen> {
                                 ],
                               ),
                               const SizedBox(height: 15),
+                              
+                              // NUEVO GRÁFICO DE LÍNEAS (Sustituye al cuadro gris)
                               Container(
                                 width: double.infinity,
-                                height: 200,
+                                height: 260, // Altura ajustada para el gráfico
+                                padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(15),
-                                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.05),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                                child: const Center(
-                                  child: Text('Gráfico de Actividad Semanal\n(Requiere fechas de las publicaciones)', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Actividad Semanal (Simulada)',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Expanded(
+                                      child: LineChart(
+                                        LineChartData(
+                                          gridData: FlGridData(
+                                            show: true,
+                                            drawVerticalLine: false,
+                                            horizontalInterval: 2,
+                                            getDrawingHorizontalLine: (value) {
+                                              return FlLine(
+                                                color: Colors.grey.withValues(alpha: 0.2),
+                                                strokeWidth: 1,
+                                              );
+                                            },
+                                          ),
+                                          titlesData: FlTitlesData(
+                                            show: true,
+                                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                            bottomTitles: AxisTitles(
+                                              sideTitles: SideTitles(
+                                                showTitles: true,
+                                                reservedSize: 30,
+                                                interval: 1,
+                                                getTitlesWidget: (value, meta) {
+                                                  const style = TextStyle(color: Colors.grey, fontSize: 12);
+                                                  Widget text;
+                                                  switch (value.toInt()) {
+                                                    case 0: text = const Text('Lun', style: style); break;
+                                                    case 1: text = const Text('Mar', style: style); break;
+                                                    case 2: text = const Text('Mié', style: style); break;
+                                                    case 3: text = const Text('Jue', style: style); break;
+                                                    case 4: text = const Text('Vie', style: style); break;
+                                                    case 5: text = const Text('Sáb', style: style); break;
+                                                    case 6: text = const Text('Dom', style: style); break;
+                                                    default: text = const Text('', style: style); break;
+                                                  }
+                                                  // CORRECCIÓN APLICADA: meta: meta
+                                                  return SideTitleWidget(meta: meta, child: text);
+                                                },
+                                              ),
+                                            ),
+                                            leftTitles: AxisTitles(
+                                              sideTitles: SideTitles(
+                                                showTitles: true,
+                                                interval: 2,
+                                                reservedSize: 30,
+                                                getTitlesWidget: (value, meta) {
+                                                  return Text(
+                                                    value.toInt().toString(),
+                                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                          borderData: FlBorderData(show: false),
+                                          minX: 0,
+                                          maxX: 6,
+                                          minY: 0,
+                                          maxY: 10,
+                                          lineBarsData: [
+                                            LineChartBarData(
+                                              spots: const [
+                                                FlSpot(0, 3), // Lunes
+                                                FlSpot(1, 5), // Martes
+                                                FlSpot(2, 2), // Miércoles
+                                                FlSpot(3, 8), // Jueves
+                                                FlSpot(4, 4), // Viernes
+                                                FlSpot(5, 7), // Sábado
+                                                FlSpot(6, 9), // Domingo
+                                              ],
+                                              isCurved: true,
+                                              color: const Color(0xFFC93C20), // Color rojo de MetroSwap
+                                              barWidth: 4,
+                                              isStrokeCapRound: true,
+                                              dotData: const FlDotData(show: true),
+                                              belowBarData: BarAreaData(
+                                                show: true,
+                                                color: const Color(0xFFC93C20).withValues(alpha: 0.1), 
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -174,7 +279,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(15),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .05), blurRadius: 10)],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,7 +373,7 @@ class _AdminScreenState extends State<AdminScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +382,7 @@ class _AdminScreenState extends State<AdminScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.orange.withOpacity(0.2)),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.orange.withValues(alpha: 0.2)),
                 child: Icon(icon, color: const Color(0xFFFF5C00), size: isLarge ? 28 : 20),
               ),
               const SizedBox(width: 10),
