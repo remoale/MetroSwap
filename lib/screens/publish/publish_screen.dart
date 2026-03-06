@@ -55,4 +55,71 @@ class _PublishScreenState extends State<PublishScreen>{
     );
   }
 
+  Widget _buildImagePlaceholder(){
+
+    return GestureDetector(
+      onTap : ()=> print("Abrir galeria"),
+      child : Container(
+        height: 400,
+        decoration: BoxDecoration(
+          color : const Color(0xFFD9D9D9).withOpacity(0.5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child : const Icon(Icons.image_outlined,size : 100,color:Colors.black26),
+      ),
+    );
+  }
+
+  Widget _buildFormFields(){
+    return Column (crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text("Añadir foto",style: TextStyle(fontSize: 24,fontWeight: FontWeight.bold)),
+      const SizedBox(height: 20),
+
+      _buildLabel("Titulo de Material"),
+      _buildTextField("Insertar"),
+
+      const SizedBox(height: 20),
+
+      Row (
+        children: [
+        Expanded(
+          child: Column (
+            crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel("Categoria"),
+            _buildDropdown(
+              value : _selectedCategory,
+              items: ["Libros","Guias","Otros"],
+              onChanged :(val)=> setState(() => _selectedCategory=val), 
+            ),
+            
+          ],
+          ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column (
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel ("Método"),
+                _buildDropdown(
+                  value : _selectedMethod,
+                  items:["Intercambio","Venta","Donacion"]
+                  onChanged: (val)=> setState(() => _selectedMethod=val),
+                    
+                  ),
+                
+              ],
+              ),
+              ),
+      ],
+      ),
+      const SizedBox(height: 20),
+      _buildLabel("Descripcion detallada"),
+      _buildTextField("", maxLines:4),
+      
+    ],
+  }
+
 }
