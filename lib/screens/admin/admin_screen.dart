@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart'; 
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 
@@ -13,11 +14,24 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   bool _isLoading = true;
   
-  // Variables para almacenar los datos reales de Firebase
   int _totalMembers = 0;
   int _totalProducts = 0;
   int _totalExchanges = 0;
   double _totalContributions = 0.0;
+  
+  // Mapa para guardar cuántos usuarios hay por cada carrera
+  Map<String, int> _careerCounts = {};
+
+  // Paleta de colores para el gráfico 
+  final List<Color> _chartColors = [
+    const Color(0xFFEF476F), // Rosa/Rojo
+    const Color(0xFFFFD166), // Amarillo
+    const Color(0xFF06D6A0), // Verde
+    const Color(0xFF118AB2), // Azul
+    const Color(0xFF073B4C), // Azul oscuro
+    const Color(0xFFFF9F1C), // Naranja
+    const Color(0xFF9D4EDD), // Morado
+  ];
 
   @override
   void initState() {
@@ -25,22 +39,33 @@ class _AdminScreenState extends State<AdminScreen> {
     _fetchDashboardData();
   }
 
-  // ¡Magia de Firebase! Aquí leemos los datos reales
   Future<void> _fetchDashboardData() async {
     try {
-      // 1. Contar total de usuarios
-      final usersSnap = await FirebaseFirestore.instance.collection('users').count().get();
-      // 2. Contar total de publicaciones (asumiendo que tu colección se llama 'posts' o 'products')
+      // 1. Obtenemos todos los usuarios para contarlos y agrupar sus carreras
+      final usersSnap = await FirebaseFirestore.instance.collection('users').get();
+      
+      int memberCount = usersSnap.docs.length;
+      Map<String, int> tempCareerCounts = {};
+
+      for (var doc in usersSnap.docs) {
+        final data = doc.data();
+        // Leemos el campo 'career' exactamente como está en tu UserModel
+        String career = (data['career'] ?? 'No especificada').toString().trim();
+        if (career.isEmpty) career = 'No especificada';
+
+        tempCareerCounts[career] = (tempCareerCounts[career] ?? 0) + 1;
+      }
+
+      // 2. Contar total de publicaciones (asumimos colección 'posts' o 'products')
       final postsSnap = await FirebaseFirestore.instance.collection('posts').count().get();
-      // 3. Contar intercambios (asumiendo colección 'exchanges', pon 0 si aún no existe)
-      // final exchangesSnap = await FirebaseFirestore.instance.collection('exchanges').count().get();
 
       if (mounted) {
         setState(() {
-          _totalMembers = usersSnap.count ?? 0;
+          _totalMembers = memberCount;
+          _careerCounts = tempCareerCounts;
           _totalProducts = postsSnap.count ?? 0;
-          _totalExchanges = 0; // Cambiar cuando tengas la colección de intercambios
-          _totalContributions = 0.0; // Cambiar cuando manejes pagos/donaciones
+          _totalExchanges = 0; // Pendiente para cuando tengas la colección
+          _totalContributions = 0.0; 
           _isLoading = false;
         });
       }
@@ -55,13 +80,11 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8E9EB), // Color de fondo gris claro del mockup
+      backgroundColor: const Color(0xFFE8E9EB),
       body: Column(
         children: [
-          // 1. Navbar con el color terracota que hicimos
           const MetroSwapNavbar(developmentNav: false, heading: 'Dashboard'),
-
-          // 2. Botones de Gestión (Lo que pediste nuevo)
+          
           Container(
             padding: const EdgeInsets.symmetric(vertical: 15),
             color: Colors.white,
@@ -69,9 +92,7 @@ class _AdminScreenState extends State<AdminScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Navegar a pantalla de gestión de perfiles
-                  },
+                  onPressed: () {},
                   icon: const Icon(Icons.people_alt),
                   label: const Text('Gestionar Perfiles'),
                   style: ElevatedButton.styleFrom(
@@ -82,13 +103,11 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
                 const SizedBox(width: 20),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Navegar a pantalla de gestión de publicaciones
-                  },
+                  onPressed: () {},
                   icon: const Icon(Icons.library_books),
                   label: const Text('Gestionar Publicaciones'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC93C20), // Terracota
+                    backgroundColor: const Color(0xFFC93C20),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
@@ -97,7 +116,6 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
           ),
 
-          // 3. Cuerpo del Dashboard
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
@@ -106,23 +124,21 @@ class _AdminScreenState extends State<AdminScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // COLUMNA IZQUIERDA (Tarjetas de KPIs)
+                        // COLUMNA IZQUIERDA (KPIs)
                         Expanded(
                           flex: 5,
                           child: Column(
                             children: [
-                              // Fila 1: 3 Tarjetas pequeñas
                               Row(
                                 children: [
                                   Expanded(child: _buildKpiCard('Total productos', _totalProducts.toString(), Icons.computer)),
                                   const SizedBox(width: 15),
                                   Expanded(child: _buildKpiCard('Miembros', _totalMembers.toString(), Icons.person)),
                                   const SizedBox(width: 15),
-                                  Expanded(child: _buildKpiCard('Activos ahora', '1', Icons.monitor_heart)), // Simulado por ahora
+                                  Expanded(child: _buildKpiCard('Activos ahora', '1', Icons.monitor_heart)),
                                 ],
                               ),
                               const SizedBox(height: 15),
-                              // Fila 2: 2 Tarjetas medianas
                               Row(
                                 children: [
                                   Expanded(child: _buildKpiCard('Total contribuciones', '\$$_totalContributions', Icons.attach_money, isLarge: true)),
@@ -131,7 +147,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                 ],
                               ),
                               const SizedBox(height: 15),
-                              // Fila 3: Gráfico de línea (Espacio reservado)
                               Container(
                                 width: double.infinity,
                                 height: 200,
@@ -141,7 +156,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
                                 ),
                                 child: const Center(
-                                  child: Text('Gráfico de Actividad Semanal\n(Próximamente con fl_chart)', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                                  child: Text('Gráfico de Actividad Semanal\n(Requiere fechas de las publicaciones)', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
                                 ),
                               )
                             ],
@@ -150,7 +165,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         
                         const SizedBox(width: 30),
 
-                        // COLUMNA DERECHA (Gráfico de Dona)
+                        // COLUMNA DERECHA (Gráfico de Dona Real)
                         Expanded(
                           flex: 4,
                           child: Container(
@@ -161,15 +176,34 @@ class _AdminScreenState extends State<AdminScreen> {
                               borderRadius: BorderRadius.circular(15),
                               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
                             ),
-                            child: const Column(
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Estadísticas', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                                const Text('Estadísticas', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 20),
                                 Expanded(
-                                  child: Center(
-                                    child: Text('Gráfico de Dona de Carreras\n(Próximamente con fl_chart)', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-                                  ),
+                                  child: _careerCounts.isEmpty 
+                                    ? const Center(child: Text('No hay datos de carreras aún'))
+                                    : Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          PieChart(
+                                            PieChartData(
+                                              sectionsSpace: 2,
+                                              centerSpaceRadius: 80,
+                                              sections: _getChartSections(),
+                                            ),
+                                          ),
+                                          const Text(
+                                            'Carreras\nsolicitantes',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                          ),
+                                        ],
+                                      ),
                                 ),
+                                const SizedBox(height: 20),
+                                _buildLegend(), // Leyenda de colores generada dinámicamente
                               ],
                             ),
                           ),
@@ -178,28 +212,63 @@ class _AdminScreenState extends State<AdminScreen> {
                     ),
                   ),
           ),
-
-          // 4. Footer
           const MetroSwapFooter(),
         ],
       ),
     );
   }
 
-  // Widget auxiliar para crear las tarjetitas blancas con sombra
+  // Genera las secciones del gráfico de Dona basado en los datos de Firebase
+  List<PieChartSectionData> _getChartSections() {
+    List<PieChartSectionData> sections = [];
+    int colorIndex = 0;
+
+    _careerCounts.forEach((career, count) {
+      final percentage = (count / _totalMembers) * 100;
+      sections.add(
+        PieChartSectionData(
+          color: _chartColors[colorIndex % _chartColors.length],
+          value: count.toDouble(),
+          title: '${percentage.toStringAsFixed(1)}%',
+          radius: 40,
+          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      );
+      colorIndex++;
+    });
+
+    return sections;
+  }
+
+  // Genera la leyenda (los puntitos de colores con el nombre de la carrera)
+  Widget _buildLegend() {
+    int colorIndex = 0;
+    return Wrap(
+      spacing: 15,
+      runSpacing: 10,
+      alignment: WrapAlignment.center,
+      children: _careerCounts.keys.map((career) {
+        final color = _chartColors[colorIndex % _chartColors.length];
+        colorIndex++;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            const SizedBox(width: 5),
+            Text(career, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildKpiCard(String title, String value, IconData icon, {bool isLarge = false}) {
     return Container(
       padding: EdgeInsets.all(isLarge ? 25.0 : 15.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,31 +277,15 @@ class _AdminScreenState extends State<AdminScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.orange.withOpacity(0.2),
-                ),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.orange.withOpacity(0.2)),
                 child: Icon(icon, color: const Color(0xFFFF5C00), size: isLarge ? 28 : 20),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(color: Colors.grey[700], fontSize: isLarge ? 16 : 12),
-                  maxLines: 2,
-                ),
-              ),
+              Expanded(child: Text(title, style: TextStyle(color: Colors.grey[700], fontSize: isLarge ? 16 : 12), maxLines: 2)),
             ],
           ),
           const SizedBox(height: 15),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isLarge ? 32 : 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
+          Text(value, style: TextStyle(fontSize: isLarge ? 32 : 24, fontWeight: FontWeight.bold, color: Colors.black87)),
         ],
       ),
     );

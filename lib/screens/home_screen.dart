@@ -27,7 +27,7 @@ class HomeScreen extends StatelessWidget {
                         image: const AssetImage('assets/images/fondo_estudiantes.jpg'),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
-                          Colors.black.withValues(alpha: 0.5),
+                          Colors.orange.withValues(alpha: -8),
                           BlendMode.darken,
                         ),
                       ),
