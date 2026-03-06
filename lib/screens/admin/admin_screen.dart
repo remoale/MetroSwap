@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/screens/admin/manage_posts_screen.dart';
+import 'package:metroswap/screens/admin/manage_profiles_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -93,7 +94,14 @@ class _AdminScreenState extends State<AdminScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ManageProfilesScreen(),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.people_alt),
                   label: const Text('Gestionar Perfiles'),
                   style: ElevatedButton.styleFrom(
