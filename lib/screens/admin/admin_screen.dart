@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart'; 
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
+import 'package:metroswap/screens/admin/manage_posts_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -103,7 +104,14 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
                 const SizedBox(width: 20),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ManagePostsScreen(),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.library_books),
                   label: const Text('Gestionar Publicaciones'),
                   style: ElevatedButton.styleFrom(
