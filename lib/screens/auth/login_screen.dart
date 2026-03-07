@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metroswap/screens/auth/forgot_password_screen.dart';
 import 'package:metroswap/screens/auth/register_screen.dart';
 import 'package:metroswap/screens/home_screen.dart';
@@ -45,6 +47,21 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         password: password,
       );
+
+      // --- NUEVA VALIDACIÓN DE SUSPENSIÓN ---
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+        if (userDoc.exists) {
+          final status = userDoc.data()?['status'] ?? 'Activo';
+          if (status == 'Suspendido') {
+            await FirebaseAuth.instance.signOut(); // Forzamos el cierre de sesión
+            throw Exception('Tu cuenta ha sido suspendida por un administrador.');
+          }
+        }
+      }
+      // --- FIN DE VALIDACIÓN ---
+
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
@@ -66,6 +83,21 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       final user = await _authService.signInWithGoogle();
+
+      // --- NUEVA VALIDACIÓN DE SUSPENSIÓN ---
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+        if (userDoc.exists) {
+          final status = userDoc.data()?['status'] ?? 'Activo';
+          if (status == 'Suspendido') {
+            await FirebaseAuth.instance.signOut(); // Forzamos el cierre de sesión
+            throw Exception('Tu cuenta ha sido suspendida por un administrador.');
+          }
+        }
+      }
+      // --- FIN DE VALIDACIÓN ---
+
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
@@ -327,4 +359,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
