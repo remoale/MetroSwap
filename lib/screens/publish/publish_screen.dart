@@ -19,6 +19,8 @@ class _PublishScreenState extends State<PublishScreen>{
   String? _selectedMethod;
 
   final TextEditingController _titleController =TextEditingController();
+  final TextEditingController _priceController =TextEditingController();
+  final TextEditingController _descController = TextEditingController();
 
   File? _image;
   final ImagePicker _picker =ImagePicker();
@@ -152,10 +154,12 @@ class _PublishScreenState extends State<PublishScreen>{
     child: Text (text,style :const TextStyle(fontWeight: FontWeight.w500)),
     );
 
-    Widget _buildTextField (String hint,{int maxLines =1})=> Container(
+    Widget _buildTextField (String hint,{int maxLines =1,TextEditingController? controller, TextInputType? keyboardType})=> Container(
       decoration : BoxDecoration(color: Colors.white,borderRadius: BorderRadius.circular(5)),
       child : TextField(
+        controller: controller,
         maxLines: maxLines,
+        keyboardType: keyboardType,
         decoration : InputDecoration(hintText: hint,border: InputBorder.none,contentPadding: const EdgeInsets.all(12)),
       ),
       );
