@@ -1,5 +1,7 @@
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:metroswap/screens/publish/Sucess_screen.dart';
+import 'package:metroswap/screens/publish/success_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
@@ -15,6 +17,22 @@ class _PublishScreenState extends State<PublishScreen>{
   //Controlar dropdown
   String? _selectedCategory;
   String? _selectedMethod;
+
+  final TextEditingController _titleController =TextEditingController();
+
+  File? _image;
+  final ImagePicker _picker =ImagePicker();
+
+  Future<void> _pickImage()async{
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null){
+      setState ((){
+        _image=File (pickedFile.path);
+      });
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +77,11 @@ class _PublishScreenState extends State<PublishScreen>{
   Widget _buildImagePlaceholder(){
 
     return GestureDetector(
-      onTap : ()=> print("Abrir galeria"),
+      onTap : _pickImage,
       child : Container(
         height: 400,
         decoration: BoxDecoration(
-          color : const Color(0xFFD9D9D9).withOpacity(0.5),
+          color : const Color(0xFFD9D9D9).withValues(alpha:0.5),
           borderRadius: BorderRadius.circular(8),
         ),
         child : const Icon(Icons.image_outlined,size : 100,color:Colors.black26),
@@ -167,6 +185,8 @@ class _PublishScreenState extends State<PublishScreen>{
                     shape:RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                     onPressed: (){
+
+                      debugPrint("Publicando articulo: ${_titleController.text} ");
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context)=> const SuccessScreen()),
