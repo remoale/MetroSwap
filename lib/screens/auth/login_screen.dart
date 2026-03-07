@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
 
-      // --- NUEVA VALIDACIÓN DE SUSPENSIÓN ---
+      // Validacion de suspension
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
       }
-      // --- FIN DE VALIDACIÓN ---
+      // Fin de la validacion de suspension 
 
       if (user != null && mounted) {
         Navigator.pushReplacement(
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await _authService.signInWithGoogle();
 
-      // --- NUEVA VALIDACIÓN DE SUSPENSIÓN ---
+      // Validacion de suspension
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
       }
-      // --- FIN DE VALIDACIÓN ---
+      // Fin de la validacion de suspension
 
       if (user != null && mounted) {
         Navigator.pushReplacement(

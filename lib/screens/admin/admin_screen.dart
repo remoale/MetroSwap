@@ -51,14 +51,14 @@ class _AdminScreenState extends State<AdminScreen> {
 
       for (var doc in usersSnap.docs) {
         final data = doc.data();
-        // Leemos el campo 'career' exactamente como está en tu UserModel
+        // Leemos el campo 'career' exactamente como está en el UserModel
         String career = (data['career'] ?? 'No especificada').toString().trim();
         if (career.isEmpty) career = 'No especificada';
 
         tempCareerCounts[career] = (tempCareerCounts[career] ?? 0) + 1;
       }
 
-      // 2. Contar total de publicaciones (asumimos colección 'posts' o 'products')
+      // 2. Contar total de publicaciones 
       final postsSnap = await FirebaseFirestore.instance.collection('posts').count().get();
 
       if (mounted) {
@@ -140,7 +140,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // COLUMNA IZQUIERDA (KPIs y Gráfico Semanal)
+                        // Kpis y grafico semanal 
                         Expanded(
                           flex: 5,
                           child: Column(
@@ -164,7 +164,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                               const SizedBox(height: 15),
                               
-                              // NUEVO GRÁFICO DE LÍNEAS (Sustituye al cuadro gris)
+                              // Nuevo grafico de lineas
                               Container(
                                 width: double.infinity,
                                 height: 260, // Altura ajustada para el gráfico
@@ -286,7 +286,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         
                         const SizedBox(width: 30),
 
-                        // COLUMNA DERECHA (Gráfico de Dona Real)
+                        // Grafico de dona real 
                         Expanded(
                           flex: 4,
                           child: Container(

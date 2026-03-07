@@ -57,7 +57,7 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
     }
   }
 
-  // --- NUEVA LÓGICA DE ACCIÓN ---
+  // Logica de accion
   Future<void> _toggleUserStatus(String userId, String currentStatus) async {
     final newStatus = currentStatus == 'Activo' ? 'Suspendido' : 'Activo';
     final actionText = currentStatus == 'Activo' ? 'suspender' : 'reactivar';
@@ -89,7 +89,7 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
     // 2. Si el admin confirma, actualizamos Firebase
     if (confirm == true) {
       try {
-        // Usamos SetOptions(merge: true) para no borrar los demás datos del usuario, solo actualizar el status
+        // Usamos SetOptions para no borrar los demás datos del usuario, solo actualizar el status
         await FirebaseFirestore.instance.collection('users').doc(userId).set(
           {'status': newStatus},
           SetOptions(merge: true), 
