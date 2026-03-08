@@ -23,7 +23,7 @@ class SuccessScreen extends StatelessWidget {
                   ),
                 ),
 
-                Container (color: Colors.black.withOpacity(0.6)),
+                Container (color: Colors.black.withValues(alpha:0.6)),
 
                 Center (child: Column (
                   mainAxisAlignment:MainAxisAlignment.center,
