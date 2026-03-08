@@ -98,7 +98,7 @@ class _PublishScreenState extends State<PublishScreen>{
       const SizedBox(height: 20),
 
       _buildLabel("Titulo de Material"),
-      _buildTextField("Insertar"),
+      _buildTextField("Ej. Calculo 1"),
 
       const SizedBox(height: 20),
 
@@ -136,6 +136,13 @@ class _PublishScreenState extends State<PublishScreen>{
               ),
       ],
       ),
+
+      if (_selectedMethod=="Venta")... [
+        const SizedBox (height: 20),
+        _buildLabel("Precio (/usd)"),
+        _buildTextField("0.00",controller: _priceController,keyboardType: TextInputType.number),
+        
+      ],
       const SizedBox(height: 20),
       _buildLabel("Descripcion detallada"),
       _buildTextField("", maxLines:4),
