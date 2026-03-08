@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Desplegable de carreras
   final List<String> _carrerasUnimet =[
-  'Ciencias Administrativas',
+    'Ciencias Administrativas',
     'Comunicación Social y Empresarial',
     'Contaduría Pública',
     'Derecho',
@@ -45,6 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   ];
   String? _carreraSeleccionada;
   bool _isLoading = false;
+  bool _obscurePassword = true; 
 
   final Color naranjaM = const Color(0xFFFF6B00);
   final Color grisOscuroHeader = const Color(0xFF2E2E2E);
@@ -55,10 +56,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose(){
     _nombreController.dispose();
     _carnetController.dispose();
-   _telefonoController.dispose();
-  _correoController.dispose();
-   _passwordController.dispose();
-   super.dispose();
+    _telefonoController.dispose();
+    _correoController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   void _showError(String message) {
@@ -102,8 +103,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    final formatoNombre = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+(\s+[a-zA-ZáéíóúÁÉÍÓÚñÑ]+)+$');
+    if (!formatoNombre.hasMatch(nombre)) {
+      _showError("Debe ingresar al menos nombre y apellido, sin dígitos numéricos.");
+      return;
+    }
+
     if (role == 'estudiante' && carrera.isEmpty) {
-      _showError("Por favor, llena todos los campos.");
+      _showError("Debe seleccionar una carrera.");
       return;
     }
 
@@ -252,7 +259,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Expanded(
                         child: _buildFormCard([
                           _buildInputField("Correo Unimet:", _correoController, false),
-                          _buildInputField("Contraseña:", _passwordController, true),
+                          _buildPasswordField("Contraseña:", _passwordController),
                           _buildInputField("Carnet:", _carnetController, false, esNumero: true),
                         ]),
                       ),
@@ -329,6 +336,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       
   }
+
   Widget _buildFormCard(List<Widget> children) {
     return Container(
       padding: const EdgeInsets.all(35),
@@ -337,7 +345,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.2), 
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -349,7 +357,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-
 
   Widget _buildInputField(String label, TextEditingController controller, bool isPassword, {bool esNumero = false}) {
     return Padding(
@@ -383,5 +390,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-}
 
+  Widget _buildPasswordField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 25.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: controller,
+            obscureText: _obscurePassword, 
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: "Insertar (mínimo 8 caracteres)",
+              hintStyle: const TextStyle(color: Colors.white60),
+              filled: true,
+              fillColor: naranjaM,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword; 
+                  });
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
