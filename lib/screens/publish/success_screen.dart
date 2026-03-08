@@ -40,7 +40,7 @@ class SuccessScreen extends StatelessWidget {
                       _buildOption(context,"Seguir publicando",()=>Navigator.pop(context)),
                       const SizedBox(width: 50),
                       _buildOption(context, "Volver al inicio",(){
-                        Navigator.pushNamed(context, "/home_screen");
+                        Navigator.pushNamedAndRemoveUntil(context, "/home_screen", (route)=>false,);
                       }),
                     ],
                     ),
