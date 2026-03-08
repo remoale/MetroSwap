@@ -38,6 +38,8 @@ class _PublishScreenState extends State<PublishScreen>{
 
   @override
   Widget build(BuildContext context) {
+
+    final bool isMobile = MediaQuery.of(context).size.width<750;//Dectecta si es telefono o computadora
     return Scaffold(
       backgroundColor: const Color(0xFFE4E1E6),
       body: Column(
@@ -50,7 +52,16 @@ class _PublishScreenState extends State<PublishScreen>{
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 1000),
 
-                child: Row(
+                child: isMobile
+                ? Column (
+                  children: [
+                    _buildImagePlaceholder(),
+                    const SizedBox(height: 30),
+                    _buildFormFields(),
+                    ],
+                    )
+                    :
+                Row(
                   crossAxisAlignment:CrossAxisAlignment.start,
                   children: [
                     //lado izq
