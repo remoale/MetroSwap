@@ -100,10 +100,21 @@ class _PublishScreenState extends State<PublishScreen>{
         decoration: BoxDecoration(
           color : const Color(0xFFD9D9D9).withValues(alpha:0.5),
           borderRadius: BorderRadius.circular(8),
+          border: Border.all (color : Colors.black12),
         ),
-        child : const Icon(Icons.image_outlined,size : 100,color:Colors.black26),
-      ),
-    );
+        child :_image == null
+        ? const Icon(Icons.image_outlined,size : 100,color:Colors.black26)
+        :ClipRRect(
+          borderRadius :  BorderRadius.circular(8),
+          child : Image.file(
+            _image!,
+            fit : BoxFit.cover,
+            width: double.infinity,
+            ),
+            ),
+        ),
+      );
+    
   }
 
   Widget _buildFormFields(){
