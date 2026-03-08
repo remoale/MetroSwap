@@ -33,9 +33,13 @@ class _PublishScreenState extends State<PublishScreen>{
       });
     }
   }
-
-
-
+  @override
+  void dispose(){
+    _titleController.dispose();
+    _priceController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
 
