@@ -69,7 +69,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           children: [
             const MetroSwapNavbar(
               developmentNav: true,
-              heading: 'Tradea',
+              heading: '',
               showLogoutButton: false,
               showNotificationsButton: true,
               showProfileButton: true,
