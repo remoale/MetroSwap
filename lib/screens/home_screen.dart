@@ -85,6 +85,38 @@ class HomeScreen extends StatelessWidget {
                           }
                           final String searchTerm = controller.text.toLowerCase();
                         }
+
+                        final snapshot = await FirebaseFirestore.instance
+                        .collection('post')
+                        .where('title_search',isGreaterThanOrEqualTo: searchTerm)
+                        .where ('title_search',isLessThanOrEqualTo:'$searchTerm\uf8ff')
+                        .get();
+
+                        return snapshot.docs.map((doc){
+                          final data= doc.data();
+                          return ListTitle(
+                            leading: const Icon (Icon.book),
+                            title :Text (data['title']),
+                            subtitle: Text(data['career']??""),
+                            onTap:(){
+                              controller.closeView(data['title']);
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder :(context)=> ResultDetailScreen(data:data),
+                                  ),
+                              );
+                            },
+                            );
+                        }).toList();
+  },
+  ),
+  ),
+  ),
+],
+),
+),
                         decoration: InputDecoration(
                           hintText: 'Buscar por titulo, material o materia..',
                           hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
