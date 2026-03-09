@@ -188,39 +188,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               ],
                                             ),
                                       const SizedBox(height: 24),
-                                      SizedBox(
-                                        width: 190,
-                                        child: ElevatedButton(
-                                          onPressed: () async {
-                                            final updated =
-                                                await Navigator.push<bool>(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    EditProfileScreen(
-                                                  user: user!,
+                                      if (FirebaseAuth.instance.currentUser?.uid == widget.uid)
+                                        SizedBox(
+                                          width: 190,
+                                          child: ElevatedButton(
+                                            onPressed: () async {
+                                              final updated =
+                                                  await Navigator.push<bool>(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      EditProfileScreen(
+                                                    user: user!,
+                                                  ),
                                                 ),
-                                              ),
-                                            );
-                                            if (updated == true) {
-                                              setState(
-                                                () => isLoading = true,
                                               );
-                                              await loadUser();
-                                            }
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                const Color(0xFFFF5C00),
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
+                                              if (updated == true) {
+                                                setState(
+                                                  () => isLoading = true,
+                                                );
+                                                await loadUser();
+                                              }
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  const Color(0xFFFF5C00),
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
                                             ),
+                                            child: const Text("Editar perfil"),
                                           ),
-                                          child: const Text("Editar perfil"),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -332,4 +333,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return count > 0 ? "$count libro(s)" : "Sin publicaciones";
   }
 }
-
