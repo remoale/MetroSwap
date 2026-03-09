@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+import 'package:metroswap/screens/profile/profile_screen.dart';
 
 class TradeScreen extends StatelessWidget {
   const TradeScreen({super.key});
 
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFE4E1E6),
@@ -15,14 +16,13 @@ class TradeScreen extends StatelessWidget {
             // 1. Encabezado actualizado
             const MetroSwapNavbar(
               developmentNav: true, 
-              heading: 'Tradea'
+              heading: 'Intercambio'
             ),
             
             const SizedBox(height: 60),
-
             // 2. Contenedor principal de la vista
             SizedBox(
-              width: 900, 
+              width: 1100, 
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -64,7 +64,42 @@ class TradeScreen extends StatelessWidget {
                             color: Color(0xFF333333)
                           ),
                         ),
-                        
+                        const SizedBox(height: 15),
+                        GestureDetector(
+                          onTap: () {
+                            // Cambiar 'ID_DEL_USUARIO' cuando este listo la publicacion
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileScreen(uid: 'ID_DEL_USUARIO'),
+                              ),
+                            );
+                          },
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Row(
+                              children: [
+                                const CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Color(0xFF5A5860),
+                                  child: Icon(Icons.person, color: Colors.white, size: 20),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Daniela Pacheco', // Cambiar por el nombre real cuando este lo de publicar
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[700],
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: Colors.blue[700]
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
                         const SizedBox(height: 25),
 
                         Row(
@@ -104,7 +139,7 @@ class TradeScreen extends StatelessWidget {
 
                         const SizedBox(height: 40),
 
-                        // Botón de Tradear
+                        // Botón de Intercambiar
                         SizedBox(
                           width: double.infinity,
                           height: 60, 
@@ -125,7 +160,7 @@ class TradeScreen extends StatelessWidget {
                                 Icon(Icons.handshake_outlined, color: Colors.white, size: 28),
                                 SizedBox(width: 10),
                                 Text(
-                                  'Tradear',
+                                  'Intercambiar',
                                   style: TextStyle(
                                     color: Colors.white, 
                                     fontSize: 22, 
@@ -144,8 +179,6 @@ class TradeScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 100),
-            
-            // 3. Footer
             const MetroSwapFooter(),
           ],
         ),
