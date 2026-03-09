@@ -130,9 +130,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final esSoloNumeros = RegExp(r'^[0-9]+$');
+    final esSoloNumeros = RegExp(r'^[0-9]{10,12}$');
     if (!esSoloNumeros.hasMatch(telefono)) {
-      _showError("El teléfono debe contener solo números, sin puntos ni guiones.");
+      _showError("El teléfono debe contener 10 o 12 números, sin puntos ni guiones.");
       return;
     }
 
