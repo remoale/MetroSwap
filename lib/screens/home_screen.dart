@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -58,7 +59,22 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const TextField( 
+                      child: SearchAnchor( 
+                        builder: (context,controller){
+                          return SearchBar(
+                            controller: controller,
+                            hintText:'Buscar por titulo, material o materia..',
+                            hintStyle: WidgetStatePropertyAll(
+                              const TextStyle(color: Colors.grey,fontSize: 16)),
+                              backgroundColor: WidgetStatePropertyAll(Colors.transparent),
+                              elevation: WidgetStatePropertyAll(0),
+                              onTap: ()=> controller.openView(),
+                              onChanged: (_)=> controller.openView(),
+                              padding: const WidgetStatePropertyAll(
+                                EdgeInsets.symmetric(horizontal: 25)),
+                                trailing: const [Icon(Icons.search,color: Colors.black54)],
+                              );
+                        }
                         decoration: InputDecoration(
                           hintText: 'Buscar por titulo, material o materia..',
                           hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
