@@ -117,32 +117,16 @@ class HomeScreen extends StatelessWidget {
 ],
 ),
 ),
-                        decoration: InputDecoration(
-                          hintText: 'Buscar por titulo, material o materia..',
-                          hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-                          suffixIcon: Padding(
-                            padding: EdgeInsets.only(right: 15.0),
-                            child: Icon(Icons.search, color: Colors.black54),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 80),
-            Row(
+const SizedBox(height : 80),
+Row (
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildCategoryCard(
                   title: 'Libros',
                   imagePath: 'assets/images/libros.png',
                 ),
-                const SizedBox(width: 180),
+                const SizedBox(width: 80),
                 _buildCategoryCard(
                   title: 'Materiales',
                   imagePath: 'assets/images/materiales.png',
@@ -156,6 +140,7 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+
   }
 
   Widget _buildCategoryCard({required String title, required String imagePath}) {
@@ -174,19 +159,59 @@ class HomeScreen extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            color: Colors.white,
+            color: Colors.black87,
             fontSize: 32,
             fontWeight: FontWeight.w300,
-            shadows: [
-              Shadow(
-                color: Colors.black26,
-                blurRadius: 2,
-                offset: Offset(1, 1),
-              )
-            ],
-          ),
+              ),
         ),
-      ],
-    );
+            ],
+          );
+        
+    
+    
   }
 }
+// Resultado de busqueda
+class ResultDetailScreen extends StateLessWidget {
+  final Map <String,dynamic> data;
+  const ResultDetailScreen({super.key,required this.data});
+
+  @override
+
+  Widget build (BuildContext context){
+    return Scaffold(
+      body :CustomScrollView(
+        slivers: [
+
+          SliverAppBar(
+            expandedHeight: 300,
+            pinned :true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(data["title"], style :const TextStyle(color: Colors.white,fontSize: 18)),
+              background: Stack(
+                fit : StackFit.expand,
+                children: [
+                  data['iamgeUrl']!=null
+                    ? Image.network(data['imageUrl'],fit :BoxFit.cover)
+                    : Container(color:Colors.blueGrey),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin : Alignment.bottomCenter,
+                        end: Alignment.topCenter ,
+                        colors: [Colors.black87,Colors.transparent],
+                      ),
+                    ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          
+        ],
+      )
+    )
+  }
+
+  }
