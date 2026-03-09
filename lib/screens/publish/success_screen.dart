@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:metroswap/screens/home_screen.dart';
+import 'package:metroswap/screens/publish/publish_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
@@ -37,10 +39,20 @@ class SuccessScreen extends StatelessWidget {
                   Row (
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildOption(context,"Seguir publicando",()=>Navigator.pop(context)),
+                      _buildOption(context, "Seguir publicando", () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PublishScreen()),
+                          (route) => route.isFirst,
+                        );
+                      }),
                       const SizedBox(width: 50),
                       _buildOption(context, "Volver al inicio",(){
-                        Navigator.pushNamedAndRemoveUntil(context, "/home_screen", (route)=>false,);
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HomeScreen()),
+                          (route) => false,
+                        );
                       }),
                     ],
                     ),
