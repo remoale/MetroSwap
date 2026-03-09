@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -54,6 +53,7 @@ class _PublishScreenState extends State<PublishScreen> {
   String? _selectedCondition;
   String? _selectedMethod;
   bool _isPublishing = false;
+  int _quantity = 1; 
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
@@ -163,6 +163,7 @@ class _PublishScreenState extends State<PublishScreen> {
         condition: _selectedCondition!,
         method: _selectedMethod!,
         priceUsd: priceUsd,
+        quantity: _quantity,
         imageUrl: imageUrl,
         ownerUid: currentUser.uid,
         ownerName: ownerName,
@@ -344,6 +345,7 @@ class _PublishScreenState extends State<PublishScreen> {
           Row(
             children: [
               Expanded(
+                flex: 3,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -356,8 +358,9 @@ class _PublishScreenState extends State<PublishScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 15),
               Expanded(
+                flex: 3,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -367,6 +370,17 @@ class _PublishScreenState extends State<PublishScreen> {
                       items: _methods,
                       onChanged: (val) => setState(() => _selectedMethod = val),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Cantidad'),
+                    _buildQuantitySelector(),
                   ],
                 ),
               ),
@@ -433,6 +447,8 @@ class _PublishScreenState extends State<PublishScreen> {
     );
   }
 
+  // Creación de widgets 
+
   Widget _buildLabel(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
         child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500)),
@@ -471,6 +487,7 @@ class _PublishScreenState extends State<PublishScreen> {
     required ValueChanged<String?> onChanged,
   }) =>
       Container(
+        height: 48, 
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -488,6 +505,43 @@ class _PublishScreenState extends State<PublishScreen> {
           ),
         ),
       );
+
+  Widget _buildQuantitySelector() {
+    return Container(
+      height: 48, 
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.remove, size: 18),
+            onPressed: () {
+              if (_quantity > 1) {
+                setState(() {
+                  _quantity--;
+                });
+              }
+            },
+          ),
+          Text(
+            '$_quantity',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add, size: 18),
+            onPressed: () {
+              setState(() {
+                _quantity++;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildPublishButton() => SizedBox(
         width: double.infinity,

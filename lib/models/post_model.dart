@@ -23,6 +23,7 @@ class PostModel {
   final String condition;
   final String method;
   final double? priceUsd;
+  final int quantity; 
   final String imageUrl;
   final String ownerUid;
   final String ownerName;
@@ -43,6 +44,7 @@ class PostModel {
     required this.condition,
     required this.method,
     required this.priceUsd,
+    required this.quantity, 
     required this.imageUrl,
     required this.ownerUid,
     required this.ownerName,
@@ -65,6 +67,7 @@ class PostModel {
       'condition': condition,
       'method': method,
       'priceUsd': priceUsd,
+      'quantity': quantity, 
       'imageUrl': imageUrl,
       'ownerUid': ownerUid,
       'ownerName': ownerName,
@@ -88,6 +91,7 @@ class PostModel {
       'condition': condition,
       'method': method,
       'priceUsd': priceUsd,
+      'quantity': quantity, 
       'imageUrl': imageUrl,
       'ownerUid': ownerUid,
       'ownerName': ownerName,
@@ -119,6 +123,9 @@ class PostModel {
       priceUsd: map['priceUsd'] == null
           ? null
           : double.tryParse(map['priceUsd'].toString()),
+      quantity: map['quantity'] != null 
+          ? int.tryParse(map['quantity'].toString()) ?? 1 
+          : 1,
       imageUrl: (map['imageUrl'] ?? '').toString(),
       ownerUid: (map['ownerUid'] ?? '').toString(),
       ownerName: (map['ownerName'] ?? '').toString(),
