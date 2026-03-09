@@ -7,7 +7,8 @@ import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:metroswap/screens/notifications/notifications_screen.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
-import 'package:metroswap/screens/exchange/trade.dart'; 
+import 'package:metroswap/screens/exchange/show_material.dart';
+import 'package:metroswap/screens/exchange/exchange.dart'; 
 import 'package:metroswap/screens/publish/publish_screen.dart'; 
 import 'package:metroswap/services/auth_service.dart';
 import 'package:metroswap/widgets/metroswap_brand.dart';
@@ -148,7 +149,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (_) => const TradeScreen()), //AQUI PARA PROBAR, deberia ir Publish
+                      MaterialPageRoute(builder: (_) => const TradeChatScreen(tradeId: 'oxwHctJT1W84enkndGT',)), //AQUI PARA PROBAR, deberia ir Publish
                     );
                   },
                   style: OutlinedButton.styleFrom(
