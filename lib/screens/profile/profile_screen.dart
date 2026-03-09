@@ -129,15 +129,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
-                                      child: Text(
-                                        user!.name,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 40,
-                                          color: Color(0xFF54515A),
-                                          fontWeight: FontWeight.w400,
-                                        ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            user!.name,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 40,
+                                              color: Color(0xFF54515A),
+                                              fontWeight: FontWeight.w400,
+                                              height: 1.1, 
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                '${user!.reputation}', 
+                                                style: const TextStyle(
+                                                  fontSize: 22, 
+                                                  fontWeight: FontWeight.bold, 
+                                                  color: Color(0xFFFF9800)
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              const Icon(
+                                                Icons.star, 
+                                                color: Color.fromARGB(242, 241, 255, 52), 
+                                                size: 24,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '(${user!.tradesCount})', 
+                                                style: const TextStyle(
+                                                  fontSize: 18, 
+                                                  fontWeight: FontWeight.w500, 
+                                                  color: Colors.black
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],

@@ -216,13 +216,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
-                                    child: TextField(
-                                      controller: nameCtrl,
-                                      style: const TextStyle(
-                                        color: Color(0xFF54515A),
-                                        fontSize: 22,
-                                      ),
-                                      decoration: _fieldDecoration("Nombre de usuario"),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        TextField(
+                                          controller: nameCtrl,
+                                          style: const TextStyle(
+                                            color: Color(0xFF54515A),
+                                            fontSize: 22,
+                                          ),
+                                          decoration: _fieldDecoration("Nombre de usuario"),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              '${editableUser.reputation}', 
+                                              style: const TextStyle(
+                                                fontSize: 22, 
+                                                fontWeight: FontWeight.bold, 
+                                                color: Color(0xFFFF9800)
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            const Icon(
+                                              Icons.star, 
+                                              color: Color.fromARGB(242, 241, 255, 52), 
+                                              size: 24,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '(${editableUser.tradesCount})', 
+                                              style: const TextStyle(
+                                                fontSize: 18, 
+                                                fontWeight: FontWeight.w500, 
+                                                color: Colors.black
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
