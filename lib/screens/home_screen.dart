@@ -75,6 +75,16 @@ class HomeScreen extends StatelessWidget {
                                 trailing: const [Icon(Icons.search,color: Colors.black54)],
                               );
                         }
+
+                        suggestionsBuilder: (context,controller)async{
+                          if (controller.text.isEmpty){
+                            return[const Center (child: Padding(
+                              padding:EdgeInsets.all(16.0),
+                              child: Text("Escribe para buscar..."),
+                              ))];
+                          }
+                          final String searchTerm = controller.text.toLowerCase();
+                        }
                         decoration: InputDecoration(
                           hintText: 'Buscar por titulo, material o materia..',
                           hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
