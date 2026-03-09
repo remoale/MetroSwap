@@ -74,28 +74,28 @@ class HomeScreen extends StatelessWidget {
                                 EdgeInsets.symmetric(horizontal: 25)),
                                 trailing: const [Icon(Icons.search,color: Colors.black54)],
                               );
-                        }
+                        },
 
                         suggestionsBuilder: (context,controller)async{
                           if (controller.text.isEmpty){
                             return[const Center (child: Padding(
                               padding:EdgeInsets.all(16.0),
                               child: Text("Escribe para buscar..."),
-                              ))];
+                              ),)];
                           }
                           final String searchTerm = controller.text.toLowerCase();
-                        }
+                        
 
                         final snapshot = await FirebaseFirestore.instance
-                        .collection('post')
+                        .collection('posts')
                         .where('title_search',isGreaterThanOrEqualTo: searchTerm)
                         .where ('title_search',isLessThanOrEqualTo:'$searchTerm\uf8ff')
                         .get();
 
                         return snapshot.docs.map((doc){
                           final data= doc.data();
-                          return ListTitle(
-                            leading: const Icon (Icon.book),
+                          return ListTile(
+                            leading: const Icon (Icons.book),
                             title :Text (data['title']),
                             subtitle: Text(data['career']??""),
                             onTap:(){
@@ -172,7 +172,7 @@ Row (
   }
 }
 // Resultado de busqueda
-class ResultDetailScreen extends StateLessWidget {
+class ResultDetailScreen extends StatelessWidget {
   final Map <String,dynamic> data;
   const ResultDetailScreen({super.key,required this.data});
 
@@ -191,7 +191,7 @@ class ResultDetailScreen extends StateLessWidget {
               background: Stack(
                 fit : StackFit.expand,
                 children: [
-                  data['iamgeUrl']!=null
+                  data['imageUrl']!=null
                     ? Image.network(data['imageUrl'],fit :BoxFit.cover)
                     : Container(color:Colors.blueGrey),
                   const DecoratedBox(
@@ -207,11 +207,41 @@ class ResultDetailScreen extends StateLessWidget {
               ),
             ),
           ),
+          SliverList(
+            delegate: SliverChildListDelegate([
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child : Column (
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Chip(
+                      label: Text(data['method'] ?? 'Intercambio'),
+                      backgroundColor: Colors.blueAccent.withValues(alpha:0.1),
+                    ),
+                    const SizedBox(height: 20),
+                    Text("Precio: \$${data['priceUsd'] ?? '0.00'}", 
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    Text("Materia: ${data['subject']}", style: const TextStyle(fontSize: 18)),
+                    const SizedBox(height: 10),
+                    Text("Estado: ${data['condition']}", style: const TextStyle(fontSize: 18)),
+                    const Divider(height: 40),
+                    const Text("Descripción", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    Text(data['description'] ?? "Sin descripción disponible.", 
+                        style: const TextStyle(fontSize: 16, height: 1.5)),
+                    const SizedBox(height: 500), // prueba del scroll
+                    const Text("Fin del contenido."),
+                    ],
+                    ),
 
-          
-        ],
-      )
-    )
+                ),
+              ]),
+              ),
+              ],
+              ),
+    );
+
   }
 
   }
