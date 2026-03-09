@@ -99,6 +99,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> save() async {
+    final nombre = nameCtrl.text.trim();
+    final formatoNombre = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+(\s+[a-zA-ZáéíóúÁÉÍÓÚñÑ]+)+$');
+    
+    if (!formatoNombre.hasMatch(nombre)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Debe ingresar al menos nombre y apellido, sin dígitos numéricos."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return; 
+    }
+
+    final telefono = phoneCtrl.text.trim();
+    final formatoTelefono = RegExp(r'^[0-9]{10,12}$'); 
+    
+    if (!formatoTelefono.hasMatch(telefono)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Ingrese un número de teléfono válido (solo 10 o 12 dígitos numéricos, sin puntos ni guiones)."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    final carnet = studentIdCtrl.text.trim();
+    final formatoCarnet = RegExp(r'^[0-9]{6,15}$');
+    
+    if (carnet.isEmpty || !formatoCarnet.hasMatch(carnet)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Ingrese un carnet válido (entre 6 y 15 dígitos numéricos)."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     if (_isSaving) return;
     setState(() => _isSaving = true);
 
@@ -446,4 +488,3 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return normalizedCareer;
   }
 }
-
