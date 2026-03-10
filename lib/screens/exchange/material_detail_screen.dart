@@ -274,6 +274,7 @@ class MaterialDetailScreen extends StatelessWidget {
                                           'imageUrl': currentPost.imageUrl,
                                           'method': currentPost.method,
                                           'ownerUid': currentPost.ownerUid,
+                                          'ownerName': currentPost.ownerName,
                                           'targetUid': currentPost.ownerUid,
                                           'requesterUid': currentUser.uid,
                                           'requesterName': requesterName.isEmpty

@@ -167,14 +167,12 @@ class NotificationService {
     final postTitle = (data['postTitle'] ?? '').toString().trim();
     final exchangeId = doc.id;
     final postId = (data['postId'] ?? '').toString().trim();
-    final requesterName =
-        (data['requesterName'] ?? data['actorName'] ?? 'Un usuario')
-            .toString()
-            .trim();
-    final ownerName =
-        (data['ownerName'] ?? data['targetName'] ?? 'El propietario')
-            .toString()
-            .trim();
+    final rawRequesterName =
+        (data['requesterName'] ?? data['actorName'] ?? '').toString().trim();
+    final requesterName = rawRequesterName.isEmpty ? 'Un usuario' : rawRequesterName;
+    final rawOwnerName =
+        (data['ownerName'] ?? data['targetName'] ?? '').toString().trim();
+    final ownerName = rawOwnerName.isEmpty ? 'El propietario' : rawOwnerName;
 
     final isRequester = requesterUid == uid;
     final isTarget = targetUid == uid || ownerUid == uid;

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/exchange_model.dart';
 import 'package:metroswap/screens/feedback/feedback_screen.dart';
+import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/payments/contribution_payment_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
@@ -205,6 +206,31 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
   }
 
+  Future<void> _cancelExchange() async {
+    try {
+      await _firestore.collection('exchanges').doc(widget.tradeId).update({
+        'status': ExchangeModel.statusDeclined,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo cancelar el intercambio.')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Intercambio cancelado.')),
+    );
+  }
+
   String _statusLabel(String status) {
     switch (status.trim().toLowerCase()) {
       case ExchangeModel.statusAccepted:
@@ -295,6 +321,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                             ),
                                         owner: participants?.owner ??
                                             const _UserSummary(name: 'Propietario'),
+                                        currentUid: _auth.currentUser?.uid ?? '',
                                       );
                                     },
                                   ),
@@ -402,6 +429,35 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                               ),
                                             ),
                                           ),
+                                        if (exchange.status !=
+                                                ExchangeModel.statusCompleted &&
+                                            exchange.status !=
+                                                ExchangeModel.statusRejected &&
+                                            exchange.status !=
+                                                ExchangeModel.statusDeclined)
+                                          SizedBox(
+                                            width: 250,
+                                            height: 45,
+                                            child: OutlinedButton(
+                                              onPressed: _cancelExchange,
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor: const Color(0xFF8A1E1E),
+                                                side: const BorderSide(
+                                                  color: Color(0xFF8A1E1E),
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Cancelar intercambio',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -428,7 +484,15 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     required ExchangeModel exchange,
     required _UserSummary requester,
     required _UserSummary owner,
+    required String currentUid,
   }) {
+    final isRequesterCurrentUser =
+        currentUid.isNotEmpty && currentUid == exchange.requesterUid;
+    final leftUser = isRequesterCurrentUser ? requester : owner;
+    final rightUser = isRequesterCurrentUser ? owner : requester;
+    final leftIsOwner = !isRequesterCurrentUser;
+    final rightIsOwner = isRequesterCurrentUser;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 800;
@@ -442,22 +506,42 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           child: isCompact
               ? Column(
                   children: [
-                    _buildUserColumn(requester, isRightAligned: false),
+                    _buildUserColumn(
+                      leftUser,
+                      isRightAligned: false,
+                      isOwner: leftIsOwner,
+                    ),
                     const Divider(height: 30),
                     _buildItemInfo(exchange),
                     const Divider(height: 30),
-                    _buildUserColumn(owner, isRightAligned: true),
+                    _buildUserColumn(
+                      rightUser,
+                      isRightAligned: true,
+                      isOwner: rightIsOwner,
+                    ),
                   ],
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(child: _buildUserColumn(requester, isRightAligned: false)),
+                    Expanded(
+                      child: _buildUserColumn(
+                        leftUser,
+                        isRightAligned: false,
+                        isOwner: leftIsOwner,
+                      ),
+                    ),
                     Container(height: 80, width: 2, color: Colors.grey.shade300),
                     Expanded(child: _buildItemInfo(exchange)),
                     Container(height: 80, width: 2, color: Colors.grey.shade300),
-                    Expanded(child: _buildUserColumn(owner, isRightAligned: true)),
+                    Expanded(
+                      child: _buildUserColumn(
+                        rightUser,
+                        isRightAligned: true,
+                        isOwner: rightIsOwner,
+                      ),
+                    ),
                   ],
                 ),
         );
@@ -465,7 +549,11 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
   }
 
-  Widget _buildUserColumn(_UserSummary user, {required bool isRightAligned}) {
+  Widget _buildUserColumn(
+    _UserSummary user, {
+    required bool isRightAligned,
+    required bool isOwner,
+  }) {
     final photoUrl = user.photoUrl?.trim() ?? '';
     final avatar = photoUrl.isEmpty
         ? CircleAvatar(
@@ -500,11 +588,26 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     final info = Column(
       crossAxisAlignment: isRightAligned ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        Text(
-          user.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isRightAligned && isOwner) ...[
+              _buildOwnerBadge(),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Text(
+                user.name,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isRightAligned && isOwner) ...[
+              const SizedBox(width: 8),
+              _buildOwnerBadge(),
+            ],
+          ],
         ),
         Text(
           user.studentId?.trim().isNotEmpty == true ? user.studentId! : 'Carnet no disponible',
@@ -544,6 +647,24 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       children: isRightAligned
           ? [Flexible(child: info), const SizedBox(width: 16), avatar]
           : [avatar, const SizedBox(width: 16), Flexible(child: info)],
+    );
+  }
+
+  Widget _buildOwnerBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFF333333),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Text(
+        'Propietario',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 
@@ -622,7 +743,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
   Widget _buildMessageBubble({required String text, required bool isMe}) {
     return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
