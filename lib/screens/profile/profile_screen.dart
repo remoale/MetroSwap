@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -144,33 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             ),
                                           ),
                                           const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                '${user!.reputation}', 
-                                                style: const TextStyle(
-                                                  fontSize: 22, 
-                                                  fontWeight: FontWeight.bold, 
-                                                  color: Color(0xFFFF9800)
-                                                ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              const Icon(
-                                                Icons.star, 
-                                                color: Color.fromARGB(242, 241, 255, 52), 
-                                                size: 24,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                '(${user!.tradesCount})', 
-                                                style: const TextStyle(
-                                                  fontSize: 18, 
-                                                  fontWeight: FontWeight.w500, 
-                                                  color: Colors.black
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                          _buildRatingSummary(),
                                         ],
                                       ),
                                     ),
@@ -365,5 +340,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _buildBooksValue(List<String>? books) {
     final count = books?.where((book) => book.trim().isNotEmpty).length ?? 0;
     return count > 0 ? "$count libro(s)" : "Sin publicaciones";
+  }
+
+  Widget _buildRatingSummary() {
+    final ratingsStream = FirebaseFirestore.instance
+        .collection('user_ratings')
+        .doc(widget.uid)
+        .collection('entries')
+        .snapshots();
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: ratingsStream,
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ??
+            const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+        final ratings = docs
+            .map((doc) => doc.data()['rating'])
+            .whereType<int>()
+            .toList(growable: false);
+
+        final count = ratings.length;
+        final average = count == 0
+            ? user!.reputation.toDouble()
+            : ratings.reduce((a, b) => a + b) / count;
+        final displayCount = count == 0 ? user!.tradesCount : count;
+
+        return Row(
+          children: [
+            Text(
+              average.toStringAsFixed(1),
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFF9800),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.star,
+              color: Color.fromARGB(242, 241, 255, 52),
+              size: 24,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '($displayCount)',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/exchange_model.dart';
+import 'package:metroswap/screens/feedback/feedback_screen.dart';
+import 'package:metroswap/screens/payments/contribution_payment_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
@@ -26,7 +28,6 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
   Future<_ParticipantsData>? _participantsFuture;
   bool _isSending = false;
-  bool _isCompleting = false;
 
   @override
   void dispose() {
@@ -169,45 +170,39 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     }
   }
 
-  Future<void> _completeExchange(ExchangeModel exchange) async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null || _isCompleting) return;
+  bool _isPostOwner(ExchangeModel exchange) {
+    final currentUid = _auth.currentUser?.uid ?? '';
+    if (currentUid.isEmpty) return false;
+    final ownerUids = <String>{exchange.ownerUid.trim(), exchange.targetUid.trim()}
+      ..removeWhere((uid) => uid.isEmpty);
+    return ownerUids.contains(currentUid);
+  }
 
-    final participantUids = {
-      exchange.ownerUid,
-      exchange.targetUid,
-      exchange.requesterUid,
-    }..removeWhere((uid) => uid.trim().isEmpty);
-
-    if (!participantUids.contains(currentUser.uid)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Solo los participantes pueden completar el intercambio.'),
+  Future<void> _goToContributionPayment(ExchangeModel exchange) async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ContributionPaymentScreen(
+          tradeId: exchange.id,
+          title: exchange.postTitle,
+          imageUrl: exchange.imageUrl,
         ),
-      );
-      return;
-    }
+      ),
+    );
+  }
 
-    setState(() => _isCompleting = true);
-    try {
-      await _firestore.collection('exchanges').doc(widget.tradeId).update({
-        'status': ExchangeModel.statusCompleted,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Intercambio marcado como completado.')),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo completar el intercambio.')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isCompleting = false);
-      }
-    }
+  Future<void> _goToFeedback(ExchangeModel exchange) async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FeedbackScreen(
+          tradeId: exchange.id,
+          postTitle: exchange.postTitle,
+        ),
+      ),
+    );
   }
 
   String _statusLabel(String status) {
@@ -357,30 +352,57 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                   _buildInputArea(exchange),
                                   const SizedBox(height: 20),
                                   Center(
-                                    child: SizedBox(
-                                      width: 250,
-                                      height: 45,
-                                      child: ElevatedButton(
-                                        onPressed: _isCompleting
-                                            ? null
-                                            : () => _completeExchange(exchange),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFFFF8A4C),
-                                          foregroundColor: Colors.black,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
+                                    child: Wrap(
+                                      spacing: 14,
+                                      runSpacing: 14,
+                                      alignment: WrapAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 250,
+                                          height: 45,
+                                          child: ElevatedButton(
+                                            onPressed: () => _goToContributionPayment(exchange),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFFF8A4C),
+                                              foregroundColor: Colors.black,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              'Enviar contribucion',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                        child: Text(
-                                          _isCompleting
-                                              ? 'Enviando...'
-                                              : 'Enviar contribucion',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
+                                        if (_isPostOwner(exchange))
+                                          SizedBox(
+                                            width: 250,
+                                            height: 45,
+                                            child: OutlinedButton(
+                                              onPressed: () => _goToFeedback(exchange),
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor: const Color(0xFF2F2F33),
+                                                side: const BorderSide(
+                                                  color: Color(0xFF8A858F),
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Terminar intercambio',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(height: 20),
