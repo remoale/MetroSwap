@@ -251,52 +251,38 @@ class MaterialDetailScreen extends StatelessWidget {
                                       String tradeId = '';
 
                                       try {
-                                        final existingExchange = await firestore
-                                            .collection('exchanges')
-                                            .where('postId', isEqualTo: postId)
-                                            .where(
-                                              'requesterUid',
-                                              isEqualTo: currentUser.uid,
-                                            )
-                                            .limit(1)
+                                        final requesterSnapshot = await firestore
+                                            .collection('users')
+                                            .doc(currentUser.uid)
                                             .get();
+                                        final requesterData = requesterSnapshot.data();
+                                        final requesterName = (requesterData?['name'] ??
+                                                requesterData?['displayName'] ??
+                                                currentUser.displayName ??
+                                                currentUser.email ??
+                                                'Usuario')
+                                            .toString()
+                                            .trim();
 
-                                        if (existingExchange.docs.isNotEmpty) {
-                                          tradeId = existingExchange.docs.first.id;
-                                        } else {
-                                          final requesterSnapshot = await firestore
-                                              .collection('users')
-                                              .doc(currentUser.uid)
-                                              .get();
-                                          final requesterData = requesterSnapshot.data();
-                                          final requesterName = (requesterData?['name'] ??
-                                                  requesterData?['displayName'] ??
-                                                  currentUser.displayName ??
-                                                  currentUser.email ??
-                                                  'Usuario')
-                                              .toString()
-                                              .trim();
-
-                                          final exchangeRef =
-                                              firestore.collection('exchanges').doc();
-                                          tradeId = exchangeRef.id;
-                                          await exchangeRef.set({
-                                            'id': tradeId,
-                                            'postId': postId,
-                                            'postTitle': currentPost.title,
-                                            'imageUrl': currentPost.imageUrl,
-                                            'method': currentPost.method,
-                                            'ownerUid': currentPost.ownerUid,
-                                            'targetUid': currentPost.ownerUid,
-                                            'requesterUid': currentUser.uid,
-                                            'requesterName': requesterName.isEmpty
-                                                ? 'Usuario'
-                                                : requesterName,
-                                            'status': 'requested',
-                                            'createdAt': FieldValue.serverTimestamp(),
-                                            'updatedAt': FieldValue.serverTimestamp(),
-                                          });
-                                        }
+                                        final exchangeRef =
+                                            firestore.collection('exchanges').doc();
+                                        tradeId = exchangeRef.id;
+                                        await exchangeRef.set({
+                                          'id': tradeId,
+                                          'postId': postId,
+                                          'postTitle': currentPost.title,
+                                          'imageUrl': currentPost.imageUrl,
+                                          'method': currentPost.method,
+                                          'ownerUid': currentPost.ownerUid,
+                                          'targetUid': currentPost.ownerUid,
+                                          'requesterUid': currentUser.uid,
+                                          'requesterName': requesterName.isEmpty
+                                              ? 'Usuario'
+                                              : requesterName,
+                                          'status': 'requested',
+                                          'createdAt': FieldValue.serverTimestamp(),
+                                          'updatedAt': FieldValue.serverTimestamp(),
+                                        });
                                       } on FirebaseException catch (e) {
                                         if (!context.mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
