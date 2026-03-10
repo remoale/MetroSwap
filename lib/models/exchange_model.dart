@@ -49,8 +49,11 @@ class ExchangeModel {
       return null;
     }
 
+    final normalizedFallbackId = fallbackId.trim();
+    final normalizedMapId = (map['id'] ?? '').toString().trim();
+
     return ExchangeModel(
-      id: (map['id'] ?? fallbackId).toString(),
+      id: normalizedFallbackId.isNotEmpty ? normalizedFallbackId : normalizedMapId,
       postId: (map['postId'] ?? '').toString(),
       postTitle: (map['postTitle'] ?? '').toString(),
       imageUrl: (map['imageUrl'] ?? '').toString(),

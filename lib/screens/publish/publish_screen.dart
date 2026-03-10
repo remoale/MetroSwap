@@ -65,6 +65,17 @@ class _PublishScreenState extends State<PublishScreen> {
   Uint8List? _imageBytes;
   final ImagePicker _picker = ImagePicker();
 
+  String _safeImageExtension(XFile file) {
+    final fileName = file.name.trim().toLowerCase();
+    if (fileName.contains('.')) {
+      final ext = fileName.split('.').last;
+      if (RegExp(r'^[a-z0-9]{2,5}$').hasMatch(ext)) {
+        return ext;
+      }
+    }
+    return 'jpg';
+  }
+
   Future<void> _pickImage() async {
     final XFile? pickedFile =
         await _picker.pickImage(source: ImageSource.gallery);
@@ -127,9 +138,9 @@ class _PublishScreenState extends State<PublishScreen> {
 
     try {
       final postRef = FirebaseFirestore.instance.collection('posts').doc();
-      final imagePath = _image!.path;
-      final extension =
-          imagePath.contains('.') ? imagePath.split('.').last.toLowerCase() : 'jpg';
+      final extension = _safeImageExtension(_image!);
+      final contentType = _resolveContentType(extension);
+      final imageSizeBytes = _imageBytes!.lengthInBytes;
 
       final storageRef = FirebaseStorage.instance
           .ref()
@@ -137,11 +148,23 @@ class _PublishScreenState extends State<PublishScreen> {
           .child(currentUser.uid)
           .child('${postRef.id}.$extension');
 
-      final metadata = SettableMetadata(
-        contentType: _resolveContentType(extension),
-      );
-      await storageRef.putData(_imageBytes!, metadata);
-      final imageUrl = await storageRef.getDownloadURL();
+      String imageUrl;
+      try {
+        final metadata = SettableMetadata(contentType: contentType);
+        await storageRef.putData(_imageBytes!, metadata);
+        imageUrl = await storageRef.getDownloadURL();
+      } on FirebaseException catch (e) {
+        _showMessage(
+          'Fallo al subir imagen (${e.code}). '
+          'bucket=${FirebaseStorage.instance.bucket}, '
+          'path=${storageRef.fullPath}, '
+          'uid=${currentUser.uid}, '
+          'size=$imageSizeBytes, '
+          'type=$contentType. '
+          '${e.message ?? 'Verifica reglas de Storage/App Check.'}',
+        );
+        return;
+      }
 
       final userSnapshot = await FirebaseFirestore.instance
           .collection('users')
@@ -170,11 +193,24 @@ class _PublishScreenState extends State<PublishScreen> {
         ownerEmail: currentUser.email,
       );
 
-      await postRef.set(post.toCreateMap());
+      try {
+        await postRef.set(post.toCreateMap());
+      } on FirebaseException catch (e) {
+        _showMessage(
+          'Fallo al crear publicación (${e.code}). ${e.message ?? 'Verifica reglas de Firestore.'}',
+        );
+        return;
+      }
 
-      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set({
-        'books': FieldValue.arrayUnion([_titleController.text.trim()]),
-      }, SetOptions(merge: true));
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set({
+          'books': FieldValue.arrayUnion([_titleController.text.trim()]),
+        }, SetOptions(merge: true));
+      } on FirebaseException catch (e) {
+        _showMessage(
+          'Publicación creada, pero falló actualizar perfil (${e.code}). ${e.message ?? ''}',
+        );
+      }
 
       if (!mounted) return;
       Navigator.push(
@@ -182,7 +218,9 @@ class _PublishScreenState extends State<PublishScreen> {
         MaterialPageRoute(builder: (_) => const SuccessScreen()),
       );
     } on FirebaseException catch (e) {
-      _showMessage('No se pudo publicar. ${e.message ?? 'Intenta nuevamente.'}');
+      _showMessage(
+        'No se pudo publicar (${e.code}). ${e.message ?? 'Intenta nuevamente.'}',
+      );
     } catch (_) {
       _showMessage('Ocurrió un error inesperado al publicar.');
     } finally {

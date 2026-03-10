@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metroswap/models/post_model.dart';
 import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
@@ -198,7 +199,7 @@ class MaterialDetailScreen extends StatelessWidget {
                                       ),
                                       elevation: 2,
                                     ),
-                                    onPressed: () {
+                                    onPressed: () async {
                                       if (currentPost == null) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
@@ -210,9 +211,116 @@ class MaterialDetailScreen extends StatelessWidget {
                                         return;
                                       }
 
-                                      final tradeId = currentPost.id.isNotEmpty
-                                          ? currentPost.id
-                                          : 'post-${currentPost.ownerUid}';
+                                      final currentUser =
+                                          FirebaseAuth.instance.currentUser;
+                                      if (currentUser == null) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Debes iniciar sesion para intercambiar.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      if (currentUser.uid == currentPost.ownerUid) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'No puedes intercambiar tu propia publicacion.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      final postId = currentPost.id.trim();
+                                      if (postId.isEmpty) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'No se pudo cargar la publicacion.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      final firestore = FirebaseFirestore.instance;
+                                      String tradeId = '';
+
+                                      try {
+                                        final existingExchange = await firestore
+                                            .collection('exchanges')
+                                            .where('postId', isEqualTo: postId)
+                                            .where(
+                                              'requesterUid',
+                                              isEqualTo: currentUser.uid,
+                                            )
+                                            .limit(1)
+                                            .get();
+
+                                        if (existingExchange.docs.isNotEmpty) {
+                                          tradeId = existingExchange.docs.first.id;
+                                        } else {
+                                          final requesterSnapshot = await firestore
+                                              .collection('users')
+                                              .doc(currentUser.uid)
+                                              .get();
+                                          final requesterData = requesterSnapshot.data();
+                                          final requesterName = (requesterData?['name'] ??
+                                                  requesterData?['displayName'] ??
+                                                  currentUser.displayName ??
+                                                  currentUser.email ??
+                                                  'Usuario')
+                                              .toString()
+                                              .trim();
+
+                                          final exchangeRef =
+                                              firestore.collection('exchanges').doc();
+                                          tradeId = exchangeRef.id;
+                                          await exchangeRef.set({
+                                            'id': tradeId,
+                                            'postId': postId,
+                                            'postTitle': currentPost.title,
+                                            'imageUrl': currentPost.imageUrl,
+                                            'method': currentPost.method,
+                                            'ownerUid': currentPost.ownerUid,
+                                            'targetUid': currentPost.ownerUid,
+                                            'requesterUid': currentUser.uid,
+                                            'requesterName': requesterName.isEmpty
+                                                ? 'Usuario'
+                                                : requesterName,
+                                            'status': 'requested',
+                                            'createdAt': FieldValue.serverTimestamp(),
+                                            'updatedAt': FieldValue.serverTimestamp(),
+                                          });
+                                        }
+                                      } on FirebaseException catch (e) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              e.message ??
+                                                  'No se pudo iniciar el intercambio.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      } catch (_) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'No se pudo iniciar el intercambio.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      if (!context.mounted) return;
 
                                       Navigator.push(
                                         context,

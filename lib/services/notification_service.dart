@@ -165,7 +165,7 @@ class NotificationService {
     final ownerUid = (data['ownerUid'] ?? '').toString().trim();
     final status = (data['status'] ?? 'requested').toString().trim().toLowerCase();
     final postTitle = (data['postTitle'] ?? '').toString().trim();
-    final exchangeId = (data['id'] ?? doc.id).toString();
+    final exchangeId = doc.id;
     final postId = (data['postId'] ?? '').toString().trim();
     final requesterName =
         (data['requesterName'] ?? data['actorName'] ?? 'Un usuario')

@@ -184,7 +184,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => ContributionPaymentScreen(
-          tradeId: exchange.id,
+          tradeId: widget.tradeId,
           title: exchange.postTitle,
           imageUrl: exchange.imageUrl,
         ),
@@ -198,7 +198,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => FeedbackScreen(
-          tradeId: exchange.id,
+          tradeId: widget.tradeId,
           postTitle: exchange.postTitle,
         ),
       ),
