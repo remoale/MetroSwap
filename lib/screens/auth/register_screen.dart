@@ -317,7 +317,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Text (label,style: const TextStyle(color: Colors.white,fontSize: 16)),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-          value : _carreraSeleccionada,
+          initialValue : _carreraSeleccionada,
           dropdownColor : const Color(0xFF444444),
           style: const TextStyle(color:Colors.white,fontSize: 16),
           decoration :InputDecoration(
