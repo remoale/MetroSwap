@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
+import 'package:metroswap/models/post_model.dart'; 
 
 class TradeScreen extends StatelessWidget {
-  const TradeScreen({super.key});
+  final PostModel post; 
+  final dynamic user; 
+
+  const TradeScreen({
+    super.key, 
+    required this.post,
+    this.user, 
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +49,15 @@ class TradeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.menu_book, 
-                        size: 150,
-                        color: Colors.grey[400],
-                      ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: post.imageUrl.isNotEmpty
+                          ? Image.network(
+                              post.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => _buildPlaceholderIcon(),
+                            )
+                          : _buildPlaceholderIcon(),
                     ),
                   ),
 
@@ -56,9 +67,9 @@ class TradeScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Libro de Cálculo Diferencial e Integral',
-                          style: TextStyle(
+                        Text(
+                          post.title, 
+                          style: const TextStyle(
                             fontSize: 32, 
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF333333)
@@ -67,11 +78,10 @@ class TradeScreen extends StatelessWidget {
                         const SizedBox(height: 15),
                         GestureDetector(
                           onTap: () {
-                            // Cambiar 'ID_DEL_USUARIO' cuando este listo la publicacion
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const ProfileScreen(uid: 'ID_DEL_USUARIO'),
+                                builder: (context) => ProfileScreen(uid: post.ownerUid),
                               ),
                             );
                           },
@@ -85,15 +95,50 @@ class TradeScreen extends StatelessWidget {
                                   child: Icon(Icons.person, color: Colors.white, size: 20),
                                 ),
                                 const SizedBox(width: 10),
-                                Text(
-                                  'Daniela Pacheco', // Cambiar por el nombre real cuando este lo de publicar
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.blue[700],
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: Colors.blue[700]
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      post.ownerName, 
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue[700],
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: Colors.blue[700]
+                                      ),
+                                    ),
+                                    if (user != null) ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            '${user!.reputation}',
+                                            style: const TextStyle(
+                                              fontSize: 16, 
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFFF9800)
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          const Icon(
+                                            Icons.star,
+                                            color: Color.fromARGB(242, 241, 255, 52),
+                                            size: 18, 
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '(${user!.tradesCount})',
+                                            style: const TextStyle(
+                                              fontSize: 14, 
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ]
+                                  ],
                                 ),
                               ],
                             ),
@@ -104,9 +149,9 @@ class TradeScreen extends StatelessWidget {
 
                         Row(
                           children: [
-                            _buildInfoBadge('Categoría', 'Ingeniería'),
+                            _buildInfoBadge('Área', post.knowledgeArea), 
                             const SizedBox(width: 30),
-                            _buildInfoBadge('Método', 'Intercambio'),
+                            _buildInfoBadge('Método', post.method), 
                           ],
                         ),
 
@@ -127,9 +172,9 @@ class TradeScreen extends StatelessWidget {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
-                            'Libro en excelente estado, usado solo durante un trimestre. Tiene algunas anotaciones a lápiz en los primeros capítulos, pero nada que impida la lectura. Busco a cambio material de Física 1 o implementos de dibujo técnico.',
-                            style: TextStyle(
+                          child: Text(
+                            post.description,
+                            style: const TextStyle(
                               fontSize: 16,
                               color: Colors.black87,
                               height: 1.5,
@@ -152,7 +197,6 @@ class TradeScreen extends StatelessWidget {
                               elevation: 2,
                             ),
                             onPressed: () {
-                              // Aquí irá la lógica para iniciar el tradeo luego
                             },
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -182,6 +226,16 @@ class TradeScreen extends StatelessWidget {
             const MetroSwapFooter(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderIcon() {
+    return Center(
+      child: Icon(
+        Icons.menu_book, 
+        size: 150,
+        color: Colors.grey[400],
       ),
     );
   }
