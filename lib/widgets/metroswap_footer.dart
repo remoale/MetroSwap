@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MetroSwapFooter extends StatefulWidget {
   const MetroSwapFooter({super.key});
@@ -10,6 +9,7 @@ class MetroSwapFooter extends StatefulWidget {
 }
 
 class _MetroSwapFooterState extends State<MetroSwapFooter> {
+  static const String _adminEmail = 'administrador.metroswap@correo.unimet.edu.ve';
   bool _isAdmin = false;
   // Mantenemos el color gris original para usuarios normales
   final Color _colorOriginal = const Color(0xFF333333); 
@@ -19,28 +19,8 @@ class _MetroSwapFooterState extends State<MetroSwapFooter> {
   @override
   void initState() {
     super.initState();
-    _verificarRolAdmin();
-  }
-
-  Future<void> _verificarRolAdmin() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      try {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid)
-            .get();
-
-        if (doc.exists && mounted) {
-          final isAdminUser = doc.data()?['role']?.toString().toLowerCase() == 'admin';
-          setState(() {
-            _isAdmin = isAdminUser;
-          });
-        }
-      } catch (e) {
-        debugPrint("Error verificando admin en Footer: $e");
-      }
-    }
+    final email = FirebaseAuth.instance.currentUser?.email?.trim().toLowerCase();
+    _isAdmin = email == _adminEmail;
   }
 
   @override

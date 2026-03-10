@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:metroswap/screens/admin/admin_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:metroswap/screens/about/about_screen.dart';
+import 'package:metroswap/screens/admin/admin_screen.dart';
 import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:metroswap/screens/notifications/notifications_screen.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
-import 'package:metroswap/screens/publish/publish_screen.dart'; 
+import 'package:metroswap/screens/publish/publish_screen.dart';
 import 'package:metroswap/services/auth_service.dart';
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
@@ -32,6 +32,9 @@ class MetroSwapNavbar extends StatefulWidget {
 }
 
 class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
+  static const String _adminEmail =
+      'administrador.metroswap@correo.unimet.edu.ve';
+
   bool _isAdmin = false;
   final Color _colorOriginal = const Color(0xFF2C2C2C);
   final Color _colorAdmin = const Color(0xFFC93C20);
@@ -39,28 +42,8 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
   @override
   void initState() {
     super.initState();
-    _checkAdminRole();
-  }
-
-  Future<void> _checkAdminRole() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      try {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid)
-            .get();
-
-        if (doc.exists && mounted) {
-          final isAdminUser = doc.data()?['role']?.toString().toLowerCase() == 'admin';
-          setState(() {
-            _isAdmin = isAdminUser;
-          });
-        }
-      } catch (e) {
-        debugPrint("Error verificando admin en Navbar: $e");
-      }
-    }
+    final email = FirebaseAuth.instance.currentUser?.email?.trim().toLowerCase();
+    _isAdmin = email == _adminEmail;
   }
 
   void _navigateToAdmin(BuildContext context) {
@@ -83,7 +66,11 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
     );
   }
 
-  Widget _buildNotificationsButton(BuildContext context, bool isNotifications, String uid) {
+  Widget _buildNotificationsButton(
+    BuildContext context,
+    bool isNotifications,
+    String uid,
+  ) {
     final unreadStream = FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
@@ -100,19 +87,29 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
           icon: Stack(
             clipBehavior: Clip.none,
             children: [
-              const Icon(Icons.notifications_none, color: Colors.white, size: 28),
+              const Icon(
+                Icons.notifications_none,
+                color: Colors.white,
+                size: 28,
+              ),
               if (unreadCount > 0)
                 Positioned(
                   right: -6,
                   top: -6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red.shade600,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.white, width: 1),
                     ),
-                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
                     child: Text(
                       unreadCount > 99 ? '99+' : '$unreadCount',
                       textAlign: TextAlign.center,
@@ -131,7 +128,9 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               : () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
                   );
                 },
         );
@@ -148,7 +147,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
 
     return Container(
       height: 85,
-      color: _isAdmin ? _colorAdmin : _colorOriginal, 
+      color: _isAdmin ? _colorAdmin : _colorOriginal,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: [
@@ -158,13 +157,12 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               color: Colors.white,
             ),
           ),
-          // * NUEVO CÓDIGO AQUÍ: Mensaje de "Bienvenido admin" *
           if (_isAdmin) ...[
-            const SizedBox(width: 15), // Separación del logo
+            const SizedBox(width: 15),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2), // Un fondo semi-transparente elegante
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
@@ -178,7 +176,6 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               ),
             ),
           ],
-          
           if (!isHome) ...[
             const SizedBox(width: 24),
             Expanded(
@@ -234,9 +231,8 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => isLoggedIn
-                            ? const HomeScreen()
-                            : const LandingScreen(),
+                        builder: (_) =>
+                            isLoggedIn ? const HomeScreen() : const LandingScreen(),
                       ),
                     );
                   },
@@ -253,14 +249,16 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                 ElevatedButton.icon(
                   onPressed: () => _handleSignOut(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isAdmin ? const Color(0xFF2C2C2C) : const Color(0xFFFF5C00),
+                    backgroundColor: _isAdmin
+                        ? const Color(0xFF2C2C2C)
+                        : const Color(0xFFFF5C00),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   icon: const Icon(Icons.exit_to_app, size: 18),
-                  label: const Text("Cerrar sesion"),
+                  label: const Text('Cerrar sesion'),
                 ),
               ],
               if (widget.showNotificationsButton && isLoggedIn) ...[
@@ -274,7 +272,11 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               if (widget.showProfileButton && isLoggedIn) ...[
                 const SizedBox(width: 10),
                 IconButton(
-                  icon: const Icon(Icons.account_circle, color: Colors.white70, size: 35),
+                  icon: const Icon(
+                    Icons.account_circle,
+                    color: Colors.white70,
+                    size: 35,
+                  ),
                   onPressed: () {
                     final currentUser = FirebaseAuth.instance.currentUser;
                     if (currentUser != null) {

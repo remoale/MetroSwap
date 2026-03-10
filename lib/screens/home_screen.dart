@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/post_model.dart';
+import 'package:metroswap/screens/exchange/material_detail_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
@@ -174,6 +175,7 @@ class HomeScreen extends StatelessWidget {
                             return results.map((data) {
                               final title =
                                   data['title']?.toString() ?? 'Sin titulo';
+                              final post = PostModel.fromMap(data);
                               return ListTile(
                                 leading: const Icon(Icons.book),
                                 title: Text(title),
@@ -183,8 +185,9 @@ class HomeScreen extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          ResultDetailScreen(data: data),
+                                      builder: (context) => MaterialDetailScreen(
+                                        post: post,
+                                      ),
                                     ),
                                   );
                                 },
