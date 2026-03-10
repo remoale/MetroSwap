@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/post_model.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
@@ -292,7 +293,15 @@ class ResultDetailScreen extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   if (imageUrl != null && imageUrl.isNotEmpty)
-                    Image.network(imageUrl, fit: BoxFit.cover)
+                    Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      webHtmlElementStrategy: kIsWeb
+                          ? WebHtmlElementStrategy.prefer
+                          : WebHtmlElementStrategy.never,
+                      errorBuilder: (context, error, stackTrace) =>
+                          Container(color: Colors.blueGrey),
+                    )
                   else
                     Container(color: Colors.blueGrey),
                   const DecoratedBox(
