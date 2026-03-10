@@ -23,23 +23,27 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
   // --- OBTENER PUBLICACIONES DE FIREBASE ---
   Future<void> _fetchPosts() async {
     try {
-      // Nota: Asumimos que tu colección se llama 'posts'. Si se llama distinto, cámbialo aquí.
       final postsSnap = await FirebaseFirestore.instance.collection('posts').get();
       final List<Map<String, dynamic>> loadedPosts = [];
 
       for (var doc in postsSnap.docs) {
         final data = doc.data();
         
-        // Formateo de fecha por si viene como Timestamp desde Firebase
+        // Formateo de fecha
         String dateStr = 'Sin fecha';
         if (data['createdAt'] != null) {
           if (data['createdAt'] is Timestamp) {
             DateTime dt = (data['createdAt'] as Timestamp).toDate();
-            // Formato DD/MM/AAAA
             dateStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
           } else {
             dateStr = data['createdAt'].toString();
           }
+        }
+
+        // TRADUCCIÓN AUTOMÁTICA DEL ESTADO
+        String rawStatus = data['status'] ?? 'Activo';
+        if (rawStatus.toLowerCase() == 'active') {
+          rawStatus = 'Activo';
         }
 
         loadedPosts.add({
@@ -47,7 +51,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
           'title': data['title'] ?? data['productName'] ?? 'Publicación sin título',
           'author': data['authorEmail'] ?? data['email'] ?? 'Autor desconocido',
           'date': dateStr,
-          'status': data['status'] ?? 'Disponible',
+          'status': rawStatus,
         });
       }
 
@@ -67,7 +71,6 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
 
   // --- ELIMINAR PUBLICACIÓN ---
   Future<void> _deletePost(String postId, String title) async {
-    // 1. Mostrar diálogo de confirmación
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -91,7 +94,6 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
       ),
     );
 
-    // 2. Si confirma, borrar de Firebase y de la tabla
     if (confirm == true) {
       try {
         await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
@@ -171,7 +173,6 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                           ),
                           const SizedBox(height: 20),
                           
-                          // Tabla de datos dinámica
                           SizedBox(
                             width: double.infinity,
                             child: _posts.isEmpty 
@@ -205,7 +206,8 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                             decoration: BoxDecoration(
-                                              color: post['status'] == 'Disponible' 
+                                              // LÓGICA DE COLORES UNIFICADA
+                                              color: post['status'] == 'Activo' 
                                                   ? Colors.green.withValues(alpha: 0.1) 
                                                   : Colors.orange.withValues(alpha: 0.1),
                                               borderRadius: BorderRadius.circular(10),
@@ -213,7 +215,8 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                             child: Text(
                                               post['status'],
                                               style: TextStyle(
-                                                color: post['status'] == 'Disponible' ? Colors.green[700] : Colors.orange[700],
+                                                // LÓGICA DE COLORES UNIFICADA
+                                                color: post['status'] == 'Activo' ? Colors.green[700] : Colors.orange[700],
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,
                                               ),
@@ -224,7 +227,6 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                           IconButton(
                                             icon: const Icon(Icons.delete_outline, color: Colors.red),
                                             tooltip: 'Eliminar publicación',
-                                            // Conectamos el botón con nuestra función _deletePost
                                             onPressed: () => _deletePost(post['id'], post['title']),
                                           ),
                                         ),

@@ -24,6 +24,9 @@ class _AdminScreenState extends State<AdminScreen> {
   
   Map<String, int> _careerCounts = {};
 
+  // ARREGLO PARA LA ACTIVIDAD SEMANAL (De Lun a Dom)
+  List<double> _weeklyActivity = List.filled(7, 0.0);
+
   final List<Color> _chartColors = [
     const Color(0xFFEF476F), 
     const Color(0xFFFFD166), 
@@ -42,6 +45,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _fetchDashboardData() async {
     try {
+      // 1. OBTENER USUARIOS
       final usersSnap = await FirebaseFirestore.instance.collection('users').get();
       
       int memberCount = usersSnap.docs.length;
@@ -60,16 +64,64 @@ class _AdminScreenState extends State<AdminScreen> {
         }
       }
 
-      final postsSnap = await FirebaseFirestore.instance.collection('posts').count().get();
+      // 2. OBTENER PUBLICACIONES Y CALCULAR ACTIVIDAD SEMANAL
+      final postsSnap = await FirebaseFirestore.instance.collection('posts').get();
+      int productsCount = postsSnap.docs.length;
+      List<double> tempWeeklyActivity = List.filled(7, 0.0);
+
+      for (var doc in postsSnap.docs) {
+        final data = doc.data();
+        if (data['createdAt'] != null) {
+          DateTime dt;
+          if (data['createdAt'] is Timestamp) {
+            dt = (data['createdAt'] as Timestamp).toDate();
+          } else {
+            dt = DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now();
+          }
+          
+          int dayIndex = dt.weekday - 1; // 1 (Lun) a 7 (Dom) -> 0 a 6
+          if (dayIndex >= 0 && dayIndex < 7) {
+            tempWeeklyActivity[dayIndex] += 1;
+          }
+        }
+      }
+
+      // 3. OBTENER TOTAL DE INTERCAMBIOS Y SUMAR CONTRIBUCIONES (SOLO COMPLETADOS)
+      int exchangesCount = 0;
+      double tempContributions = 0.0;
+      
+      try {
+        final exchangesSnap = await FirebaseFirestore.instance.collection('exchanges').get();
+
+        for (var doc in exchangesSnap.docs) {
+          final data = doc.data();
+          
+          // Buscamos el campo de estado ('status' o 'estado')
+          String status = (data['status'] ?? data['estado'] ?? '').toString().toLowerCase();
+          
+          // Si el estado es "completado" o "completed", lo contamos
+          if (status == 'completado' || status == 'completed') {
+            exchangesCount++; // Aumentamos el contador de intercambios
+            
+            // Solo si está completado, sumamos el dinero (si es que tiene el campo 'price')
+            if (data.containsKey('price') && data['price'] != null) {
+              tempContributions += (data['price'] as num).toDouble();
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint("Error al leer la colección exchanges: $e");
+      }
 
       if (mounted) {
         setState(() {
           _totalMembers = memberCount;
           _suspendedUsers = suspendedCount; 
           _careerCounts = tempCareerCounts;
-          _totalProducts = postsSnap.count ?? 0;
-          _totalExchanges = 0; 
-          _totalContributions = 0.0; 
+          _totalProducts = productsCount;
+          _weeklyActivity = tempWeeklyActivity;
+          _totalExchanges = exchangesCount; 
+          _totalContributions = tempContributions; 
           _isLoading = false;
         });
       }
@@ -81,6 +133,15 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
+  // FUNCIÓN PARA CALCULAR EL TECHO DEL GRÁFICO DINÁMICAMENTE
+  double _getMaxY() {
+    double maxVal = 10.0; 
+    for (var val in _weeklyActivity) {
+      if (val > maxVal) maxVal = val;
+    }
+    return maxVal + 2.0; 
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,8 +150,7 @@ class _AdminScreenState extends State<AdminScreen> {
         children: [
           const MetroSwapNavbar(developmentNav: false, heading: 'Dashboard'),
           
-        
-          const SizedBox(height: 20), // Un pequeño espacio para respirar
+          const SizedBox(height: 20),
 
           Expanded(
             child: _isLoading
@@ -106,7 +166,6 @@ class _AdminScreenState extends State<AdminScreen> {
                             children: [
                               Row(
                                 children: [
-                                  // Tarjeta de productos la cual llevas a posts
                                   Expanded(
                                     child: _buildKpiCard(
                                       'Total productos', 
@@ -116,7 +175,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 15),
-                                  // TARJETA DE MIEMBROS -> LLEVA A PERFILES
                                   Expanded(
                                     child: _buildKpiCard(
                                       'Miembros', 
@@ -126,7 +184,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 15),
-                                  // tarjeta de suspendidos -> lleva a suspendidos
                                   Expanded(
                                     child: _buildKpiCard(
                                       'Suspendidos', 
@@ -135,7 +192,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       onTap: () => Navigator.push(
                                         context, 
                                         MaterialPageRoute(
-                                          builder: (context) => const ManageProfilesScreen(showOnlySuspended: true) // ¡AQUÍ ESTÁ LA MAGIA!
+                                          builder: (context) => const ManageProfilesScreen(showOnlySuspended: true) 
                                         ),
                                       ),
                                     ),
@@ -171,7 +228,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text(
-                                      'Actividad Semanal (Simulada)',
+                                      'Actividad Semanal',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -182,6 +239,23 @@ class _AdminScreenState extends State<AdminScreen> {
                                     Expanded(
                                       child: LineChart(
                                         LineChartData(
+                                          lineTouchData: LineTouchData(
+                                            touchTooltipData: LineTouchTooltipData(
+                                              getTooltipColor: (touchedSpot) => Colors.black87, 
+                                              getTooltipItems: (touchedSpots) {
+                                                return touchedSpots.map((LineBarSpot touchedSpot) {
+                                                  return LineTooltipItem(
+                                                    touchedSpot.y.toInt().toString(),
+                                                    const TextStyle(
+                                                      color: Colors.white, 
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  );
+                                                }).toList();
+                                              },
+                                            ),
+                                          ),
                                           gridData: FlGridData(
                                             show: true,
                                             drawVerticalLine: false,
@@ -228,12 +302,17 @@ class _AdminScreenState extends State<AdminScreen> {
                                             ),
                                           ),
                                           borderData: FlBorderData(show: false),
-                                          minX: 0, maxX: 6, minY: 0, maxY: 10,
+                                          minX: 0, maxX: 6, minY: 0, maxY: _getMaxY(), 
                                           lineBarsData: [
                                             LineChartBarData(
-                                              spots: const [
-                                                FlSpot(0, 3), FlSpot(1, 5), FlSpot(2, 2), FlSpot(3, 8), 
-                                                FlSpot(4, 4), FlSpot(5, 7), FlSpot(6, 9), 
+                                              spots: [
+                                                FlSpot(0, _weeklyActivity[0]), 
+                                                FlSpot(1, _weeklyActivity[1]), 
+                                                FlSpot(2, _weeklyActivity[2]), 
+                                                FlSpot(3, _weeklyActivity[3]), 
+                                                FlSpot(4, _weeklyActivity[4]), 
+                                                FlSpot(5, _weeklyActivity[5]), 
+                                                FlSpot(6, _weeklyActivity[6]), 
                                               ],
                                               isCurved: true,
                                               color: const Color(0xFFC93C20), 
@@ -352,7 +431,6 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  // Ahora acepta un 'onTap' y usa 'InkWell' para ser clickable 
   Widget _buildKpiCard(String title, String value, IconData icon, {bool isLarge = false, VoidCallback? onTap}) {
     return Container(
       decoration: BoxDecoration(
@@ -361,11 +439,11 @@ class _AdminScreenState extends State<AdminScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Material(
-        color: Colors.transparent, // Necesario para que el InkWell muestre el efecto sobre el fondo blanco
+        color: Colors.transparent, 
         child: InkWell(
-          onTap: onTap, // Aquí le pasamos la acción (a dónde ir)
+          onTap: onTap, 
           borderRadius: BorderRadius.circular(15),
-          hoverColor: Colors.orange.withValues(alpha: 0.05), // Colorcito suave al pasar el mouse
+          hoverColor: Colors.orange.withValues(alpha: 0.05), 
           child: Padding(
             padding: EdgeInsets.all(isLarge ? 25.0 : 15.0),
             child: Column(
@@ -381,7 +459,6 @@ class _AdminScreenState extends State<AdminScreen> {
                     const SizedBox(width: 10),
                     Expanded(child: Text(title, style: TextStyle(color: Colors.grey[700], fontSize: isLarge ? 16 : 12), maxLines: 2)),
                     
-                    // Si la tarjeta tiene una acción (onTap), mostramos una flechita sutil
                     if (onTap != null)
                       Icon(Icons.chevron_right, color: Colors.grey.withValues(alpha: 0.5), size: 20),
                   ],

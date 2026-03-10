@@ -158,7 +158,7 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
                               _showingSuspended ? 'Usuarios Suspendidos' : 'Directorio de Miembros',
                               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                             ),
-                            // ELIMINAMOS EL BOTÓN DE "VER TODOS" QUE ESTABA AQUÍ
+                            
                             OutlinedButton.icon(
                               onPressed: () => Navigator.pop(context),
                               icon: const Icon(Icons.arrow_back),
@@ -209,7 +209,10 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
                                               ? const Color(0xFFC93C20).withValues(alpha: 0.2)
                                               : Colors.grey.withValues(alpha: 0.3),
                                             child: Text(
-                                              user['name'].toString().substring(0, 1).toUpperCase(),
+                                              // NUEVA LÓGICA SEGURA:
+                                              (user['name'] != null && user['name'].toString().trim().isNotEmpty)
+                                                  ? user['name'].toString().trim().substring(0, 1).toUpperCase()
+                                                  : 'U', // 'U' de Usuario si el nombre está vacío
                                               style: TextStyle(
                                                 color: isActive ? const Color(0xFFC93C20) : Colors.grey[700], 
                                                 fontWeight: FontWeight.bold
