@@ -20,19 +20,18 @@ class _AdminScreenState extends State<AdminScreen> {
   int _totalProducts = 0;
   int _totalExchanges = 0;
   double _totalContributions = 0.0;
+  int _suspendedUsers = 0; 
   
-  // Mapa para guardar cuántos usuarios hay por cada carrera
   Map<String, int> _careerCounts = {};
 
-  // Paleta de colores para el gráfico 
   final List<Color> _chartColors = [
-    const Color(0xFFEF476F), // Rosa/Rojo
-    const Color(0xFFFFD166), // Amarillo
-    const Color(0xFF06D6A0), // Verde
-    const Color(0xFF118AB2), // Azul
-    const Color(0xFF073B4C), // Azul oscuro
-    const Color(0xFFFF9F1C), // Naranja
-    const Color(0xFF9D4EDD), // Morado
+    const Color(0xFFEF476F), 
+    const Color(0xFFFFD166), 
+    const Color(0xFF06D6A0), 
+    const Color(0xFF118AB2), 
+    const Color(0xFF073B4C), 
+    const Color(0xFFFF9F1C), 
+    const Color(0xFF9D4EDD), 
   ];
 
   @override
@@ -43,30 +42,33 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _fetchDashboardData() async {
     try {
-      // 1. Obtenemos todos los usuarios para contarlos y agrupar sus carreras
       final usersSnap = await FirebaseFirestore.instance.collection('users').get();
       
       int memberCount = usersSnap.docs.length;
+      int suspendedCount = 0; 
       Map<String, int> tempCareerCounts = {};
 
       for (var doc in usersSnap.docs) {
         final data = doc.data();
-        // Leemos el campo 'career' exactamente como está en el UserModel
+        
         String career = (data['career'] ?? 'No especificada').toString().trim();
         if (career.isEmpty) career = 'No especificada';
-
         tempCareerCounts[career] = (tempCareerCounts[career] ?? 0) + 1;
+
+        if (data['status'] == 'Suspendido') {
+          suspendedCount++;
+        }
       }
 
-      // 2. Contar total de publicaciones 
       final postsSnap = await FirebaseFirestore.instance.collection('posts').count().get();
 
       if (mounted) {
         setState(() {
           _totalMembers = memberCount;
+          _suspendedUsers = suspendedCount; 
           _careerCounts = tempCareerCounts;
           _totalProducts = postsSnap.count ?? 0;
-          _totalExchanges = 0; // Pendiente para cuando tengas la colección
+          _totalExchanges = 0; 
           _totalContributions = 0.0; 
           _isLoading = false;
         });
@@ -87,71 +89,57 @@ class _AdminScreenState extends State<AdminScreen> {
         children: [
           const MetroSwapNavbar(developmentNav: false, heading: 'Dashboard'),
           
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ManageProfilesScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.people_alt),
-                  label: const Text('Gestionar Perfiles'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2C2C2C),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ManagePostsScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.library_books),
-                  label: const Text('Gestionar Publicaciones'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC93C20),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        
+          const SizedBox(height: 20), // Un pequeño espacio para respirar
 
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.all(30.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 10.0),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Kpis y grafico semanal 
                         Expanded(
                           flex: 5,
                           child: Column(
                             children: [
                               Row(
                                 children: [
-                                  Expanded(child: _buildKpiCard('Total productos', _totalProducts.toString(), Icons.computer)),
+                                  // Tarjeta de productos la cual llevas a posts
+                                  Expanded(
+                                    child: _buildKpiCard(
+                                      'Total productos', 
+                                      _totalProducts.toString(), 
+                                      Icons.computer,
+                                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManagePostsScreen())),
+                                    ),
+                                  ),
                                   const SizedBox(width: 15),
-                                  Expanded(child: _buildKpiCard('Miembros', _totalMembers.toString(), Icons.person)),
+                                  // TARJETA DE MIEMBROS -> LLEVA A PERFILES
+                                  Expanded(
+                                    child: _buildKpiCard(
+                                      'Miembros', 
+                                      _totalMembers.toString(), 
+                                      Icons.person,
+                                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageProfilesScreen())),
+                                    ),
+                                  ),
                                   const SizedBox(width: 15),
-                                  Expanded(child: _buildKpiCard('Activos ahora', '1', Icons.monitor_heart)),
+                                  // tarjeta de suspendidos -> lleva a suspendidos
+                                  Expanded(
+                                    child: _buildKpiCard(
+                                      'Suspendidos', 
+                                      _suspendedUsers.toString(), 
+                                      Icons.person_off,
+                                      onTap: () => Navigator.push(
+                                        context, 
+                                        MaterialPageRoute(
+                                          builder: (context) => const ManageProfilesScreen(showOnlySuspended: true) // ¡AQUÍ ESTÁ LA MAGIA!
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 15),
@@ -164,10 +152,9 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                               const SizedBox(height: 15),
                               
-                              // Nuevo grafico de lineas
                               Container(
                                 width: double.infinity,
-                                height: 260, // Altura ajustada para el gráfico
+                                height: 260, 
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -200,10 +187,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             drawVerticalLine: false,
                                             horizontalInterval: 2,
                                             getDrawingHorizontalLine: (value) {
-                                              return FlLine(
-                                                color: Colors.grey.withValues(alpha: 0.2),
-                                                strokeWidth: 1,
-                                              );
+                                              return FlLine(color: Colors.grey.withValues(alpha: 0.2), strokeWidth: 1);
                                             },
                                           ),
                                           titlesData: FlTitlesData(
@@ -228,7 +212,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                                     case 6: text = const Text('Dom', style: style); break;
                                                     default: text = const Text('', style: style); break;
                                                   }
-                                                  // CORRECCIÓN APLICADA: meta: meta
                                                   return SideTitleWidget(meta: meta, child: text);
                                                 },
                                               ),
@@ -239,32 +222,21 @@ class _AdminScreenState extends State<AdminScreen> {
                                                 interval: 2,
                                                 reservedSize: 30,
                                                 getTitlesWidget: (value, meta) {
-                                                  return Text(
-                                                    value.toInt().toString(),
-                                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                                                  );
+                                                  return Text(value.toInt().toString(), style: const TextStyle(color: Colors.grey, fontSize: 12));
                                                 },
                                               ),
                                             ),
                                           ),
                                           borderData: FlBorderData(show: false),
-                                          minX: 0,
-                                          maxX: 6,
-                                          minY: 0,
-                                          maxY: 10,
+                                          minX: 0, maxX: 6, minY: 0, maxY: 10,
                                           lineBarsData: [
                                             LineChartBarData(
                                               spots: const [
-                                                FlSpot(0, 3), // Lunes
-                                                FlSpot(1, 5), // Martes
-                                                FlSpot(2, 2), // Miércoles
-                                                FlSpot(3, 8), // Jueves
-                                                FlSpot(4, 4), // Viernes
-                                                FlSpot(5, 7), // Sábado
-                                                FlSpot(6, 9), // Domingo
+                                                FlSpot(0, 3), FlSpot(1, 5), FlSpot(2, 2), FlSpot(3, 8), 
+                                                FlSpot(4, 4), FlSpot(5, 7), FlSpot(6, 9), 
                                               ],
                                               isCurved: true,
-                                              color: const Color(0xFFC93C20), // Color rojo de MetroSwap
+                                              color: const Color(0xFFC93C20), 
                                               barWidth: 4,
                                               isStrokeCapRound: true,
                                               dotData: const FlDotData(show: true),
@@ -286,7 +258,6 @@ class _AdminScreenState extends State<AdminScreen> {
                         
                         const SizedBox(width: 30),
 
-                        // Grafico de dona real 
                         Expanded(
                           flex: 4,
                           child: Container(
@@ -324,7 +295,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       ),
                                 ),
                                 const SizedBox(height: 20),
-                                _buildLegend(), // Leyenda de colores generada dinámicamente
+                                _buildLegend(), 
                               ],
                             ),
                           ),
@@ -339,7 +310,6 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  // Genera las secciones del gráfico de Dona basado en los datos de Firebase
   List<PieChartSectionData> _getChartSections() {
     List<PieChartSectionData> sections = [];
     int colorIndex = 0;
@@ -361,7 +331,6 @@ class _AdminScreenState extends State<AdminScreen> {
     return sections;
   }
 
-  // Genera la leyenda (los puntitos de colores con el nombre de la carrera)
   Widget _buildLegend() {
     int colorIndex = 0;
     return Wrap(
@@ -383,31 +352,46 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  Widget _buildKpiCard(String title, String value, IconData icon, {bool isLarge = false}) {
+  // Ahora acepta un 'onTap' y usa 'InkWell' para ser clickable 
+  Widget _buildKpiCard(String title, String value, IconData icon, {bool isLarge = false, VoidCallback? onTap}) {
     return Container(
-      padding: EdgeInsets.all(isLarge ? 25.0 : 15.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.orange.withValues(alpha: 0.2)),
-                child: Icon(icon, color: const Color(0xFFFF5C00), size: isLarge ? 28 : 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Text(title, style: TextStyle(color: Colors.grey[700], fontSize: isLarge ? 16 : 12), maxLines: 2)),
-            ],
+      child: Material(
+        color: Colors.transparent, // Necesario para que el InkWell muestre el efecto sobre el fondo blanco
+        child: InkWell(
+          onTap: onTap, // Aquí le pasamos la acción (a dónde ir)
+          borderRadius: BorderRadius.circular(15),
+          hoverColor: Colors.orange.withValues(alpha: 0.05), // Colorcito suave al pasar el mouse
+          child: Padding(
+            padding: EdgeInsets.all(isLarge ? 25.0 : 15.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.orange.withValues(alpha: 0.2)),
+                      child: Icon(icon, color: const Color(0xFFFF5C00), size: isLarge ? 28 : 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(title, style: TextStyle(color: Colors.grey[700], fontSize: isLarge ? 16 : 12), maxLines: 2)),
+                    
+                    // Si la tarjeta tiene una acción (onTap), mostramos una flechita sutil
+                    if (onTap != null)
+                      Icon(Icons.chevron_right, color: Colors.grey.withValues(alpha: 0.5), size: 20),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                Text(value, style: TextStyle(fontSize: isLarge ? 32 : 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+              ],
+            ),
           ),
-          const SizedBox(height: 15),
-          Text(value, style: TextStyle(fontSize: isLarge ? 32 : 24, fontWeight: FontWeight.bold, color: Colors.black87)),
-        ],
+        ),
       ),
     );
   }
