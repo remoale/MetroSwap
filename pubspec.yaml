@@ -40,6 +40,7 @@ flutter:
     - assets/images/derek.png
     - assets/images/equipo_trabajando.png
     - assets/images/fondo_marmol.png
+    - assets/images/Sucess.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
