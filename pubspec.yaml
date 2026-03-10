@@ -17,16 +17,12 @@ dependencies:
   google_sign_in: ^6.2.1
   firebase_storage: ^13.0.6
   image_picker: ^1.2.1
-<<<<<<< HEAD
   paypal_sdk: ^1.0.11
   collection: ^1.18.0
   url_launcher: ^6.2.5
   uni_links: ^0.5.1
-
-
-=======
   font_awesome_flutter: ^10.12.0
->>>>>>> 09f52d5ceac74978ce1cd8d90691c626fe655569
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:

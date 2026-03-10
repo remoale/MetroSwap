@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/screens/auth/login_screen.dart';
-// ¡AQUÍ IMPORTAMOS TU NUEVA PANTALLA!
 import 'package:metroswap/screens/about/about_screen.dart'; 
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
@@ -19,7 +18,7 @@ class LandingScreen extends StatelessWidget {
         title: const MetroSwapBrand(),
         actions: [
           OutlinedButton(
-            // ¡AQUÍ AGREGAMOS LA NAVEGACIÓN AL BOTÓN!
+            
             onPressed: () {
               Navigator.push(
                 context, 
@@ -66,7 +65,7 @@ class LandingScreen extends StatelessWidget {
                 ),
               ),
               child: Container(
-                color: Colors.black.withValues(alpha: 0.2), 
+                color: Colors.orange.withValues(alpha: -8), 
                 child: const Center(
                   child: Text(
                     'Bienvenido a MetroSwap',

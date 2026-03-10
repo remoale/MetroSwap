@@ -19,7 +19,7 @@ class AboutScreen extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                // --- COLUMNA IZQUIERDA (Fondo mármol e integrantes) ---
+                // COLUMNA IZQUIERDA 
                 Expanded(
                   flex: 6, 
                   child: Container(
@@ -64,7 +64,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
 
-                // --- COLUMNA DERECHA (Foto trabajando) ---
+                //  COLUMNA DERECHA 
                 Expanded(
                   flex: 4, 
                   child: Image.asset(
@@ -78,7 +78,7 @@ class AboutScreen extends StatelessWidget {
           ),
 
           // 3. Footer
-          const MetroSwapFooter(), // 2. ¡Reemplazamos el Container por nuestro widget mágico!
+          const MetroSwapFooter(), // 2. Reemplazamos el Container por nuestro widget
         ],
       ),
     );

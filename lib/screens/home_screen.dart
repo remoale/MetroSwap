@@ -90,7 +90,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
-                          Colors.black.withValues(alpha: 0.5),
+                          Colors.orange.withValues(alpha: -8),
                           BlendMode.darken,
                         ),
                       ),
