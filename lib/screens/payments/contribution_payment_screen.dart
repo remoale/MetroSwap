@@ -108,7 +108,7 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
                       webHtmlElementStrategy: kIsWeb
                           ? WebHtmlElementStrategy.prefer
                           : WebHtmlElementStrategy.never,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.image_not_supported_outlined,
                         color: Colors.white70,
                         size: 56,
