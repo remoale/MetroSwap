@@ -34,15 +34,15 @@ class MetroSwapNavbar extends StatefulWidget {
 class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
   bool _isAdmin = false;
   final Color _colorOriginal = const Color(0xFF2C2C2C);
-  final Color _colorAdmin = const Color(0xFFC93C20); // Tu color terracota
+  final Color _colorAdmin = const Color(0xFFC93C20);
 
   @override
   void initState() {
     super.initState();
-    _verificarRolAdmin();
+    _checkAdminRole();
   }
 
-  Future<void> _verificarRolAdmin() async {
+  Future<void> _checkAdminRole() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       try {
@@ -83,6 +83,62 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
     );
   }
 
+  Widget _buildNotificationsButton(BuildContext context, bool isNotifications, String uid) {
+    final unreadStream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('notifications')
+        .where('read', isEqualTo: false)
+        .snapshots();
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: unreadStream,
+      builder: (context, snapshot) {
+        final unreadCount = snapshot.data?.docs.length ?? 0;
+
+        return IconButton(
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(Icons.notifications_none, color: Colors.white, size: 28),
+              if (unreadCount > 0)
+                Positioned(
+                  right: -6,
+                  top: -6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade600,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white, width: 1),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Text(
+                      unreadCount > 99 ? '99+' : '$unreadCount',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: isNotifications
+              ? null
+              : () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                  );
+                },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final normalizedHeading = widget.heading.toLowerCase();
@@ -102,7 +158,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               color: Colors.white,
             ),
           ),
-          // *** NUEVO CÓDIGO AQUÍ: Mensaje de "Bienvenido admin" ***
+          // * NUEVO CÓDIGO AQUÍ: Mensaje de "Bienvenido admin" *
           if (_isAdmin) ...[
             const SizedBox(width: 15), // Separación del logo
             Container(
@@ -209,16 +265,10 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               ],
               if (widget.showNotificationsButton && isLoggedIn) ...[
                 const SizedBox(width: 25),
-                IconButton(
-                  icon: const Icon(Icons.notifications_none, color: Colors.white, size: 28),
-                  onPressed: isNotifications
-                      ? null
-                      : () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                          );
-                        },
+                _buildNotificationsButton(
+                  context,
+                  isNotifications,
+                  FirebaseAuth.instance.currentUser!.uid,
                 ),
               ],
               if (widget.showProfileButton && isLoggedIn) ...[
