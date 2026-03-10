@@ -1,4 +1,8 @@
 class UserModel {
+  static const String roleStudent = 'estudiante';
+  static const String roleProfessor = 'profesor';
+  static const String roleAdmin = 'admin';
+
   final String uid;
   String name;
   String email;
@@ -7,6 +11,9 @@ class UserModel {
   String? career;
   String? studentId;
   List<String>? books;
+  String role;
+  int reputation; 
+  int tradesCount;
 
   UserModel({
     required this.uid,
@@ -17,9 +24,11 @@ class UserModel {
     this.career,
     this.studentId,
     this.books,
+    this.role = roleStudent,
+    this.reputation = 0,
+    this.tradesCount = 0,
   });
 
-  // PROTOTYPE: permite clonar el objeto sin acoplarlo
   UserModel clone() {
     return UserModel(
       uid: uid,
@@ -30,28 +39,37 @@ class UserModel {
       career: career,
       studentId: studentId,
       books: books != null ? List<String>.from(books!) : null,
+      role: role,
+      reputation: reputation,
+      tradesCount: tradesCount,
     );
   }
 
-  // MAPPER: convierte el objeto a un mapa para Firestore
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
       'name': name,
-      'displayName': name,
       'email': email,
       'photoUrl': photoUrl,
       'phone': phone,
       'career': career,
       'studentId': studentId,
       'books': books,
+      'role': role,
+      'reputation': reputation,
+      'tradesCount': tradesCount,
     };
   }
 
-  //Crea un modelo desde Firestore
   factory UserModel.fromMap(Map<String, dynamic> map) {
-    final rawName = map['name'] ?? map['displayName'];
+    final rawName = map['name'];
     final rawPhoto = map['photoUrl'] ?? map['photoURL'];
+    final rawRole = (map['role'] ?? '').toString().toLowerCase();
+    final normalizedRole = rawRole == roleAdmin
+        ? roleAdmin
+        : rawRole == roleProfessor
+            ? roleProfessor
+            : roleStudent;
     return UserModel(
       uid: (map['uid'] ?? '').toString(),
       name: (rawName ?? 'Usuario').toString(),
@@ -61,6 +79,9 @@ class UserModel {
       career: map['career'],
       studentId: (map['studentId'] ?? map['carnet'])?.toString(),
       books: map['books'] != null ? List<String>.from(map['books']) : null,
+      role: normalizedRole,
+      reputation: map['reputation'] ?? 0, 
+      tradesCount: map['tradesCount'] ?? 0, 
     );
   }
 }

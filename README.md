@@ -1,16 +1,15 @@
-# metroswap
+# MetroSwap
 
+Plataforma que permite a los estudiantes y docentes publicar, buscar y gestionar el intercambio o venta de recursos educativos.
 
+---
 
-## Getting Started
+<a href="https://metroswap-73a05.web.app/">
+  <img width="1705" height="1170" alt="image" src="https://github.com/user-attachments/assets/b8e887a1-6c70-402b-aa58-153b47057a6a" />
+</a>
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Tech Stack
+- Flutter
+- Firebase (Authentication, FireStore, Storage, Hosting)

@@ -6,7 +6,8 @@ import '../../models/user_model.dart';
 import '../../services/storage_service.dart';
 import 'edit_profile_screen.dart';
 import '../../widgets/profile_avatar.dart'; 
-import '../landing_page.dart';
+import '../../widgets/metroswap_navbar.dart';
+import '../../widgets/metroswap_footer.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -31,6 +32,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> loadUser() async {
     final data = await controller.loadUser(widget.uid);
+    if (data != null) {
+      final resolvedPhotoUrl = await storage.getProfileImageDownloadUrl(widget.uid) ??
+          await storage.resolveImageUrl(data.photoUrl);
+      data.photoUrl = resolvedPhotoUrl;
+    }
+
     Uint8List? imageBytes;
     if (!kIsWeb) {
       imageBytes = await storage.getProfileImageBytes(widget.uid);
@@ -86,7 +93,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              _buildTopBar(context),
+              const MetroSwapNavbar(
+                developmentNav: true,
+                heading: 'Mi Perfil',
+                showLogoutButton: true,
+                showNotificationsButton: false,
+                showProfileButton: false,
+              ),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -116,15 +129,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
-                                      child: Text(
-                                        user!.name,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 40,
-                                          color: Color(0xFF54515A),
-                                          fontWeight: FontWeight.w400,
-                                        ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            user!.name,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 40,
+                                              color: Color(0xFF54515A),
+                                              fontWeight: FontWeight.w400,
+                                              height: 1.1, 
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                '${user!.reputation}', 
+                                                style: const TextStyle(
+                                                  fontSize: 22, 
+                                                  fontWeight: FontWeight.bold, 
+                                                  color: Color(0xFFFF9800)
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              const Icon(
+                                                Icons.star, 
+                                                color: Color.fromARGB(242, 241, 255, 52), 
+                                                size: 24,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '(${user!.tradesCount})', 
+                                                style: const TextStyle(
+                                                  fontSize: 18, 
+                                                  fontWeight: FontWeight.w500, 
+                                                  color: Colors.black
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -175,39 +222,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               ],
                                             ),
                                       const SizedBox(height: 24),
-                                      SizedBox(
-                                        width: 190,
-                                        child: ElevatedButton(
-                                          onPressed: () async {
-                                            final updated =
-                                                await Navigator.push<bool>(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    EditProfileScreen(
-                                                  user: user!,
+                                      if (FirebaseAuth.instance.currentUser?.uid == widget.uid)
+                                        SizedBox(
+                                          width: 190,
+                                          child: ElevatedButton(
+                                            onPressed: () async {
+                                              final updated =
+                                                  await Navigator.push<bool>(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      EditProfileScreen(
+                                                    user: user!,
+                                                  ),
                                                 ),
-                                              ),
-                                            );
-                                            if (updated == true) {
-                                              setState(
-                                                () => isLoading = true,
                                               );
-                                              await loadUser();
-                                            }
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                const Color(0xFFFF5C00),
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
+                                              if (updated == true) {
+                                                setState(
+                                                  () => isLoading = true,
+                                                );
+                                                await loadUser();
+                                              }
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  const Color(0xFFFF5C00),
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
                                             ),
+                                            child: const Text("Editar perfil"),
                                           ),
-                                          child: const Text("Editar perfil"),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -220,66 +268,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
               ),
-              Container(
-                width: double.infinity,
-                color: const Color(0xFF2C2C2C),
-                padding: const EdgeInsets.all(20),
-                child: const Text(
-                  "© 2026 MetroSwap - Universidad Metropolitana.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ),
+              const MetroSwapFooter(),
             ],
           ),
         ),
       );
-  }
-
-  Widget _buildTopBar(BuildContext context) {
-    return Container(
-      height: 85,
-      color: const Color(0xFF2C2C2C),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        children: [
-          Image.asset(
-            "assets/images/logo_metroswap.png",
-            height: 45,
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text(
-              "MetroSwap",
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 26,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const LandingPage(),
-                ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white, width: 1.4),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text("Inicio"),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildLeftInfo() {

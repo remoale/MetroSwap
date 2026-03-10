@@ -1,10 +1,12 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart'; 
 import '../../widgets/profile_avatar.dart'; 
-import '../landing_page.dart';
+import '../../widgets/metroswap_navbar.dart';
+import '../../widgets/metroswap_footer.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -15,6 +17,29 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  static const List<String> _unimetCareers = [
+    'Ciencias Administrativas',
+    'Comunicación Social y Empresarial',
+    'Contaduría Pública',
+    'Derecho',
+    'Economía Empresarial',
+    'Educación',
+    'Estudios Internacionales',
+    'Estudios Liberales',
+    'Estudios simultáneos',
+    'Idiomas Modernos',
+    'Ingeniería Civil',
+    'Ingeniería de Sistemas',
+    'Ingeniería Eléctrica',
+    'Ingeniería Mecánica',
+    'Ingeniería Producción',
+    'Ingeniería Química',
+    'Matemáticas Industriales',
+    'Psicología',
+    'TSU en Desarrollo de Sistemas Inteligentes',
+    'Turismo Sostenible',
+  ];
+
   final controller = ProfileController();
   final picker = ImagePicker();
   bool _isSaving = false;
@@ -28,6 +53,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController careerCtrl;
   late TextEditingController studentIdCtrl;
   late TextEditingController booksCtrl;
+  String? selectedCareer;
 
   @override
   void initState() {
@@ -43,6 +69,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     booksCtrl = TextEditingController( 
       text: editableUser.books?.join(", ") ?? "",
     );
+    if (_isStudentRole(editableUser.role)) {
+      final currentCareer = editableUser.career?.trim();
+      if (currentCareer != null && _unimetCareers.contains(currentCareer)) {
+        selectedCareer = currentCareer;
+      }
+    }
   }
 
   @override
@@ -67,12 +99,58 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> save() async {
+    final nombre = nameCtrl.text.trim();
+    final formatoNombre = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+(\s+[a-zA-ZáéíóúÁÉÍÓÚñÑ]+)+$');
+    
+    if (!formatoNombre.hasMatch(nombre)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Debe ingresar al menos nombre y apellido, sin dígitos numéricos."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return; 
+    }
+
+    final telefono = phoneCtrl.text.trim();
+    final formatoTelefono = RegExp(r'^[0-9]{10,12}$'); 
+    
+    if (!formatoTelefono.hasMatch(telefono)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Ingrese un número de teléfono válido (solo 10 o 12 dígitos numéricos, sin puntos ni guiones)."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    final carnet = studentIdCtrl.text.trim();
+    final formatoCarnet = RegExp(r'^[0-9]{6,15}$');
+    
+    if (carnet.isEmpty || !formatoCarnet.hasMatch(carnet)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Ingrese un carnet válido (entre 6 y 15 dígitos numéricos)."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     if (_isSaving) return;
     setState(() => _isSaving = true);
 
     editableUser.name = nameCtrl.text; 
     editableUser.phone = phoneCtrl.text; 
-    editableUser.career = careerCtrl.text; 
+    editableUser.career = _resolveCareerForRole(
+      editableUser.role,
+      selectedCareer: selectedCareer,
+      fallbackCareer: careerCtrl.text,
+    );
     editableUser.studentId = _normalizeOptional(studentIdCtrl.text);
     
     // Convertir libros separados por coma a lista 
@@ -93,6 +171,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return;
       }
       editableUser.photoUrl = uploadedUrl;
+      try {
+        await FirebaseAuth.instance.currentUser?.updatePhotoURL(uploadedUrl);
+      } catch (_) {}
     }
 
     await controller.updateUser(editableUser);
@@ -108,7 +189,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopBar(context),
+            const MetroSwapNavbar(developmentNav: true, heading: 'Editar Perfil'),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -135,13 +216,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
-                                    child: TextField(
-                                      controller: nameCtrl,
-                                      style: const TextStyle(
-                                        color: Color(0xFF54515A),
-                                        fontSize: 22,
-                                      ),
-                                      decoration: _fieldDecoration("Nombre de usuario"),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        TextField(
+                                          controller: nameCtrl,
+                                          style: const TextStyle(
+                                            color: Color(0xFF54515A),
+                                            fontSize: 22,
+                                          ),
+                                          decoration: _fieldDecoration("Nombre de usuario"),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              '${editableUser.reputation}', 
+                                              style: const TextStyle(
+                                                fontSize: 22, 
+                                                fontWeight: FontWeight.bold, 
+                                                color: Color(0xFFFF9800)
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            const Icon(
+                                              Icons.star, 
+                                              color: Color.fromARGB(242, 241, 255, 52), 
+                                              size: 24,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '(${editableUser.tradesCount})', 
+                                              style: const TextStyle(
+                                                fontSize: 18, 
+                                                fontWeight: FontWeight.w500, 
+                                                color: Colors.black
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -226,64 +340,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 },
               ),
             ),
-            Container(
-              width: double.infinity,
-              color: const Color(0xFF2C2C2C),
-              padding: const EdgeInsets.all(20),
-              child: const Text(
-                "© 2026 MetroSwap - Universidad Metropolitana.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70),
-              ),
-            ),
+            const MetroSwapFooter(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context) {
-    return Container(
-      height: 85,
-      color: const Color(0xFF2C2C2C),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        children: [
-          Image.asset(
-            "assets/images/logo_metroswap.png",
-            height: 45,
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text(
-              "MetroSwap",
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 26,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const LandingPage(),
-                ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white, width: 1.4),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text("Inicio"),
-          ),
-        ],
       ),
     );
   }
@@ -299,15 +358,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         const SizedBox(height: 16),
         _buildFieldLabel("Carrera:"),
-        _buildEditableField(
-          controller: careerCtrl,
-          hintText: "Carrera...",
-        ),
+        _buildCareerField(),
         const SizedBox(height: 16),
         _buildFieldLabel("Carnet:"),
         _buildEditableField(
           controller: studentIdCtrl,
-          hintText: "Carnet...",
+          hintText: "20261234567",
         ),
       ],
     );
@@ -357,6 +413,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       keyboardType: keyboardType,
       decoration: _fieldDecoration(hintText),
     );
+  }
+
+  Widget _buildCareerField() {
+    if (_isStudentRole(editableUser.role)) {
+      return DropdownButtonFormField<String>(
+        initialValue: selectedCareer,
+        isExpanded: true,
+        decoration: _fieldDecoration("Selecciona tu carrera"),
+        items: _unimetCareers
+            .map(
+              (career) => DropdownMenuItem<String>(
+                value: career,
+                child: Text(
+                  career,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: (value) {
+          selectedCareer = value;
+        },
+      );
+    }
+
+    return _buildReadOnlyField(editableUser.career?.trim().isNotEmpty == true
+        ? editableUser.career!
+        : "No especificada");
   }
 
   Widget _buildReadOnlyField(String value) {
@@ -417,5 +501,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return null;
     }
     return normalized;
+  }
+
+  bool _isStudentRole(String? role) {
+    return role?.trim().toLowerCase() == UserModel.roleStudent;
+  }
+
+  String? _resolveCareerForRole(
+    String? role, {
+    String? selectedCareer,
+    String? fallbackCareer,
+  }) {
+    final normalizedRole = role?.trim().toLowerCase();
+    if (normalizedRole == UserModel.roleAdmin) return 'Administrador';
+    if (normalizedRole == UserModel.roleProfessor) return 'Profesor';
+    if (normalizedRole == UserModel.roleStudent) return selectedCareer;
+    final normalizedCareer = fallbackCareer?.trim();
+    if (normalizedCareer == null || normalizedCareer.isEmpty) return null;
+    return normalizedCareer;
   }
 }

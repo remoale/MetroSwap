@@ -1,14 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:metroswap/screens/landing_page.dart';
-import 'package:metroswap/screens/profile/profile_screen.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metroswap/screens/home_screen.dart';
+import 'package:metroswap/screens/landing_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -22,10 +21,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MetroSwap',
-      debugShowCheckedModeBanner: false,
+      title: 'MetroSwap', 
+      debugShowCheckedModeBanner: false, 
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B00)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B00)), 
         useMaterial3: true,
       ),
       home: const AuthGate(),
@@ -47,12 +46,12 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        final user = snapshot.data;
-        if (user == null) {
-          return const LandingPage();
+        // Si el usuario está logueado, lo enviamos al HomeScreen (el unificado)
+        if (snapshot.hasData) {
+          return const HomeScreen(); 
         }
 
-        return ProfileScreen(uid: user.uid);
+        return const LandingScreen();
       },
     );
   }
