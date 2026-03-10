@@ -147,97 +147,103 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final history = notifications.where((n) => !_isInProgress(n)).toList();
           final latest = notifications.take(2).toList();
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                const MetroSwapNavbar(developmentNav: true, heading: 'Notificaciones'),
-                const SizedBox(height: 24),
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8E6EB),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFB7B3BB)),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton(
-                                onPressed: notifications.isEmpty
-                                    ? null
-                                    : () => _notificationService.markAllAsRead(uid),
-                                child: const Text('Marcar todas como leídas'),
-                              ),
-                            ],
-                          ),
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      const MetroSwapNavbar(developmentNav: true, heading: 'Notificaciones'),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1200),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8E6EB),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFB7B3BB)),
+                            ),
+                            child: Column(
                               children: [
-                                Expanded(
-                                  child: _buildSection(
-                                    title: 'Historial',
-                                    children: _buildHistoryCards(history),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton(
+                                      onPressed: notifications.isEmpty
+                                          ? null
+                                          : () => _notificationService.markAllAsRead(uid),
+                                      child: const Text('Marcar todas como leídas'),
+                                    ),
+                                  ],
+                                ),
+                                IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: _buildSection(
+                                          title: 'Historial',
+                                          children: _buildHistoryCards(history),
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 1,
+                                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                                        color: const Color(0xFF8D8A90),
+                                      ),
+                                      Expanded(
+                                        child: _buildSection(
+                                          title: 'En curso',
+                                          children: _buildHistoryCards(inProgress),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Container(
-                                  width: 1,
-                                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                                  color: const Color(0xFF8D8A90),
-                                ),
-                                Expanded(
-                                  child: _buildSection(
-                                    title: 'En curso',
-                                    children: _buildHistoryCards(inProgress),
-                                  ),
+                                const SizedBox(height: 20),
+                                const Divider(color: Color(0xFF8D8A90), height: 1),
+                                const SizedBox(height: 20),
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final cards = _buildActivityCards(latest);
+                                    if (constraints.maxWidth >= 1000) {
+                                      return Row(
+                                        children: [
+                                          Expanded(
+                                            child: cards[0],
+                                          ),
+                                          const SizedBox(width: 20),
+                                          Expanded(
+                                            child: cards[1],
+                                          ),
+                                        ],
+                                      );
+                                    }
+
+                                    return Column(
+                                      children: [
+                                        cards[0],
+                                        const SizedBox(height: 16),
+                                        cards[1],
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          const Divider(color: Color(0xFF8D8A90), height: 1),
-                          const SizedBox(height: 20),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final cards = _buildActivityCards(latest);
-                              if (constraints.maxWidth >= 1000) {
-                                return Row(
-                                  children: [
-                                    Expanded(
-                                      child: cards[0],
-                                    ),
-                                    const SizedBox(width: 20),
-                                    Expanded(
-                                      child: cards[1],
-                                    ),
-                                  ],
-                                );
-                              }
-
-                              return Column(
-                                children: [
-                                  cards[0],
-                                  const SizedBox(height: 16),
-                                  cards[1],
-                                ],
-                              );
-                            },
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                const MetroSwapFooter(),
-              ],
-            ),
+              ),
+              const MetroSwapFooter(),
+            ],
           );
         },
       ),
@@ -346,7 +352,7 @@ class _HistoryCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          height: 88,
+          height: 118,
           decoration: BoxDecoration(
             color: const Color(0xFFF1EEF4),
             borderRadius: BorderRadius.circular(14),
@@ -371,46 +377,56 @@ class _HistoryCard extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2A292C),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            message,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF4C4A50),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              username,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2A292C),
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            const SizedBox(height: 3),
+                            Text(
+                              message,
+                              maxLines: 3,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                height: 1.2,
+                                color: Color(0xFF4C4A50),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        if (timeText.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 10),
+                      ),
+                      if (timeText.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 10, right: 12, top: 4),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 56),
                             child: Text(
                               timeText,
+                              textAlign: TextAlign.right,
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF9A96A1),
                               ),
                             ),
                           ),
-                      ],
-                    ),
-                  ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
               Container(
@@ -502,28 +518,31 @@ class _ActivityCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    trailingText,
-                    style: const TextStyle(
-                      color: Color(0xFFA7A2AE),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (showAction)
-                    OutlinedButton.icon(
-                      onPressed: onTap,
-                      icon: const Icon(Icons.logout, size: 20),
-                      label: const Text('Ir'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF55525D),
-                        side: const BorderSide(color: Color(0xFFC2BECA)),
+              Padding(
+                padding: const EdgeInsets.only(right: 6, top: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      trailingText,
+                      style: const TextStyle(
+                        color: Color(0xFFA7A2AE),
+                        fontSize: 14,
                       ),
                     ),
-                ],
+                    const SizedBox(height: 10),
+                    if (showAction)
+                      OutlinedButton.icon(
+                        onPressed: onTap,
+                        icon: const Icon(Icons.logout, size: 20),
+                        label: const Text('Ir'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF55525D),
+                          side: const BorderSide(color: Color(0xFFC2BECA)),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
