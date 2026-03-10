@@ -33,6 +33,33 @@ class PostModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  static String normalizeSearchText(String value) {
+    return value
+        .toLowerCase()
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  static String buildSearchableText({
+    required String title,
+    required String description,
+    required String materialType,
+    required String knowledgeArea,
+    required String career,
+    required String subject,
+    required String ownerName,
+  }) {
+    return normalizeSearchText([
+      title,
+      description,
+      materialType,
+      knowledgeArea,
+      career,
+      subject,
+      ownerName,
+    ].join(' '));
+  }
+
   const PostModel({
     required this.id,
     required this.title,
@@ -59,6 +86,16 @@ class PostModel {
     return {
       'id': id,
       'title': title,
+      'titleSearch': normalizeSearchText(title),
+      'searchableText': buildSearchableText(
+        title: title,
+        description: description,
+        materialType: materialType,
+        knowledgeArea: knowledgeArea,
+        career: career,
+        subject: subject,
+        ownerName: ownerName,
+      ),
       'description': description,
       'materialType': materialType,
       'knowledgeArea': knowledgeArea,
@@ -83,6 +120,16 @@ class PostModel {
     return {
       'id': id,
       'title': title,
+      'titleSearch': normalizeSearchText(title),
+      'searchableText': buildSearchableText(
+        title: title,
+        description: description,
+        materialType: materialType,
+        knowledgeArea: knowledgeArea,
+        career: career,
+        subject: subject,
+        ownerName: ownerName,
+      ),
       'description': description,
       'materialType': materialType,
       'knowledgeArea': knowledgeArea,

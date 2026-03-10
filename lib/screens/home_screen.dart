@@ -1,10 +1,69 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:metroswap/models/post_model.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  Future<List<Map<String, dynamic>>> _searchPosts(String rawTerm) async {
+    final searchTerm = PostModel.normalizeSearchText(rawTerm);
+    if (searchTerm.isEmpty) {
+      return const [];
+    }
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('posts')
+        .where('status', isEqualTo: PostModel.statusActive)
+        .limit(75)
+        .get();
+
+    final matches = snapshot.docs
+        .map((doc) => doc.data())
+        .where((data) {
+          final searchableText = _buildSearchableText(data);
+          return searchableText.contains(searchTerm);
+        })
+        .take(8)
+        .toList();
+
+    return matches;
+  }
+
+  String _buildSearchableText(Map<String, dynamic> data) {
+    final stored = data['searchableText']?.toString();
+    if (stored != null && stored.trim().isNotEmpty) {
+      return PostModel.normalizeSearchText(stored);
+    }
+
+    return PostModel.buildSearchableText(
+      title: data['title']?.toString() ?? '',
+      description: data['description']?.toString() ?? '',
+      materialType: data['materialType']?.toString() ?? '',
+      knowledgeArea: data['knowledgeArea']?.toString() ?? '',
+      career: data['career']?.toString() ?? '',
+      subject: data['subject']?.toString() ?? '',
+      ownerName: data['ownerName']?.toString() ?? '',
+    );
+  }
+
+  String _buildSuggestionSubtitle(Map<String, dynamic> data) {
+    final description = data['description']?.toString().trim() ?? '';
+    if (description.isNotEmpty) {
+      return description.length > 90
+          ? '${description.substring(0, 90)}...'
+          : description;
+    }
+
+    final pieces = [
+      data['materialType']?.toString().trim() ?? '',
+      data['subject']?.toString().trim() ?? '',
+      data['career']?.toString().trim() ?? '',
+    ].where((value) => value.isNotEmpty).toList();
+
+    return pieces.isEmpty ? 'Sin descripcion disponible.' : pieces.join(' • ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +73,6 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             const MetroSwapNavbar(developmentNav: true, heading: 'Inicio'),
-
             SizedBox(
               height: 330,
               child: Stack(
@@ -25,7 +83,9 @@ class HomeScreen extends StatelessWidget {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        image: const AssetImage('assets/images/fondo_estudiantes.jpg'),
+                        image: const AssetImage(
+                          'assets/images/fondo_estudiantes.jpg',
+                        ),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
                           Colors.black.withValues(alpha: 0.5),
@@ -59,67 +119,98 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: SearchAnchor( 
-                        builder: (context,controller){
+                      child: SearchAnchor(
+                        builder: (context, controller) {
                           return SearchBar(
                             controller: controller,
-                            hintText:'Buscar por titulo, material o materia..',
-                            hintStyle: WidgetStatePropertyAll(
-                              const TextStyle(color: Colors.grey,fontSize: 16)),
-                              backgroundColor: WidgetStatePropertyAll(Colors.transparent),
-                              elevation: WidgetStatePropertyAll(0),
-                              onTap: ()=> controller.openView(),
-                              onChanged: (_)=> controller.openView(),
-                              padding: const WidgetStatePropertyAll(
-                                EdgeInsets.symmetric(horizontal: 25)),
-                                trailing: const [Icon(Icons.search,color: Colors.black54)],
-                              );
+                            hintText: 'Buscar por titulo, material o materia..',
+                            hintStyle: const WidgetStatePropertyAll(
+                              TextStyle(color: Colors.grey, fontSize: 16),
+                            ),
+                            backgroundColor:
+                                const WidgetStatePropertyAll(
+                                  Colors.transparent,
+                                ),
+                            elevation: const WidgetStatePropertyAll(0),
+                            onTap: controller.openView,
+                            onChanged: (_) => controller.openView(),
+                            padding: const WidgetStatePropertyAll(
+                              EdgeInsets.symmetric(horizontal: 25),
+                            ),
+                            trailing: const [
+                              Icon(Icons.search, color: Colors.black54),
+                            ],
+                          );
                         },
-
-                        suggestionsBuilder: (context,controller)async{
-                          if (controller.text.isEmpty){
-                            return[const Center (child: Padding(
-                              padding:EdgeInsets.all(16.0),
-                              child: Text("Escribe para buscar..."),
-                              ),)];
+                        suggestionsBuilder: (context, controller) async {
+                          if (controller.text.trim().isEmpty) {
+                            return const [
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text('Escribe para buscar...'),
+                                ),
+                              ),
+                            ];
                           }
-                          final String searchTerm = controller.text.toLowerCase();
-                        
 
-                        final snapshot = await FirebaseFirestore.instance
-                        .collection('posts')
-                        .where('title_search',isGreaterThanOrEqualTo: searchTerm)
-                        .where ('title_search',isLessThanOrEqualTo:'$searchTerm\uf8ff')
-                        .get();
-
-                        return snapshot.docs.map((doc){
-                          final data= doc.data();
-                          return ListTile(
-                            leading: const Icon (Icons.book),
-                            title :Text (data['title']),
-                            subtitle: Text(data['career']??""),
-                            onTap:(){
-                              controller.closeView(data['title']);
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder :(context)=> ResultDetailScreen(data:data),
-                                  ),
-                              );
-                            },
+                          try {
+                            final results = await _searchPosts(
+                              controller.text,
                             );
-                        }).toList();
-  },
-  ),
-  ),
-  ),
-],
-),
-),
+                            if (results.isEmpty) {
+                              return const [
+                                ListTile(
+                                  leading: Icon(Icons.search_off),
+                                  title: Text('No se encontraron resultados.'),
+                                  subtitle: Text(
+                                    'Prueba con otra palabra o revisa publicaciones activas.',
+                                  ),
+                                ),
+                              ];
+                            }
 
-const SizedBox(height : 80),
-Row (
+                            return results.map((data) {
+                              final title =
+                                  data['title']?.toString() ?? 'Sin titulo';
+                              return ListTile(
+                                leading: const Icon(Icons.book),
+                                title: Text(title),
+                                subtitle: Text(_buildSuggestionSubtitle(data)),
+                                onTap: () {
+                                  controller.closeView(title);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ResultDetailScreen(data: data),
+                                    ),
+                                  );
+                                },
+                              );
+                            }).toList();
+                          } on FirebaseException catch (e) {
+                            return [
+                              ListTile(
+                                leading: const Icon(Icons.lock_outline),
+                                title: const Text(
+                                  'No se pudo consultar publicaciones.',
+                                ),
+                                subtitle: Text(
+                                  e.message ?? 'Intenta nuevamente.',
+                                ),
+                              ),
+                            ];
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 80),
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildCategoryCard(
@@ -134,16 +225,17 @@ Row (
               ],
             ),
             const SizedBox(height: 100),
-
             const MetroSwapFooter(),
           ],
         ),
       ),
     );
-
   }
 
-  Widget _buildCategoryCard({required String title, required String imagePath}) {
+  Widget _buildCategoryCard({
+    required String title,
+    required String imagePath,
+  }) {
     return Column(
       children: [
         ClipRRect(
@@ -162,86 +254,114 @@ Row (
             color: Colors.black87,
             fontSize: 32,
             fontWeight: FontWeight.w300,
-              ),
+          ),
         ),
-            ],
-          );
-        
-    
-    
+      ],
+    );
   }
 }
-// Resultado de busqueda
+
 class ResultDetailScreen extends StatelessWidget {
-  final Map <String,dynamic> data;
-  const ResultDetailScreen({super.key,required this.data});
+  final Map<String, dynamic> data;
+
+  const ResultDetailScreen({super.key, required this.data});
 
   @override
+  Widget build(BuildContext context) {
+    final title = data['title']?.toString() ?? 'Publicacion';
+    final method = data['method']?.toString() ?? 'Intercambio';
+    final priceUsd = data['priceUsd']?.toString() ?? '0.00';
+    final subject = data['subject']?.toString() ?? 'Sin materia';
+    final condition = data['condition']?.toString() ?? 'Sin estado';
+    final description =
+        data['description']?.toString() ?? 'Sin descripcion disponible.';
+    final imageUrl = data['imageUrl']?.toString();
 
-  Widget build (BuildContext context){
     return Scaffold(
-      body :CustomScrollView(
+      body: CustomScrollView(
         slivers: [
-
           SliverAppBar(
             expandedHeight: 300,
-            pinned :true,
+            pinned: true,
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(data["title"], style :const TextStyle(color: Colors.white,fontSize: 18)),
+              title: Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
               background: Stack(
-                fit : StackFit.expand,
+                fit: StackFit.expand,
                 children: [
-                  data['imageUrl']!=null
-                    ? Image.network(data['imageUrl'],fit :BoxFit.cover)
-                    : Container(color:Colors.blueGrey),
+                  if (imageUrl != null && imageUrl.isNotEmpty)
+                    Image.network(imageUrl, fit: BoxFit.cover)
+                  else
+                    Container(color: Colors.blueGrey),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin : Alignment.bottomCenter,
-                        end: Alignment.topCenter ,
-                        colors: [Colors.black87,Colors.transparent],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [Colors.black87, Colors.transparent],
                       ),
                     ),
-                    ),
+                  ),
                 ],
               ),
             ),
           ),
           SliverList(
-            delegate: SliverChildListDelegate([
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child : Column (
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Chip(
-                      label: Text(data['method'] ?? 'Intercambio'),
-                      backgroundColor: Colors.blueAccent.withValues(alpha:0.1),
-                    ),
-                    const SizedBox(height: 20),
-                    Text("Precio: \$${data['priceUsd'] ?? '0.00'}", 
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    Text("Materia: ${data['subject']}", style: const TextStyle(fontSize: 18)),
-                    const SizedBox(height: 10),
-                    Text("Estado: ${data['condition']}", style: const TextStyle(fontSize: 18)),
-                    const Divider(height: 40),
-                    const Text("Descripción", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    Text(data['description'] ?? "Sin descripción disponible.", 
-                        style: const TextStyle(fontSize: 16, height: 1.5)),
-                    const SizedBox(height: 500), // prueba del scroll
-                    const Text("Fin del contenido."),
+            delegate: SliverChildListDelegate(
+              [
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Chip(
+                        label: Text(method),
+                        backgroundColor:
+                            Colors.blueAccent.withValues(alpha: 0.1),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Precio: \$$priceUsd',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Materia: $subject',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Estado: $condition',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                      const Divider(height: 40),
+                      const Text(
+                        'Descripcion',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        description,
+                        style: const TextStyle(fontSize: 16, height: 1.5),
+                      ),
+                      const SizedBox(height: 500),
+                      const Text('Fin del contenido.'),
                     ],
-                    ),
-
+                  ),
                 ),
-              ]),
-              ),
               ],
-              ),
+            ),
+          ),
+        ],
+      ),
     );
-
   }
-
-  }
+}

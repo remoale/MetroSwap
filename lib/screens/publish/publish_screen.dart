@@ -21,13 +21,13 @@ class _PublishScreenState extends State<PublishScreen> {
 
   static const List<String> _materialTypes = [
     'Libro',
-    'Guia',
+    'Guía',
     'Material',
     'Otro',
   ];
 
   static const List<String> _knowledgeAreas = [
-    'Ingenieria',
+    'Ingeniería',
     'Salud',
     'Artes',
     'Ciencias Sociales',
@@ -94,17 +94,17 @@ class _PublishScreenState extends State<PublishScreen> {
     }
 
     if (_selectedKnowledgeArea == null) {
-      _showMessage('Selecciona el area de conocimiento.');
+      _showMessage('Selecciona el área de conocimiento.');
       return;
     }
 
     if (_selectedCondition == null) {
-      _showMessage('Selecciona el estado de conservacion.');
+      _showMessage('Selecciona el estado de conservación.');
       return;
     }
 
     if (_selectedMethod == null) {
-      _showMessage('Selecciona el metodo de publicacion.');
+      _showMessage('Selecciona el metodo de publicación.');
       return;
     }
 
@@ -112,14 +112,14 @@ class _PublishScreenState extends State<PublishScreen> {
     if (_selectedMethod == PostModel.methodSale) {
       priceUsd = double.tryParse(_priceController.text.trim());
       if (priceUsd == null || priceUsd <= 0) {
-        _showMessage('Ingresa un precio valido en USD para venta.');
+        _showMessage('Ingresa un precio válido en USD para venta.');
         return;
       }
     }
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      _showMessage('Debes iniciar sesion para publicar.');
+      _showMessage('Debes iniciar sesión para publicar.');
       return;
     }
 
@@ -184,7 +184,7 @@ class _PublishScreenState extends State<PublishScreen> {
     } on FirebaseException catch (e) {
       _showMessage('No se pudo publicar. ${e.message ?? 'Intenta nuevamente.'}');
     } catch (_) {
-      _showMessage('Ocurrio un error inesperado al publicar.');
+      _showMessage('Ocurrió un error inesperado al publicar.');
     } finally {
       if (mounted) {
         setState(() => _isPublishing = false);
@@ -298,13 +298,13 @@ class _PublishScreenState extends State<PublishScreen> {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
-          _buildLabel('Titulo del material'),
+          _buildLabel('Título del material'),
           _buildTextField(
-            'Ej. Calculo 1',
+            'Ej. Cálculo 1',
             controller: _titleController,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'El titulo es obligatorio';
+                return 'El título es obligatorio';
               }
               return null;
             },
@@ -330,7 +330,7 @@ class _PublishScreenState extends State<PublishScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel('Area de conocimiento'),
+                    _buildLabel('Área de conocimiento'),
                     _buildDropdown(
                       value: _selectedKnowledgeArea,
                       items: _knowledgeAreas,
@@ -349,7 +349,7 @@ class _PublishScreenState extends State<PublishScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel('Estado de conservacion'),
+                    _buildLabel('Estado de conservación'),
                     _buildDropdown(
                       value: _selectedCondition,
                       items: _conditions,
@@ -364,7 +364,7 @@ class _PublishScreenState extends State<PublishScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel('Metodo'),
+                    _buildLabel('Método'),
                     _buildDropdown(
                       value: _selectedMethod,
                       items: _methods,
@@ -397,7 +397,7 @@ class _PublishScreenState extends State<PublishScreen> {
                 if (_selectedMethod != PostModel.methodSale) return null;
                 final parsed = double.tryParse((value ?? '').trim());
                 if (parsed == null || parsed <= 0) {
-                  return 'Ingresa un precio valido';
+                  return 'Ingresa un precio válido';
                 }
                 return null;
               },
@@ -428,14 +428,14 @@ class _PublishScreenState extends State<PublishScreen> {
             },
           ),
           const SizedBox(height: 20),
-          _buildLabel('Descripcion detallada'),
+          _buildLabel('Descripción detallada'),
           _buildTextField(
             'Describe el material',
             controller: _descController,
             maxLines: 4,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'La descripcion es obligatoria';
+                return 'La descripción es obligatoria';
               }
               return null;
             },
