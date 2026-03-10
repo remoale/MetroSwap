@@ -24,19 +24,16 @@ class NotificationService {
     final requesterExchangesStream = _firestore
         .collection('exchanges')
         .where('requesterUid', isEqualTo: uid)
-        .orderBy('updatedAt', descending: true)
         .limit(limit)
         .snapshots();
     final targetExchangesStream = _firestore
         .collection('exchanges')
         .where('targetUid', isEqualTo: uid)
-        .orderBy('updatedAt', descending: true)
         .limit(limit)
         .snapshots();
     final ownerExchangesStream = _firestore
         .collection('exchanges')
         .where('ownerUid', isEqualTo: uid)
-        .orderBy('updatedAt', descending: true)
         .limit(limit)
         .snapshots();
 
@@ -77,7 +74,10 @@ class NotificationService {
                 .toList(growable: false);
             emitMerged();
           },
-          onError: controller.addError,
+          onError: (_) {
+            requesterExchangeNotifications = const <NotificationModel>[];
+            emitMerged();
+          },
         ),
         targetExchangesStream.listen(
           (snapshot) {
@@ -87,7 +87,10 @@ class NotificationService {
                 .toList(growable: false);
             emitMerged();
           },
-          onError: controller.addError,
+          onError: (_) {
+            targetExchangeNotifications = const <NotificationModel>[];
+            emitMerged();
+          },
         ),
         ownerExchangesStream.listen(
           (snapshot) {
@@ -97,7 +100,10 @@ class NotificationService {
                 .toList(growable: false);
             emitMerged();
           },
-          onError: controller.addError,
+          onError: (_) {
+            ownerExchangeNotifications = const <NotificationModel>[];
+            emitMerged();
+          },
         ),
       ];
 

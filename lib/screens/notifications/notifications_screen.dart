@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/notification_model.dart';
+import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/services/notification_service.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
@@ -71,6 +72,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  String _exchangeIdFromNotification(NotificationModel notification) {
+    final raw = notification.data?['exchangeId']?.toString().trim();
+    if (raw != null && raw.isNotEmpty) {
+      return raw;
+    }
+    return '';
+  }
+
+  Future<void> _openNotification(NotificationModel notification) async {
+    await _markAsRead(notification);
+    final exchangeId = _exchangeIdFromNotification(notification);
+    if (exchangeId.isEmpty || !mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TradeChatScreen(tradeId: exchangeId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = _uid;
@@ -99,6 +121,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: StreamBuilder<List<NotificationModel>>(
         stream: _notificationService.streamNotifications(uid),
         builder: (context, snapshot) {
+          if (snapshot.hasError && !snapshot.hasData) {
+            return Column(
+              children: [
+                const MetroSwapNavbar(developmentNav: true, heading: 'Notificaciones'),
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        'Error cargando notificaciones: ${snapshot.error}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ),
+                const MetroSwapFooter(),
+              ],
+            );
+          }
+
           final notifications = snapshot.data ?? const <NotificationModel>[];
           final inProgress = notifications.where(_isInProgress).toList();
           final history = notifications.where((n) => !_isInProgress(n)).toList();
@@ -220,7 +263,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           timeText: _formatRelativeTime(notification.createdAt),
           statusColor: _resolveStatusColor(notification, inProgress),
           isUnread: !notification.read,
-          onTap: () => _markAsRead(notification),
+          onTap: () => _openNotification(notification),
         ),
       );
       if (i < maxItems - 1) {
@@ -242,7 +285,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         trailingText: _formatRelativeTime(first?.createdAt),
         icon: Icons.dashboard_outlined,
         isUnread: first != null && !first.read,
-        onTap: first == null ? null : () => _markAsRead(first),
+        onTap: first == null ? null : () => _openNotification(first),
       ),
       _ActivityCard(
         isDark: false,
@@ -250,9 +293,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         body: second?.body ?? 'No hay actividad reciente.',
         trailingText: _formatRelativeTime(second?.createdAt),
         icon: Icons.person_outline,
-        showAction: second != null,
+        showAction: second != null && _exchangeIdFromNotification(second).isNotEmpty,
         isUnread: second != null && !second.read,
-        onTap: second == null ? null : () => _markAsRead(second),
+        onTap: second == null ? null : () => _openNotification(second),
       ),
     ];
   }
