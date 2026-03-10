@@ -7,7 +7,6 @@ import 'payment_cancel_screen.dart';
 import 'package:uni_links/uni_links.dart';
 import 'dart:async';
 
-
 class PayPalSDKPaymentScreen extends StatefulWidget {
   final double amount;
 
@@ -27,7 +26,7 @@ class _PayPalSDKPaymentScreenState extends State<PayPalSDKPaymentScreen> {
   void initState() {
     super.initState();
     _sub = linkStream.listen((String? link) {
-      if (link == null) return;
+      if (link == null || !mounted) return;
 
       if (link.contains("paypal-success")) {
         Navigator.pushReplacement(
@@ -59,20 +58,21 @@ class _PayPalSDKPaymentScreenState extends State<PayPalSDKPaymentScreen> {
 
     final url = await _controller.createPayment(widget.amount);
 
+    if (!mounted) return;
     setState(() => loading = false);
 
     if (url != null) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentConfirmationScreen(amount: widget.amount),
-          ),
-        );
-      }
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentConfirmationScreen(amount: widget.amount),
+        ),
+      );
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error creando orden PayPal")),
       );

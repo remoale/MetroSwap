@@ -393,12 +393,12 @@ class _AdminScreenState extends State<AdminScreen> {
     List<PieChartSectionData> sections = [];
     int colorIndex = 0;
 
-    _careerCounts.forEach((career, count) {
-      final percentage = (count / _totalMembers) * 100;
+    _careerCounts.forEach((career, careerCount) {
+      final percentage = (careerCount / _totalMembers) * 100;
       sections.add(
         PieChartSectionData(
           color: _chartColors[colorIndex % _chartColors.length],
-          value: count.toDouble(),
+          value: careerCount.toDouble(),
           title: '${percentage.toStringAsFixed(1)}%',
           radius: 40,
           titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),

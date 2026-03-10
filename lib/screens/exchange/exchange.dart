@@ -466,7 +466,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                 fit: BoxFit.cover,
                 webHtmlElementStrategy:
                     kIsWeb ? WebHtmlElementStrategy.prefer : WebHtmlElementStrategy.never,
-                errorBuilder: (, _, _) => Icon(
+                errorBuilder: (context, error, stackTrace) => Icon(
                   Icons.person,
                   color: Colors.grey.shade700,
                   size: 36,
@@ -557,7 +557,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                       webHtmlElementStrategy: kIsWeb
                           ? WebHtmlElementStrategy.prefer
                           : WebHtmlElementStrategy.never,
-                      errorBuilder: (, _, _) =>
+                      errorBuilder: (context, error, stackTrace) =>
                           const Icon(Icons.image, color: Colors.grey),
                     ),
             ),

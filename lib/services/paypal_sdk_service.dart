@@ -1,6 +1,7 @@
 import 'package:paypal_sdk/core.dart';
 import 'package:paypal_sdk/orders.dart';
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 
 class PayPalSDKService {
   late PayPalHttpClient _client;
@@ -47,7 +48,7 @@ class PayPalSDKService {
       }
       return approveLink?.href;
     } catch (e) {
-      print("Error creando orden PayPal: $e");
+      debugPrint("Error creando orden PayPal: $e");
       return null;
     }
   }

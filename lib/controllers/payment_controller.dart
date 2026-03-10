@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../services/paypal_sdk_service.dart';
 
 class PaymentController {
@@ -9,7 +11,7 @@ class PaymentController {
       final url = await _paypalService.createOrder(amount);
       return url;
     } catch (e) {
-      print("Error en PaymentController.createPayment: $e");
+      debugPrint("Error en PaymentController.createPayment: $e");
       return null;
     }
   }
