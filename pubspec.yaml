@@ -17,7 +17,16 @@ dependencies:
   google_sign_in: ^6.2.1
   firebase_storage: ^13.0.6
   image_picker: ^1.2.1
+<<<<<<< HEAD
+  paypal_sdk: ^1.0.11
+  collection: ^1.18.0
+  url_launcher: ^6.2.5
+  uni_links: ^0.5.1
+
+
+=======
   font_awesome_flutter: ^10.12.0
+>>>>>>> 09f52d5ceac74978ce1cd8d90691c626fe655569
 
 dev_dependencies:
   flutter_test:
@@ -40,6 +49,7 @@ flutter:
     - assets/images/derek.png
     - assets/images/equipo_trabajando.png
     - assets/images/fondo_marmol.png
+    - assets/images/Sucess.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

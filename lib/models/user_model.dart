@@ -12,6 +12,8 @@ class UserModel {
   String? studentId;
   List<String>? books;
   String role;
+  int reputation; 
+  int tradesCount;
 
   UserModel({
     required this.uid,
@@ -23,6 +25,8 @@ class UserModel {
     this.studentId,
     this.books,
     this.role = roleStudent,
+    this.reputation = 0,
+    this.tradesCount = 0,
   });
 
   UserModel clone() {
@@ -36,6 +40,8 @@ class UserModel {
       studentId: studentId,
       books: books != null ? List<String>.from(books!) : null,
       role: role,
+      reputation: reputation,
+      tradesCount: tradesCount,
     );
   }
 
@@ -50,6 +56,8 @@ class UserModel {
       'studentId': studentId,
       'books': books,
       'role': role,
+      'reputation': reputation,
+      'tradesCount': tradesCount,
     };
   }
 
@@ -72,6 +80,8 @@ class UserModel {
       studentId: (map['studentId'] ?? map['carnet'])?.toString(),
       books: map['books'] != null ? List<String>.from(map['books']) : null,
       role: normalizedRole,
+      reputation: map['reputation'] ?? 0, 
+      tradesCount: map['tradesCount'] ?? 0, 
     );
   }
 }

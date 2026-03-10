@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:metroswap/screens/admin/admin_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:metroswap/screens/about/about_screen.dart';
+import 'package:metroswap/screens/admin/admin_screen.dart';
 import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:metroswap/screens/notifications/notifications_screen.dart';
@@ -32,35 +32,18 @@ class MetroSwapNavbar extends StatefulWidget {
 }
 
 class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
+  static const String _adminEmail =
+      'administrador.metroswap@correo.unimet.edu.ve';
+
   bool _isAdmin = false;
   final Color _colorOriginal = const Color(0xFF2C2C2C);
-  final Color _colorAdmin = const Color(0xFFC93C20); // Tu color terracota
+  final Color _colorAdmin = const Color(0xFFC93C20);
 
   @override
   void initState() {
     super.initState();
-    _verificarRolAdmin();
-  }
-
-  Future<void> _verificarRolAdmin() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      try {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid)
-            .get();
-
-        if (doc.exists && mounted) {
-          final isAdminUser = doc.data()?['role']?.toString().toLowerCase() == 'admin';
-          setState(() {
-            _isAdmin = isAdminUser;
-          });
-        }
-      } catch (e) {
-        debugPrint("Error verificando admin en Navbar: $e");
-      }
-    }
+    final email = FirebaseAuth.instance.currentUser?.email?.trim().toLowerCase();
+    _isAdmin = email == _adminEmail;
   }
 
   void _navigateToAdmin(BuildContext context) {
@@ -83,6 +66,78 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
     );
   }
 
+  Widget _buildNotificationsButton(
+    BuildContext context,
+    bool isNotifications,
+    String uid,
+  ) {
+    final unreadStream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('notifications')
+        .where('read', isEqualTo: false)
+        .snapshots();
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: unreadStream,
+      builder: (context, snapshot) {
+        final unreadCount = snapshot.data?.docs.length ?? 0;
+
+        return IconButton(
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(
+                Icons.notifications_none,
+                color: Colors.white,
+                size: 28,
+              ),
+              if (unreadCount > 0)
+                Positioned(
+                  right: -6,
+                  top: -6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade600,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white, width: 1),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      unreadCount > 99 ? '99+' : '$unreadCount',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: isNotifications
+              ? null
+              : () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
+                  );
+                },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final normalizedHeading = widget.heading.toLowerCase();
@@ -92,7 +147,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
 
     return Container(
       height: 85,
-      color: _isAdmin ? _colorAdmin : _colorOriginal, 
+      color: _isAdmin ? _colorAdmin : _colorOriginal,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: [
@@ -102,13 +157,12 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               color: Colors.white,
             ),
           ),
-          // *** NUEVO CÓDIGO AQUÍ: Mensaje de "Bienvenido admin" ***
           if (_isAdmin) ...[
-            const SizedBox(width: 15), // Separación del logo
+            const SizedBox(width: 15),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2), // Un fondo semi-transparente elegante
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
@@ -122,7 +176,6 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               ),
             ),
           ],
-          
           if (!isHome) ...[
             const SizedBox(width: 24),
             Expanded(
@@ -178,9 +231,8 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => isLoggedIn
-                            ? const HomeScreen()
-                            : const LandingScreen(),
+                        builder: (_) =>
+                            isLoggedIn ? const HomeScreen() : const LandingScreen(),
                       ),
                     );
                   },
@@ -197,34 +249,34 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                 ElevatedButton.icon(
                   onPressed: () => _handleSignOut(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isAdmin ? const Color(0xFF2C2C2C) : const Color(0xFFFF5C00),
+                    backgroundColor: _isAdmin
+                        ? const Color(0xFF2C2C2C)
+                        : const Color(0xFFFF5C00),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   icon: const Icon(Icons.exit_to_app, size: 18),
-                  label: const Text("Cerrar sesion"),
+                  label: const Text('Cerrar sesion'),
                 ),
               ],
               if (widget.showNotificationsButton && isLoggedIn) ...[
                 const SizedBox(width: 25),
-                IconButton(
-                  icon: const Icon(Icons.notifications_none, color: Colors.white, size: 28),
-                  onPressed: isNotifications
-                      ? null
-                      : () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                          );
-                        },
+                _buildNotificationsButton(
+                  context,
+                  isNotifications,
+                  FirebaseAuth.instance.currentUser!.uid,
                 ),
               ],
               if (widget.showProfileButton && isLoggedIn) ...[
                 const SizedBox(width: 10),
                 IconButton(
-                  icon: const Icon(Icons.account_circle, color: Colors.white70, size: 35),
+                  icon: const Icon(
+                    Icons.account_circle,
+                    color: Colors.white70,
+                    size: 35,
+                  ),
                   onPressed: () {
                     final currentUser = FirebaseAuth.instance.currentUser;
                     if (currentUser != null) {
