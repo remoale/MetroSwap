@@ -1,3 +1,5 @@
+import 'package:metroswap/utils/admin_utils.dart';
+
 class UserModel {
   static const String roleStudent = 'estudiante';
   static const String roleProfessor = 'profesor';
@@ -64,12 +66,17 @@ class UserModel {
   factory UserModel.fromMap(Map<String, dynamic> map) {
     final rawName = map['name'];
     final rawPhoto = map['photoUrl'] ?? map['photoURL'];
+    final normalizedEmail = (map['email'] ?? '').toString().trim().toLowerCase();
     final rawRole = (map['role'] ?? '').toString().toLowerCase();
     final normalizedRole = rawRole == roleAdmin
         ? roleAdmin
         : rawRole == roleProfessor
             ? roleProfessor
-            : roleStudent;
+            : isAdminEmail(normalizedEmail)
+                ? roleAdmin
+                : normalizedEmail.endsWith('@unimet.edu.ve')
+                    ? roleProfessor
+                    : roleStudent;
     return UserModel(
       uid: (map['uid'] ?? '').toString(),
       name: (rawName ?? 'Usuario').toString(),

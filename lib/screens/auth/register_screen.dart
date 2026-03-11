@@ -21,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Desplegable de carreras
   final List<String> _carrerasUnimet =[
+    'Profesor',
     'Ciencias Administrativas',
     'Comunicación Social y Empresarial',
     'Contaduría Pública',

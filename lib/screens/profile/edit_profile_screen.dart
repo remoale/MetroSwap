@@ -18,6 +18,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   static const List<String> _unimetCareers = [
+    'Profesor',
     'Ciencias Administrativas',
     'Comunicación Social y Empresarial',
     'Contaduría Pública',

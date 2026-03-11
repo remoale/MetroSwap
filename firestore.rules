@@ -11,6 +11,14 @@ service cloud.firestore {
         && request.auth.token.email.lower() == "administrador.metroswap@correo.unimet.edu.ve";
     }
 
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function matchesExistingOrMissing(field) {
+      return !(field in resource.data) || request.resource.data[field] == resource.data[field];
+    }
+
     function isExchangeParticipant(exchangeData) {
       return isSignedIn()
         && exchangeData != null
@@ -22,22 +30,28 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
         && (
           isAdmin()
           || (
-            request.auth.uid == userId
+            isOwner(userId)
+            && request.resource.data.uid == userId
+            && request.auth.token.email != null
+            && request.resource.data.email is string
+            && request.resource.data.email.lower() == request.auth.token.email.lower()
             && request.resource.data.role != 'admin'
           )
         );
-      allow update: if request.auth != null
+      allow update: if isSignedIn()
         && (
           isAdmin()
           || (
-            request.auth.uid == userId
-            && request.resource.data.role == resource.data.role
-            && request.resource.data.status == resource.data.status
+            isOwner(userId)
+            && matchesExistingOrMissing('uid')
+            && matchesExistingOrMissing('email')
+            && matchesExistingOrMissing('role')
+            && matchesExistingOrMissing('status')
           )
         );
       allow delete: if false;
