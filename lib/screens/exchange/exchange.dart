@@ -133,6 +133,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   Future<void> _sendMessage(ExchangeModel exchange) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
+    if (exchange.status == ExchangeModel.statusRejected ||
+        exchange.status == ExchangeModel.statusDeclined) {
+      return;
+    }
 
     final text = _messageController.text.trim();
     if (text.isEmpty || _isSending) return;
@@ -180,6 +184,13 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   }
 
   Future<void> _goToContributionPayment(ExchangeModel exchange) async {
+    if (exchange.status != ExchangeModel.statusAccepted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes esperar a que acepten la solicitud.')),
+      );
+      return;
+    }
     if (!mounted) return;
     await Navigator.push(
       context,
@@ -228,6 +239,51 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
     messenger.showSnackBar(
       const SnackBar(content: Text('Intercambio cancelado.')),
+    );
+  }
+
+  Future<void> _acceptExchange() async {
+    try {
+      await _firestore.collection('exchanges').doc(widget.tradeId).update({
+        'status': ExchangeModel.statusAccepted,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo aceptar el intercambio.')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Solicitud aceptada.')),
+    );
+  }
+
+  Future<void> _rejectExchange() async {
+    try {
+      await _firestore.collection('exchanges').doc(widget.tradeId).update({
+        'status': ExchangeModel.statusRejected,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo rechazar el intercambio.')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Solicitud rechazada.')),
     );
   }
 
@@ -304,6 +360,15 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
                               final exchange = ExchangeModel.fromDoc(exchangeDoc);
                               _participantsFuture ??= _loadParticipants(exchange);
+                              final isPostOwner = _isPostOwner(exchange);
+                              final isRequested =
+                                  exchange.status == ExchangeModel.statusRequested;
+                              final isAccepted =
+                                  exchange.status == ExchangeModel.statusAccepted;
+                              final isFinalStatus =
+                                  exchange.status == ExchangeModel.statusCompleted ||
+                                      exchange.status == ExchangeModel.statusRejected ||
+                                      exchange.status == ExchangeModel.statusDeclined;
 
                               return Column(
                                 children: [
@@ -354,8 +419,12 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                           });
 
                                           if (messages.isEmpty) {
-                                            return const Center(
-                                              child: Text('Aun no hay mensajes.'),
+                                            return Center(
+                                              child: Text(
+                                                isPostOwner
+                                                    ? 'Aun no hay mensajes. Escribe primero para coordinar el intercambio con el solicitante.'
+                                                    : 'Aun no hay mensajes. Escribe primero para coordinar el intercambio con el propietario.',
+                                              ),
                                             );
                                           }
 
@@ -376,36 +445,103 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 20),
-                                  _buildInputArea(exchange),
+                                  _buildInputArea(
+                                    exchange,
+                                    canSendMessages:
+                                        exchange.status != ExchangeModel.statusRejected &&
+                                        exchange.status != ExchangeModel.statusDeclined,
+                                  ),
                                   const SizedBox(height: 20),
+                                  if (isRequested)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: Text(
+                                        isPostOwner
+                                            ? 'Esta solicitud esta pendiente por tu aceptacion.'
+                                            : 'Tu solicitud esta pendiente de aceptacion del propietario.',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF6A6671),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
                                   Center(
                                     child: Wrap(
                                       spacing: 14,
                                       runSpacing: 14,
                                       alignment: WrapAlignment.center,
                                       children: [
-                                        SizedBox(
-                                          width: 250,
-                                          height: 45,
-                                          child: ElevatedButton(
-                                            onPressed: () => _goToContributionPayment(exchange),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFFFF8A4C),
-                                              foregroundColor: Colors.black,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(10),
+                                        if (isAccepted)
+                                          SizedBox(
+                                            width: 250,
+                                            height: 45,
+                                            child: ElevatedButton(
+                                              onPressed: () => _goToContributionPayment(exchange),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFFFF8A4C),
+                                                foregroundColor: Colors.black,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
                                               ),
-                                            ),
-                                            child: const Text(
-                                              'Enviar contribucion',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
+                                              child: const Text(
+                                                'Enviar contribucion',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                        if (_isPostOwner(exchange))
+                                        if (isPostOwner && isRequested)
+                                          SizedBox(
+                                            width: 250,
+                                            height: 45,
+                                            child: ElevatedButton(
+                                              onPressed: _acceptExchange,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF4E69E8),
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Aceptar solicitud',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        if (isPostOwner && isRequested)
+                                          SizedBox(
+                                            width: 250,
+                                            height: 45,
+                                            child: OutlinedButton(
+                                              onPressed: _rejectExchange,
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor: const Color(0xFF8A1E1E),
+                                                side: const BorderSide(
+                                                  color: Color(0xFF8A1E1E),
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Rechazar solicitud',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        if (isPostOwner && isAccepted)
                                           SizedBox(
                                             width: 250,
                                             height: 45,
@@ -429,12 +565,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                               ),
                                             ),
                                           ),
-                                        if (exchange.status !=
-                                                ExchangeModel.statusCompleted &&
-                                            exchange.status !=
-                                                ExchangeModel.statusRejected &&
-                                            exchange.status !=
-                                                ExchangeModel.statusDeclined)
+                                        if (!isPostOwner &&
+                                            !isFinalStatus)
                                           SizedBox(
                                             width: 250,
                                             height: 45,
@@ -555,7 +687,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     required bool isOwner,
   }) {
     final photoUrl = user.photoUrl?.trim() ?? '';
-    final avatar = photoUrl.isEmpty
+    final avatarBase = photoUrl.isEmpty
         ? CircleAvatar(
             radius: 40,
             backgroundColor: const Color(0xFF5A5860),
@@ -584,6 +716,19 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
               ),
             ),
           );
+    final avatar = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        avatarBase,
+        if (isOwner)
+          const Positioned(
+            top: -12,
+            left: 0,
+            right: 0,
+            child: Center(child: _OwnerBadge()),
+          ),
+      ],
+    );
 
     final info = Column(
       crossAxisAlignment: isRightAligned ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -591,10 +736,6 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isRightAligned && isOwner) ...[
-              _buildOwnerBadge(),
-              const SizedBox(width: 8),
-            ],
             Flexible(
               child: Text(
                 user.name,
@@ -603,10 +744,6 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (isRightAligned && isOwner) ...[
-              const SizedBox(width: 8),
-              _buildOwnerBadge(),
-            ],
           ],
         ),
         Text(
@@ -650,24 +787,6 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
   }
 
-  Widget _buildOwnerBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFF333333),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: const Text(
-        'Propietario',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
   Widget _buildItemInfo(ExchangeModel exchange) {
     final imageUrl = exchange.imageUrl.trim();
     return Column(
@@ -692,17 +811,17 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
-              child: imageUrl.isEmpty
-                  ? const Icon(Icons.image, color: Colors.grey)
-                  : Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      webHtmlElementStrategy: kIsWeb
-                          ? WebHtmlElementStrategy.prefer
-                          : WebHtmlElementStrategy.never,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.image, color: Colors.grey),
-                    ),
+                    child: imageUrl.isEmpty
+                        ? const Icon(Icons.image, color: Colors.grey)
+                        : Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            webHtmlElementStrategy: kIsWeb
+                                ? WebHtmlElementStrategy.prefer
+                                : WebHtmlElementStrategy.never,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.image, color: Colors.grey),
+                          ),
             ),
             const SizedBox(width: 16),
             Column(
@@ -763,7 +882,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
   }
 
-  Widget _buildInputArea(ExchangeModel exchange) {
+  Widget _buildInputArea(
+    ExchangeModel exchange, {
+    required bool canSendMessages,
+  }) {
     return Row(
       children: [
         Expanded(
@@ -774,13 +896,14 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
             ),
             child: TextField(
               controller: _messageController,
+              enabled: canSendMessages,
               decoration: const InputDecoration(
                 hintText: 'Escribe un mensaje',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 18),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
-              onSubmitted: (_) => _sendMessage(exchange),
+              onSubmitted: canSendMessages ? (_) => _sendMessage(exchange) : null,
             ),
           ),
         ),
@@ -788,7 +911,9 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         SizedBox(
           height: 50,
           child: ElevatedButton(
-            onPressed: _isSending ? null : () => _sendMessage(exchange),
+            onPressed: _isSending || !canSendMessages
+                ? null
+                : () => _sendMessage(exchange),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF8A4C),
               foregroundColor: Colors.black,
@@ -804,6 +929,29 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _OwnerBadge extends StatelessWidget {
+  const _OwnerBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFF333333),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Text(
+        'Propietario',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }

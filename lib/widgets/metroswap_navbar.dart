@@ -81,7 +81,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: unreadStream,
       builder: (context, snapshot) {
-        final unreadCount = snapshot.data?.docs.length ?? 0;
+        final unreadCount = _resolveVisibleUnreadCount(snapshot.data?.docs ?? const []);
 
         return IconButton(
           icon: Stack(
@@ -136,6 +136,45 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
         );
       },
     );
+  }
+
+  int _resolveVisibleUnreadCount(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    const lifecycleTypes = <String>{
+      'exchange_requested',
+      'exchange_accepted',
+      'exchange_rejected',
+      'exchange_completed',
+      'exchange_cancelled',
+    };
+
+    final nonExchangeUnread = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    final exchangeGroups = <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
+
+    for (final doc in docs) {
+      final data = doc.data();
+      final type = (data['type'] ?? '').toString().trim().toLowerCase();
+      final exchangeId = (data['data'] is Map<String, dynamic>)
+          ? ((data['data'] as Map<String, dynamic>)['exchangeId'] ?? '')
+              .toString()
+              .trim()
+          : '';
+      if (exchangeId.isEmpty || !lifecycleTypes.contains(type)) {
+        nonExchangeUnread.add(doc);
+        continue;
+      }
+      exchangeGroups.putIfAbsent(exchangeId, () => <QueryDocumentSnapshot<Map<String, dynamic>>>[])
+          .add(doc);
+    }
+
+    var count = nonExchangeUnread.length;
+    for (final group in exchangeGroups.values) {
+      if (group.isNotEmpty) {
+        count += 1;
+      }
+    }
+    return count;
   }
 
   @override

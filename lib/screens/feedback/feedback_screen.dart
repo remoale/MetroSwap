@@ -62,6 +62,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       if (ownerUid != currentUser.uid) {
         throw StateError('Solo el dueño del post puede calificar y finalizar.');
       }
+      if (exchange.status != ExchangeModel.statusAccepted) {
+        throw StateError('Solo puedes finalizar un intercambio aceptado.');
+      }
       if (requesterUid.isEmpty) {
         throw StateError('No se pudo identificar al usuario calificado.');
       }

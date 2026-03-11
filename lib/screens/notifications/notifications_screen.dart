@@ -37,24 +37,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   bool _isInProgress(NotificationModel notification) {
-    final rawStatus = notification.data?['status']?.toString().toLowerCase() ?? '';
-    final normalizedType = notification.type.toLowerCase();
-    return rawStatus == 'requested' ||
-        rawStatus == 'accepted' ||
-        normalizedType == 'exchange_started' ||
-        normalizedType == 'exchange_requested' ||
-        normalizedType == 'exchange_accepted';
+    final status = _statusKey(notification);
+    return status == 'requested' || status == 'accepted';
+  }
+
+  bool _isHistory(NotificationModel notification) {
+    final status = _statusKey(notification);
+    return status == 'rejected' || status == 'cancelled' || status == 'completed';
   }
 
   Color _resolveStatusColor(NotificationModel notification, bool inProgress) {
-    final rawStatus = notification.data?['status']?.toString().toLowerCase() ?? '';
-    if (inProgress) {
-      if (rawStatus == 'requested' || notification.type == 'exchange_requested') {
-        return const Color(0xFFEBCD35);
-      }
+    final status = _statusKey(notification);
+    if (inProgress && status == 'requested') {
+      return const Color(0xFFEBCD35);
+    }
+    if (inProgress && status == 'accepted') {
       return const Color(0xFF4E69E8);
     }
-    if (rawStatus == 'failed' || notification.type == 'exchange_rejected') {
+    if (status == 'rejected' || status == 'cancelled') {
       return const Color(0xFFE35A06);
     }
     return const Color(0xFF84D264);
@@ -113,10 +113,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     final patterns = <RegExp>[
       RegExp(r'^(.+?)\s+quiere realizar un intercambio contigo$', caseSensitive: false),
+      RegExp(r'^(.+?)\s+quiere intercambiar por', caseSensitive: false),
       RegExp(r'^El intercambio con\s+(.+?)\s+fue completado$', caseSensitive: false),
       RegExp(r'^Tu solicitud fue enviada a\s+(.+)$', caseSensitive: false),
       RegExp(r'^Aceptaste el intercambio de\s+(.+)$', caseSensitive: false),
       RegExp(r'^Rechazaste el intercambio de\s+(.+)$', caseSensitive: false),
+      RegExp(r'^(.+?)\s+aceptó tu solicitud', caseSensitive: false),
+      RegExp(r'^(.+?)\s+rechazó tu solicitud', caseSensitive: false),
+      RegExp(r'^Intercambio de\s+".+?"\s+completado con\s+(.+)$', caseSensitive: false),
     ];
 
     for (final pattern in patterns) {
@@ -191,30 +195,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required String fallback,
   }) {
     if (notification == null) return fallback;
-
-    final postTitle = _resolveItemTitle(notification);
-    if (postTitle.isNotEmpty) {
-      return postTitle;
-    }
-
-    final title = notification.title.trim();
-    if (title.isEmpty) return fallback;
-    return title;
+    return _resolveUiTitle(notification);
   }
 
   String _resolveCardTitle(NotificationModel notification) {
-    final postTitle = _resolveItemTitle(notification);
-    if (postTitle.isNotEmpty) {
-      return postTitle;
-    }
-
-    final normalizedBody = notification.body.trim().toLowerCase();
-    if (notification.type.toLowerCase() == 'exchange_requested' ||
-        normalizedBody.startsWith('tu solicitud fue enviada')) {
-      return 'Solicitud enviada';
-    }
-
-    return _resolveUserName(notification);
+    return _resolveUiTitle(notification);
   }
 
   String _resolveItemTitle(NotificationModel notification) {
@@ -226,14 +211,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final fromAltData = notification.data?['title']?.toString().trim() ?? '';
     if (fromAltData.isNotEmpty) {
       return fromAltData;
-    }
-
-    final normalizedType = notification.type.toLowerCase();
-    final normalizedTitle = notification.title.trim().toLowerCase();
-    if (normalizedType == 'exchange_requested' &&
-        normalizedTitle != 'solicitud enviada' &&
-        notification.title.trim().isNotEmpty) {
-      return notification.title.trim();
     }
 
     final exchangeId = _exchangeIdFromNotification(notification);
@@ -283,16 +260,76 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   String _resolveBody(NotificationModel notification) {
-    final actorName = _resolveUserName(notification);
-    if (_isGenericActorName(actorName)) {
+    return _resolveUiBody(notification);
+  }
+
+  String _statusKey(NotificationModel notification) {
+    final type = notification.type.toLowerCase();
+    if (type == 'exchange_cancelled') {
+      return 'cancelled';
+    }
+
+    final rawStatus = notification.data?['status']?.toString().trim().toLowerCase();
+    if (rawStatus != null && rawStatus.isNotEmpty) {
+      return rawStatus == 'declined' ? 'rejected' : rawStatus;
+    }
+
+    switch (type) {
+      case 'exchange_requested':
+        return 'requested';
+      case 'exchange_accepted':
+        return 'accepted';
+      case 'exchange_rejected':
+        return 'rejected';
+      case 'exchange_completed':
+        return 'completed';
+      default:
+        return '';
+    }
+  }
+
+  String _resolveUiTitle(NotificationModel notification) {
+    final status = _statusKey(notification);
+    if (status == 'requested') {
+      final requestedByMe = notification.data?['requestedByMe'] == true;
+      return requestedByMe ? 'Solicitud enviada' : 'Nueva solicitud';
+    }
+    if (status == 'accepted') return 'Solicitud aceptada';
+    if (status == 'rejected') return 'Solicitud rechazada';
+    if (status == 'cancelled') return 'Solicitud cancelada';
+    if (status == 'completed') return 'Intercambio completado';
+    final title = notification.title.trim();
+    return title.isEmpty ? 'Notificación' : title;
+  }
+
+  String _resolveUiBody(NotificationModel notification) {
+    final status = _statusKey(notification);
+    if (status.isEmpty) {
       return notification.body;
     }
 
-    return notification.body
-        .replaceAll(RegExp(r'\bel publicador\b', caseSensitive: false), actorName)
-        .replaceAll(RegExp(r'\bel usuario\b', caseSensitive: false), actorName)
-        .replaceAll(RegExp(r'\bun usuario\b', caseSensitive: false), actorName)
-        .replaceAll(RegExp(r'\bel propietario\b', caseSensitive: false), actorName);
+    final actor = _resolveUserName(notification);
+    final material = _resolveItemTitle(notification).trim();
+    final safeActor = actor.isEmpty ? 'Usuario' : actor;
+    final safeMaterial = material.isEmpty ? 'material' : material;
+
+    if (status == 'requested') {
+      final requestedByMe = notification.data?['requestedByMe'] == true;
+      if (requestedByMe) {
+        return 'Tu solicitud para "$safeMaterial" fue enviada';
+      }
+      return '$safeActor quiere intercambiar por "$safeMaterial"';
+    }
+    if (status == 'accepted') {
+      return '$safeActor aceptó tu solicitud para "$safeMaterial"';
+    }
+    if (status == 'rejected') {
+      return '$safeActor rechazó tu solicitud para "$safeMaterial"';
+    }
+    if (status == 'cancelled') {
+      return notification.body;
+    }
+    return 'Intercambio de "$safeMaterial" completado con $safeActor';
   }
 
   Future<void> _markAsRead(NotificationModel notification) async {
@@ -332,7 +369,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: const Color(0xFFDCD9DF),
         body: Column(
           children: const [
-            MetroSwapNavbar(developmentNav: true, heading: 'Notificaciones'),
+            MetroSwapNavbar(
+              developmentNav: true,
+              heading: 'Notificaciones',
+              showNotificationsButton: false,
+            ),
             Expanded(
               child: Center(
                 child: Text(
@@ -355,7 +396,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (snapshot.hasError && !snapshot.hasData) {
             return Column(
               children: [
-                const MetroSwapNavbar(developmentNav: true, heading: 'Notificaciones'),
+                const MetroSwapNavbar(
+                  developmentNav: true,
+                  heading: 'Notificaciones',
+                  showNotificationsButton: false,
+                ),
                 Expanded(
                   child: Center(
                     child: Padding(
@@ -376,7 +421,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final notifications = snapshot.data ?? const <NotificationModel>[];
           _primeUserNames(notifications);
           final inProgress = notifications.where(_isInProgress).toList();
-          final history = notifications.where((n) => !_isInProgress(n)).toList();
+          final history = notifications.where(_isHistory).toList();
           final latest = notifications.take(2).toList();
 
           return Column(
@@ -385,7 +430,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const MetroSwapNavbar(developmentNav: true, heading: 'Notificaciones'),
+                      const MetroSwapNavbar(
+                        developmentNav: true,
+                        heading: 'Notificaciones',
+                        showNotificationsButton: false,
+                      ),
                       const SizedBox(height: 24),
                       Center(
                         child: ConstrainedBox(
@@ -411,14 +460,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     ),
                                   ],
                                 ),
-                                IntrinsicHeight(
+                                SizedBox(
+                                  height: 520,
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Expanded(
                                         child: _buildSection(
                                           title: 'Historial',
-                                          children: _buildHistoryCards(history),
+                                          notifications: history,
                                         ),
                                       ),
                                       Container(
@@ -429,7 +479,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       Expanded(
                                         child: _buildSection(
                                           title: 'En curso',
-                                          children: _buildHistoryCards(inProgress),
+                                          notifications: inProgress,
                                         ),
                                       ),
                                     ],
@@ -482,35 +532,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  List<Widget> _buildHistoryCards(List<NotificationModel> notifications) {
-    if (notifications.isEmpty) {
-      return const [
-        _EmptyStateCard(message: 'Sin notificaciones en esta sección.'),
-      ];
-    }
-
-    final widgets = <Widget>[];
-    final maxItems = notifications.length > 3 ? 3 : notifications.length;
-    for (var i = 0; i < maxItems; i++) {
-      final notification = notifications[i];
-      final inProgress = _isInProgress(notification);
-      widgets.add(
-        _HistoryCard(
-          username: _resolveCardTitle(notification),
-          message: _resolveBody(notification),
-          timeText: _formatRelativeTime(notification.createdAt),
-          statusColor: _resolveStatusColor(notification, inProgress),
-          isUnread: !notification.read,
-          onTap: () => _openNotification(notification),
-        ),
-      );
-      if (i < maxItems - 1) {
-        widgets.add(const SizedBox(height: 14));
-      }
-    }
-    return widgets;
-  }
-
   List<Widget> _buildActivityCards(List<NotificationModel> latest) {
     final first = latest.isNotEmpty ? latest[0] : null;
     final second = latest.length > 1 ? latest[1] : null;
@@ -548,7 +569,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     ];
   }
 
-  Widget _buildSection({required String title, required List<Widget> children}) {
+  Widget _buildSection({
+    required String title,
+    required List<NotificationModel> notifications,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -563,7 +587,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        ...children,
+        Expanded(
+          child: notifications.isEmpty
+              ? const _EmptyStateCard(message: 'Sin notificaciones en esta sección.')
+              : Scrollbar(
+                  child: ListView.separated(
+                    primary: false,
+                    itemCount: notifications.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      final notification = notifications[index];
+                      final inProgress = _isInProgress(notification);
+                      return _HistoryCard(
+                        username: _resolveCardTitle(notification),
+                        message: _resolveBody(notification),
+                        timeText: _formatRelativeTime(notification.createdAt),
+                        statusColor: _resolveStatusColor(notification, inProgress),
+                        isUnread: !notification.read,
+                        onTap: () => _openNotification(notification),
+                      );
+                    },
+                  ),
+                ),
+        ),
       ],
     );
   }

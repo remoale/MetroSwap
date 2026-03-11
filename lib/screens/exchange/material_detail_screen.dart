@@ -28,6 +28,7 @@ class MaterialDetailScreen extends StatelessWidget {
     final career = currentPost?.career ?? '';
     final quantity = currentPost?.quantity ?? 1;
     final priceUsd = currentPost?.priceUsd;
+    final hasPrice = priceUsd != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE4E1E6),
@@ -249,6 +250,7 @@ class MaterialDetailScreen extends StatelessWidget {
 
                                       final firestore = FirebaseFirestore.instance;
                                       String tradeId = '';
+                                      final autoAccept = hasPrice;
 
                                       try {
                                         final requesterSnapshot = await firestore
@@ -284,6 +286,13 @@ class MaterialDetailScreen extends StatelessWidget {
                                           'createdAt': FieldValue.serverTimestamp(),
                                           'updatedAt': FieldValue.serverTimestamp(),
                                         });
+
+                                        if (autoAccept) {
+                                          await exchangeRef.update({
+                                            'status': 'accepted',
+                                            'updatedAt': FieldValue.serverTimestamp(),
+                                          });
+                                        }
                                       } on FirebaseException catch (e) {
                                         if (!context.mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
@@ -318,7 +327,7 @@ class MaterialDetailScreen extends StatelessWidget {
                                         ),
                                       );
                                     },
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Icon(
@@ -328,8 +337,8 @@ class MaterialDetailScreen extends StatelessWidget {
                                         ),
                                         SizedBox(width: 10),
                                         Text(
-                                          'Intercambiar',
-                                          style: TextStyle(
+                                          hasPrice ? 'Comprar' : 'Intercambiar',
+                                          style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 22,
                                             fontWeight: FontWeight.bold,

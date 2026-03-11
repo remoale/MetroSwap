@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:metroswap/models/notification_model.dart';
 
@@ -17,127 +15,40 @@ class NotificationService {
     String uid, {
     int limit = 50,
   }) {
-    final directNotificationsStream = _notificationsRef(uid)
+    return _notificationsRef(uid)
         .orderBy('createdAt', descending: true)
         .limit(limit)
-        .snapshots();
-    final requesterExchangesStream = _firestore
-        .collection('exchanges')
-        .where('requesterUid', isEqualTo: uid)
-        .limit(limit)
-        .snapshots();
-    final targetExchangesStream = _firestore
-        .collection('exchanges')
-        .where('targetUid', isEqualTo: uid)
-        .limit(limit)
-        .snapshots();
-    final ownerExchangesStream = _firestore
-        .collection('exchanges')
-        .where('ownerUid', isEqualTo: uid)
-        .limit(limit)
-        .snapshots();
-
-    return Stream.multi((controller) {
-      List<NotificationModel> directNotifications = const <NotificationModel>[];
-      List<NotificationModel> requesterExchangeNotifications =
-          const <NotificationModel>[];
-      List<NotificationModel> targetExchangeNotifications =
-          const <NotificationModel>[];
-      List<NotificationModel> ownerExchangeNotifications =
-          const <NotificationModel>[];
-
-      void emitMerged() {
-        final merged = _mergeNotifications(
-          directNotifications: directNotifications,
-          requesterExchangeNotifications: requesterExchangeNotifications,
-          targetExchangeNotifications: targetExchangeNotifications,
-          ownerExchangeNotifications: ownerExchangeNotifications,
-        );
-        controller.add(merged.take(limit).toList(growable: false));
-      }
-
-      final subscriptions = <StreamSubscription<dynamic>>[
-        directNotificationsStream.listen(
-          (snapshot) {
-            directNotifications = snapshot.docs
-                .map(NotificationModel.fromDoc)
-                .toList(growable: false);
-            emitMerged();
-          },
-          onError: controller.addError,
-        ),
-        requesterExchangesStream.listen(
-          (snapshot) {
-            requesterExchangeNotifications = snapshot.docs
-                .map((doc) => _notificationFromExchangeDoc(doc: doc, uid: uid))
-                .whereType<NotificationModel>()
-                .toList(growable: false);
-            emitMerged();
-          },
-          onError: (_) {
-            requesterExchangeNotifications = const <NotificationModel>[];
-            emitMerged();
-          },
-        ),
-        targetExchangesStream.listen(
-          (snapshot) {
-            targetExchangeNotifications = snapshot.docs
-                .map((doc) => _notificationFromExchangeDoc(doc: doc, uid: uid))
-                .whereType<NotificationModel>()
-                .toList(growable: false);
-            emitMerged();
-          },
-          onError: (_) {
-            targetExchangeNotifications = const <NotificationModel>[];
-            emitMerged();
-          },
-        ),
-        ownerExchangesStream.listen(
-          (snapshot) {
-            ownerExchangeNotifications = snapshot.docs
-                .map((doc) => _notificationFromExchangeDoc(doc: doc, uid: uid))
-                .whereType<NotificationModel>()
-                .toList(growable: false);
-            emitMerged();
-          },
-          onError: (_) {
-            ownerExchangeNotifications = const <NotificationModel>[];
-            emitMerged();
-          },
-        ),
-      ];
-
-      controller.onCancel = () async {
-        for (final subscription in subscriptions) {
-          await subscription.cancel();
-        }
-      };
+        .snapshots()
+        .map((snapshot) {
+      final directNotifications = snapshot.docs
+          .map(NotificationModel.fromDoc)
+          .toList(growable: false);
+      return _mergeNotifications(directNotifications: directNotifications)
+          .take(limit)
+          .toList(growable: false);
     });
   }
 
   List<NotificationModel> _mergeNotifications({
     required List<NotificationModel> directNotifications,
-    required List<NotificationModel> requesterExchangeNotifications,
-    required List<NotificationModel> targetExchangeNotifications,
-    required List<NotificationModel> ownerExchangeNotifications,
   }) {
-    final byKey = <String, NotificationModel>{};
+    final nonExchangeNotifications = <NotificationModel>[];
+    final exchangeGroups = <String, List<NotificationModel>>{};
 
     for (final notification in directNotifications) {
-      byKey[_notificationKey(notification)] = notification;
+      final exchangeId = _exchangeId(notification);
+      if (exchangeId.isEmpty) {
+        nonExchangeNotifications.add(notification);
+        continue;
+      }
+      exchangeGroups.putIfAbsent(exchangeId, () => <NotificationModel>[])
+          .add(notification);
     }
 
-    final synthetic = <NotificationModel>[
-      ...requesterExchangeNotifications,
-      ...targetExchangeNotifications,
-      ...ownerExchangeNotifications,
+    final merged = <NotificationModel>[
+      ...nonExchangeNotifications,
+      ...exchangeGroups.values.map(_pickVisibleExchangeNotification),
     ];
-    for (final notification in synthetic) {
-      final key = _notificationKey(notification);
-      byKey.putIfAbsent(key, () => notification);
-    }
-
-    final merged = byKey.values.toList(growable: false);
     merged.sort((a, b) {
       final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -146,131 +57,58 @@ class NotificationService {
     return merged;
   }
 
-  String _notificationKey(NotificationModel notification) {
-    final exchangeId = notification.data?['exchangeId']?.toString().trim() ?? '';
-    final status = notification.data?['status']?.toString().trim() ?? '';
-    if (exchangeId.isNotEmpty) {
-      return '${notification.type}|$exchangeId|$status';
-    }
-    return 'doc:${notification.id}';
+  NotificationModel _pickVisibleExchangeNotification(
+    List<NotificationModel> notifications,
+  ) {
+    const priority = <String, int>{
+      'completed': 4,
+      'rejected': 3,
+      'accepted': 2,
+      'requested': 1,
+    };
+
+    notifications.sort((a, b) {
+      final aPriority = priority[_normalizedStatus(a)] ?? 0;
+      final bPriority = priority[_normalizedStatus(b)] ?? 0;
+      if (aPriority != bPriority) {
+        return bPriority.compareTo(aPriority);
+      }
+
+      final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+
+    return notifications.first;
   }
 
-  NotificationModel? _notificationFromExchangeDoc({
-    required QueryDocumentSnapshot<Map<String, dynamic>> doc,
-    required String uid,
-  }) {
-    final data = doc.data();
-    final requesterUid = (data['requesterUid'] ?? '').toString().trim();
-    final targetUid = (data['targetUid'] ?? '').toString().trim();
-    final ownerUid = (data['ownerUid'] ?? '').toString().trim();
-    final status = (data['status'] ?? 'requested').toString().trim().toLowerCase();
-    final postTitle = (data['postTitle'] ?? '').toString().trim();
-    final exchangeId = doc.id;
-    final postId = (data['postId'] ?? '').toString().trim();
-    final rawRequesterName =
-        (data['requesterName'] ?? data['actorName'] ?? '').toString().trim();
-    final requesterName = rawRequesterName.isEmpty ? 'Un usuario' : rawRequesterName;
-    final rawOwnerName =
-        (data['ownerName'] ?? data['targetName'] ?? '').toString().trim();
-    final ownerName = rawOwnerName.isEmpty ? 'El propietario' : rawOwnerName;
+  String _exchangeId(NotificationModel notification) {
+    return notification.data?['exchangeId']?.toString().trim() ?? '';
+  }
 
-    final isRequester = requesterUid == uid;
-    final isTarget = targetUid == uid || ownerUid == uid;
-    if (!isRequester && !isTarget) {
-      return null;
+  String _normalizedStatus(NotificationModel notification) {
+    final rawStatus = notification.data?['status']?.toString().trim().toLowerCase();
+    if (rawStatus != null && rawStatus.isNotEmpty) {
+      if (rawStatus == 'declined') {
+        return 'rejected';
+      }
+      return rawStatus;
     }
 
-    final updatedAt = data['updatedAt'];
-    final createdAt = data['createdAt'];
-    final when = updatedAt is Timestamp
-        ? updatedAt.toDate()
-        : createdAt is Timestamp
-            ? createdAt.toDate()
-            : null;
-
-    String type;
-    String title;
-    String body;
-    String actorUid;
-    String actorName;
-
-    switch (status) {
-      case 'accepted':
-        type = 'exchange_accepted';
-        title = 'Intercambio aceptado';
-        if (isRequester) {
-          body = '$ownerName acepto tu solicitud de intercambio';
-          actorUid = targetUid.isNotEmpty ? targetUid : ownerUid;
-          actorName = ownerName;
-        } else {
-          body = 'Aceptaste el intercambio de $requesterName';
-          actorUid = requesterUid;
-          actorName = requesterName;
-        }
-        break;
-      case 'rejected':
-      case 'declined':
-        type = 'exchange_rejected';
-        title = 'Intercambio rechazado';
-        if (isRequester) {
-          body = '$ownerName rechazo tu solicitud de intercambio';
-          actorUid = targetUid.isNotEmpty ? targetUid : ownerUid;
-          actorName = ownerName;
-        } else {
-          body = 'Rechazaste el intercambio de $requesterName';
-          actorUid = requesterUid;
-          actorName = requesterName;
-        }
-        break;
-      case 'completed':
-        type = 'exchange_completed';
-        title = 'Intercambio completado';
-        if (isRequester) {
-          body = 'El intercambio con $ownerName fue completado';
-          actorUid = targetUid.isNotEmpty ? targetUid : ownerUid;
-          actorName = ownerName;
-        } else {
-          body = 'El intercambio con $requesterName fue completado';
-          actorUid = requesterUid;
-          actorName = requesterName;
-        }
-        break;
-      case 'requested':
-      default:
-        type = 'exchange_requested';
-        if (isRequester) {
-          title = postTitle.isEmpty ? 'Solicitud enviada' : postTitle;
-          body = ownerName.trim().isEmpty
-              ? 'Tu solicitud fue enviada'
-              : 'Tu solicitud fue enviada a $ownerName';
-          actorUid = targetUid.isNotEmpty ? targetUid : ownerUid;
-          actorName = ownerName;
-        } else {
-          title = postTitle.isEmpty ? 'Nueva solicitud de intercambio' : postTitle;
-          body = '$requesterName quiere realizar un intercambio contigo';
-          actorUid = requesterUid;
-          actorName = requesterName;
-        }
-        break;
+    final type = notification.type.trim().toLowerCase();
+    if (type == 'exchange_requested') {
+      return 'requested';
     }
-
-    return NotificationModel(
-      id: 'exchange_event_${doc.id}_$status',
-      type: type,
-      title: title,
-      body: body,
-      createdAt: when,
-      read: true,
-      readAt: when,
-      actorUid: actorUid.isEmpty ? null : actorUid,
-      data: {
-        'exchangeId': exchangeId,
-        'postId': postId.isEmpty ? null : postId,
-        'postTitle': postTitle.isEmpty ? null : postTitle,
-        'status': status,
-        'actorName': actorName,
-      },
-    );
+    if (type == 'exchange_accepted') {
+      return 'accepted';
+    }
+    if (type == 'exchange_rejected') {
+      return 'rejected';
+    }
+    if (type == 'exchange_completed') {
+      return 'completed';
+    }
+    return '';
   }
 
   Future<void> markAsRead({

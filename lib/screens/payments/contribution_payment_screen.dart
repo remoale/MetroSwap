@@ -54,6 +54,17 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
               developmentNav: true,
               heading: 'Contribuciones',
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Volver al intercambio'),
+                ),
+              ),
+            ),
             Expanded(
               child: Center(
                 child: ConstrainedBox(
