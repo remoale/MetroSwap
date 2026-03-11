@@ -12,4 +12,5 @@ Plataforma que permite a los estudiantes y docentes publicar, buscar y gestionar
 
 ## Tech Stack
 - Flutter
-- Firebase (Authentication, FireStore, Storage, Hosting)
+- Firebase (Authentication, FireStore, Storage, Hosting, Functions)
+- TypeScript
