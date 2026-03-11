@@ -84,6 +84,7 @@ export const onExchangeCreatedNotifyTarget = onDocumentCreated(
       pickString(data["buyerUid"]);
     const actorName = pickString(data["requesterName"]) || "Un usuario";
     const postId = pickString(data["postId"]);
+    const postTitle = pickString(data["postTitle"]) || pickString(data["title"]);
     const status = pickString(data["status"]) || "requested";
 
     if (!targetUid) {
@@ -102,8 +103,8 @@ export const onExchangeCreatedNotifyTarget = onDocumentCreated(
     const notificationId = await createNotification({
       targetUid,
       type: "exchange_requested",
-      title: "Nueva solicitud de intercambio",
-      body: ${actorName} quiere realizar un intercambio contigo,
+      title: postTitle || "Nueva solicitud de intercambio",
+      body: `${actorName} quiere realizar un intercambio contigo`,
       actorUid,
       exchangeId,
       postId,
@@ -168,7 +169,7 @@ export const onExchangeUpdatedNotifyParticipants = onDocumentUpdated(
         targetUid: requesterUid,
         type: "exchange_accepted",
         title: "Intercambio aceptado",
-        body: ${ownerName} aceptó tu solicitud de intercambio,
+        body: `${ownerName} aceptó tu solicitud de intercambio`,
         actorUid: ownerUid,
         exchangeId,
         postId,
@@ -188,7 +189,7 @@ export const onExchangeUpdatedNotifyParticipants = onDocumentUpdated(
         targetUid: requesterUid,
         type: "exchange_rejected",
         title: "Intercambio rechazado",
-        body: ${ownerName} rechazó tu solicitud de intercambio,
+        body: `${ownerName} rechazó tu solicitud de intercambio`,
         actorUid: ownerUid,
         exchangeId,
         postId,
@@ -208,7 +209,7 @@ export const onExchangeUpdatedNotifyParticipants = onDocumentUpdated(
         targetUid: ownerUid,
         type: "exchange_completed",
         title: "Intercambio completado",
-        body: El intercambio con ${requesterName} fue completado,
+        body: `El intercambio con ${requesterName} fue completado`,
         actorUid: requesterUid,
         exchangeId,
         postId,
@@ -219,7 +220,7 @@ export const onExchangeUpdatedNotifyParticipants = onDocumentUpdated(
         targetUid: requesterUid,
         type: "exchange_completed",
         title: "Intercambio completado",
-        body: El intercambio con ${ownerName} fue completado,
+        body: `El intercambio con ${ownerName} fue completado`,
         actorUid: ownerUid,
         exchangeId,
         postId,

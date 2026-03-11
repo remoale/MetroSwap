@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/notification_model.dart';
 import 'package:metroswap/screens/exchange/exchange.dart';
@@ -15,7 +16,19 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final NotificationService _notificationService = NotificationService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  Map<String, String>? _userNameCache;
+  Set<String>? _loadingUserNames;
+  Map<String, String>? _exchangeTitleCache;
+  Set<String>? _loadingExchangeTitles;
+  Set<String>? _blockedExchangeTitles;
   String? _uid;
+
+  Map<String, String> get _nameCache => _userNameCache ??= <String, String>{};
+  Set<String> get _loadingNames => _loadingUserNames ??= <String>{};
+  Map<String, String> get _titleCache => _exchangeTitleCache ??= <String, String>{};
+  Set<String> get _loadingTitles => _loadingExchangeTitles ??= <String>{};
+  Set<String> get _blockedTitles => _blockedExchangeTitles ??= <String>{};
 
   @override
   void initState() {
@@ -48,11 +61,120 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   String _resolveUserName(NotificationModel notification) {
-    final actorName = notification.data?['actorName']?.toString();
-    if (actorName != null && actorName.trim().isNotEmpty) {
+    final actorUid = _actorUid(notification);
+    final cachedName =
+        actorUid == null ? null : _nameCache[actorUid]?.trim();
+    if (cachedName != null && cachedName.isNotEmpty) {
+      return cachedName;
+    }
+
+    final actorName = notification.data?['actorName']?.toString().trim() ?? '';
+    if (actorName.isNotEmpty && !_isGenericActorName(actorName)) {
       return actorName;
     }
-    return '[Nombre de Usuario]';
+
+    final bodyName = _extractNameFromBody(notification.body);
+    if (bodyName.isNotEmpty && !_isGenericActorName(bodyName)) {
+      return bodyName;
+    }
+
+    if (actorUid != null) {
+      _resolveUserNameFromUid(actorUid);
+    }
+    return 'Usuario';
+  }
+
+  String? _actorUid(NotificationModel notification) {
+    final fromData = notification.data?['actorUid']?.toString().trim();
+    if (fromData != null && fromData.isNotEmpty) {
+      return fromData;
+    }
+
+    final fromField = notification.actorUid?.trim();
+    if (fromField != null && fromField.isNotEmpty) {
+      return fromField;
+    }
+    return null;
+  }
+
+  bool _isGenericActorName(String value) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'el publicador' ||
+        normalized == 'el usuario' ||
+        normalized == 'un usuario' ||
+        normalized == 'el propietario' ||
+        normalized == 'propietario' ||
+        normalized == 'usuario';
+  }
+
+  String _extractNameFromBody(String body) {
+    final text = body.trim();
+    if (text.isEmpty) return '';
+
+    final patterns = <RegExp>[
+      RegExp(r'^(.+?)\s+quiere realizar un intercambio contigo$', caseSensitive: false),
+      RegExp(r'^El intercambio con\s+(.+?)\s+fue completado$', caseSensitive: false),
+      RegExp(r'^Tu solicitud fue enviada a\s+(.+)$', caseSensitive: false),
+      RegExp(r'^Aceptaste el intercambio de\s+(.+)$', caseSensitive: false),
+      RegExp(r'^Rechazaste el intercambio de\s+(.+)$', caseSensitive: false),
+    ];
+
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null) {
+        final extracted = (match.group(1) ?? '').trim();
+        if (extracted.isNotEmpty) {
+          return extracted;
+        }
+      }
+    }
+    return '';
+  }
+
+  void _resolveUserNameFromUid(String uid) {
+    if (_isUidLoading(uid) || _nameCache[uid] != null) {
+      return;
+    }
+
+    _loadingNames.add(uid);
+    _firestore.collection('users').doc(uid).get().then((snapshot) {
+      final data = snapshot.data();
+      final resolved = (data?['name'] ??
+              data?['displayName'] ??
+              data?['fullName'] ??
+              data?['email'] ??
+              '')
+          .toString()
+          .trim();
+      if (!mounted) return;
+
+      if (resolved.isNotEmpty) {
+        setState(() {
+          _nameCache[uid] = resolved;
+        });
+      }
+    }).whenComplete(() {
+      _loadingNames.remove(uid);
+    });
+  }
+
+  bool _isUidLoading(String uid) {
+    final set = _loadingUserNames;
+    if (set == null) return false;
+    return set.lookup(uid) != null;
+  }
+
+  void _primeUserNames(List<NotificationModel> notifications) {
+    for (final notification in notifications) {
+      final uid = _actorUid(notification);
+      if (uid != null) {
+        _resolveUserNameFromUid(uid);
+      }
+      final exchangeId = _exchangeIdFromNotification(notification);
+      if (exchangeId.isNotEmpty) {
+        _resolveItemTitleFromExchange(exchangeId);
+      }
+    }
   }
 
   String _formatRelativeTime(DateTime? createdAt) {
@@ -62,6 +184,115 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
     if (diff.inHours < 24) return 'Hace ${diff.inHours} h';
     return 'Hace ${diff.inDays} d';
+  }
+
+  String _resolveTitle(
+    NotificationModel? notification, {
+    required String fallback,
+  }) {
+    if (notification == null) return fallback;
+
+    final postTitle = _resolveItemTitle(notification);
+    if (postTitle.isNotEmpty) {
+      return postTitle;
+    }
+
+    final title = notification.title.trim();
+    if (title.isEmpty) return fallback;
+    return title;
+  }
+
+  String _resolveCardTitle(NotificationModel notification) {
+    final postTitle = _resolveItemTitle(notification);
+    if (postTitle.isNotEmpty) {
+      return postTitle;
+    }
+
+    final normalizedBody = notification.body.trim().toLowerCase();
+    if (notification.type.toLowerCase() == 'exchange_requested' ||
+        normalizedBody.startsWith('tu solicitud fue enviada')) {
+      return 'Solicitud enviada';
+    }
+
+    return _resolveUserName(notification);
+  }
+
+  String _resolveItemTitle(NotificationModel notification) {
+    final fromData = notification.data?['postTitle']?.toString().trim() ?? '';
+    if (fromData.isNotEmpty) {
+      return fromData;
+    }
+
+    final fromAltData = notification.data?['title']?.toString().trim() ?? '';
+    if (fromAltData.isNotEmpty) {
+      return fromAltData;
+    }
+
+    final normalizedType = notification.type.toLowerCase();
+    final normalizedTitle = notification.title.trim().toLowerCase();
+    if (normalizedType == 'exchange_requested' &&
+        normalizedTitle != 'solicitud enviada' &&
+        notification.title.trim().isNotEmpty) {
+      return notification.title.trim();
+    }
+
+    final exchangeId = _exchangeIdFromNotification(notification);
+    if (exchangeId.isNotEmpty) {
+      final cached = _titleCache[exchangeId]?.trim();
+      if (cached != null && cached.isNotEmpty) {
+        return cached;
+      }
+      _resolveItemTitleFromExchange(exchangeId);
+    }
+
+    return '';
+  }
+
+  bool _isExchangeTitleLoading(String exchangeId) {
+    final set = _loadingExchangeTitles;
+    if (set == null) return false;
+    return set.lookup(exchangeId) != null;
+  }
+
+  void _resolveItemTitleFromExchange(String exchangeId) {
+    if (_isExchangeTitleLoading(exchangeId) ||
+        _titleCache[exchangeId] != null ||
+        _blockedTitles.lookup(exchangeId) != null) {
+      return;
+    }
+
+    _loadingTitles.add(exchangeId);
+    _firestore.collection('exchanges').doc(exchangeId).get().then((snapshot) {
+      final data = snapshot.data();
+      final resolved = (data?['postTitle'] ?? data?['title'] ?? '')
+          .toString()
+          .trim();
+      if (!mounted) return;
+      if (resolved.isNotEmpty) {
+        setState(() {
+          _titleCache[exchangeId] = resolved;
+        });
+      }
+    }).catchError((error) {
+      if (error is FirebaseException && error.code == 'permission-denied') {
+        _blockedTitles.add(exchangeId);
+      }
+    }).whenComplete(() {
+      _loadingTitles.remove(exchangeId);
+    });
+  }
+
+  String _resolveBody(NotificationModel notification) {
+    final actorName = _resolveUserName(notification);
+    if (_isGenericActorName(actorName)) {
+      return notification.body;
+    }
+
+    return notification.body
+        .replaceAll(RegExp(r'\bel publicador\b', caseSensitive: false), actorName)
+        .replaceAll(RegExp(r'\bel usuario\b', caseSensitive: false), actorName)
+        .replaceAll(RegExp(r'\bun usuario\b', caseSensitive: false), actorName)
+        .replaceAll(RegExp(r'\bel propietario\b', caseSensitive: false), actorName);
   }
 
   Future<void> _markAsRead(NotificationModel notification) async {
@@ -143,6 +374,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
 
           final notifications = snapshot.data ?? const <NotificationModel>[];
+          _primeUserNames(notifications);
           final inProgress = notifications.where(_isInProgress).toList();
           final history = notifications.where((n) => !_isInProgress(n)).toList();
           final latest = notifications.take(2).toList();
@@ -264,8 +496,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final inProgress = _isInProgress(notification);
       widgets.add(
         _HistoryCard(
-          username: _resolveUserName(notification),
-          message: notification.body,
+          username: _resolveCardTitle(notification),
+          message: _resolveBody(notification),
           timeText: _formatRelativeTime(notification.createdAt),
           statusColor: _resolveStatusColor(notification, inProgress),
           isUnread: !notification.read,
@@ -286,8 +518,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return [
       _ActivityCard(
         isDark: true,
-        title: first?.title.isNotEmpty == true ? first!.title : 'Nueva Notificación!',
-        body: first?.body ?? 'No hay actividad reciente.',
+        title: _resolveTitle(
+          first,
+          fallback: 'Nueva Notificación!',
+        ),
+        body: first != null
+            ? _resolveBody(first)
+            : 'No hay actividad reciente.',
         trailingText: _formatRelativeTime(first?.createdAt),
         icon: Icons.dashboard_outlined,
         isUnread: first != null && !first.read,
@@ -295,8 +532,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       _ActivityCard(
         isDark: false,
-        title: second?.title.isNotEmpty == true ? second!.title : 'Notificación',
-        body: second?.body ?? 'No hay actividad reciente.',
+        title: _resolveTitle(
+          second,
+          fallback: 'Notificación',
+        ),
+        body: second != null
+            ? _resolveBody(second)
+            : 'No hay actividad reciente.',
         trailingText: _formatRelativeTime(second?.createdAt),
         icon: Icons.person_outline,
         showAction: second != null && _exchangeIdFromNotification(second).isNotEmpty,

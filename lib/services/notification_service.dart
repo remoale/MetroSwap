@@ -239,14 +239,14 @@ class NotificationService {
       default:
         type = 'exchange_requested';
         if (isRequester) {
-          title = 'Solicitud enviada';
-          body = postTitle.isEmpty
-              ? 'Tu solicitud de intercambio fue enviada'
-              : 'Tu solicitud para "$postTitle" fue enviada';
+          title = postTitle.isEmpty ? 'Solicitud enviada' : postTitle;
+          body = ownerName.trim().isEmpty
+              ? 'Tu solicitud fue enviada'
+              : 'Tu solicitud fue enviada a $ownerName';
           actorUid = targetUid.isNotEmpty ? targetUid : ownerUid;
           actorName = ownerName;
         } else {
-          title = 'Nueva solicitud de intercambio';
+          title = postTitle.isEmpty ? 'Nueva solicitud de intercambio' : postTitle;
           body = '$requesterName quiere realizar un intercambio contigo';
           actorUid = requesterUid;
           actorName = requesterName;
@@ -260,13 +260,13 @@ class NotificationService {
       title: title,
       body: body,
       createdAt: when,
-      // Son notificaciones sinteticas para visualizar estado del intercambio.
       read: true,
       readAt: when,
       actorUid: actorUid.isEmpty ? null : actorUid,
       data: {
         'exchangeId': exchangeId,
         'postId': postId.isEmpty ? null : postId,
+        'postTitle': postTitle.isEmpty ? null : postTitle,
         'status': status,
         'actorName': actorName,
       },
