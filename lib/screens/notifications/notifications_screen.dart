@@ -594,7 +594,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   child: ListView.separated(
                     primary: false,
                     itemCount: notifications.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (context, index) {
                       final notification = notifications[index];
                       final inProgress = _isInProgress(notification);
