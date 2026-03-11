@@ -20,6 +20,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Map<String, String>? _userNameCache;
   Set<String>? _loadingUserNames;
   Map<String, String>? _exchangeTitleCache;
+  Map<String, String>? _exchangeStatusCache;
   Set<String>? _loadingExchangeTitles;
   Set<String>? _blockedExchangeTitles;
   String? _uid;
@@ -27,6 +28,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Map<String, String> get _nameCache => _userNameCache ??= <String, String>{};
   Set<String> get _loadingNames => _loadingUserNames ??= <String>{};
   Map<String, String> get _titleCache => _exchangeTitleCache ??= <String, String>{};
+  Map<String, String> get _statusCache => _exchangeStatusCache ??= <String, String>{};
   Set<String> get _loadingTitles => _loadingExchangeTitles ??= <String>{};
   Set<String> get _blockedTitles => _blockedExchangeTitles ??= <String>{};
 
@@ -37,17 +39,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   bool _isInProgress(NotificationModel notification) {
-    final status = _statusKey(notification);
+    final status = _effectiveStatusKey(notification);
     return status == 'requested' || status == 'accepted';
   }
 
   bool _isHistory(NotificationModel notification) {
-    final status = _statusKey(notification);
+    final status = _effectiveStatusKey(notification);
     return status == 'rejected' || status == 'cancelled' || status == 'completed';
   }
 
   Color _resolveStatusColor(NotificationModel notification, bool inProgress) {
-    final status = _statusKey(notification);
+    final status = _effectiveStatusKey(notification);
     if (inProgress && status == 'requested') {
       return const Color(0xFFEBCD35);
     }
@@ -233,7 +235,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _resolveItemTitleFromExchange(String exchangeId) {
     if (_isExchangeTitleLoading(exchangeId) ||
-        _titleCache[exchangeId] != null ||
+        (_titleCache[exchangeId] != null && _statusCache[exchangeId] != null) ||
         _blockedTitles.lookup(exchangeId) != null) {
       return;
     }
@@ -244,10 +246,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final resolved = (data?['postTitle'] ?? data?['title'] ?? '')
           .toString()
           .trim();
+      final rawStatus = data?['status']?.toString().trim().toLowerCase() ?? '';
+      final resolvedStatus = rawStatus == 'declined' ||
+              rawStatus == 'cancelled' ||
+              rawStatus == 'canceled'
+          ? 'cancelled'
+          : rawStatus == 'rejected'
+              ? 'rejected'
+              : rawStatus == 'completed' ||
+                      rawStatus == 'finalized' ||
+                      rawStatus == 'finalizado'
+                  ? 'completed'
+                  : rawStatus;
       if (!mounted) return;
-      if (resolved.isNotEmpty) {
+      if (resolved.isNotEmpty || resolvedStatus.isNotEmpty) {
         setState(() {
-          _titleCache[exchangeId] = resolved;
+          if (resolved.isNotEmpty) {
+            _titleCache[exchangeId] = resolved;
+          }
+          if (resolvedStatus.isNotEmpty) {
+            _statusCache[exchangeId] = resolvedStatus;
+          }
         });
       }
     }).catchError((error) {
@@ -263,6 +282,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return _resolveUiBody(notification);
   }
 
+  String _effectiveStatusKey(NotificationModel notification) {
+    final notificationStatus = _statusKey(notification);
+    final exchangeId = _exchangeIdFromNotification(notification);
+    if (exchangeId.isEmpty) {
+      return notificationStatus;
+    }
+
+    final exchangeStatus = _statusCache[exchangeId];
+    if (exchangeStatus == null || exchangeStatus.isEmpty) {
+      return notificationStatus;
+    }
+
+    if ((notificationStatus == 'requested' || notificationStatus == 'accepted') &&
+        (exchangeStatus == 'rejected' ||
+            exchangeStatus == 'cancelled' ||
+            exchangeStatus == 'completed')) {
+      return exchangeStatus;
+    }
+
+    return notificationStatus;
+  }
+
   String _statusKey(NotificationModel notification) {
     final type = notification.type.toLowerCase();
     if (type == 'exchange_cancelled') {
@@ -271,7 +312,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     final rawStatus = notification.data?['status']?.toString().trim().toLowerCase();
     if (rawStatus != null && rawStatus.isNotEmpty) {
-      return rawStatus == 'declined' ? 'rejected' : rawStatus;
+      if (rawStatus == 'declined' || rawStatus == 'cancelled' || rawStatus == 'canceled') {
+        return 'cancelled';
+      }
+      if (rawStatus == 'rejected') {
+        return 'rejected';
+      }
+      if (rawStatus == 'completed' || rawStatus == 'finalized' || rawStatus == 'finalizado') {
+        return 'completed';
+      }
+      return rawStatus;
     }
 
     switch (type) {
@@ -289,7 +339,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   String _resolveUiTitle(NotificationModel notification) {
-    final status = _statusKey(notification);
+    final status = _effectiveStatusKey(notification);
     if (status == 'requested') {
       final requestedByMe = notification.data?['requestedByMe'] == true;
       return requestedByMe ? 'Solicitud enviada' : 'Nueva solicitud';
@@ -303,7 +353,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   String _resolveUiBody(NotificationModel notification) {
-    final status = _statusKey(notification);
+    final status = _effectiveStatusKey(notification);
     if (status.isEmpty) {
       return notification.body;
     }

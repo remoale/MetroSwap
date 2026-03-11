@@ -62,6 +62,7 @@ class NotificationService {
   ) {
     const priority = <String, int>{
       'completed': 4,
+      'cancelled': 3,
       'rejected': 3,
       'accepted': 2,
       'requested': 1,
@@ -89,8 +90,14 @@ class NotificationService {
   String _normalizedStatus(NotificationModel notification) {
     final rawStatus = notification.data?['status']?.toString().trim().toLowerCase();
     if (rawStatus != null && rawStatus.isNotEmpty) {
-      if (rawStatus == 'declined') {
+      if (rawStatus == 'declined' || rawStatus == 'cancelled' || rawStatus == 'canceled') {
+        return 'cancelled';
+      }
+      if (rawStatus == 'rejected') {
         return 'rejected';
+      }
+      if (rawStatus == 'completed' || rawStatus == 'finalized' || rawStatus == 'finalizado') {
+        return 'completed';
       }
       return rawStatus;
     }
@@ -104,6 +111,9 @@ class NotificationService {
     }
     if (type == 'exchange_rejected') {
       return 'rejected';
+    }
+    if (type == 'exchange_cancelled') {
+      return 'cancelled';
     }
     if (type == 'exchange_completed') {
       return 'completed';
