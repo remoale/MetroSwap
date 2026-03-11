@@ -184,6 +184,16 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   }
 
   Future<void> _goToContributionPayment(ExchangeModel exchange) async {
+    if (_isPostOwner(exchange)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El propietario no debe enviar contribuciones.'),
+        ),
+      );
+      return;
+    }
+
     if (exchange.status != ExchangeModel.statusAccepted) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -473,7 +483,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                       runSpacing: 14,
                                       alignment: WrapAlignment.center,
                                       children: [
-                                        if (isAccepted)
+                                        if (isAccepted && !isPostOwner)
                                           SizedBox(
                                             width: 250,
                                             height: 45,

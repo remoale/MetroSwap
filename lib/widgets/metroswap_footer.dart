@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metroswap/utils/admin_utils.dart';
 
 class MetroSwapFooter extends StatefulWidget {
   const MetroSwapFooter({super.key});
@@ -9,7 +10,6 @@ class MetroSwapFooter extends StatefulWidget {
 }
 
 class _MetroSwapFooterState extends State<MetroSwapFooter> {
-  static const String _adminEmail = 'administrador.metroswap@correo.unimet.edu.ve';
   bool _isAdmin = false;
   // Mantenemos el color gris original para usuarios normales
   final Color _colorOriginal = const Color(0xFF333333); 
@@ -20,7 +20,7 @@ class _MetroSwapFooterState extends State<MetroSwapFooter> {
   void initState() {
     super.initState();
     final email = FirebaseAuth.instance.currentUser?.email?.trim().toLowerCase();
-    _isAdmin = email == _adminEmail;
+    _isAdmin = isAdminEmail(email);
   }
 
   @override

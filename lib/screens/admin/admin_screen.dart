@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart'; 
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/screens/admin/manage_posts_screen.dart';
 import 'package:metroswap/screens/admin/manage_profiles_screen.dart';
+import 'package:metroswap/utils/admin_utils.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -14,6 +16,8 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
+  bool _isAuthorizing = true;
+  bool _isAuthorized = false;
   bool _isLoading = true;
   
   int _totalMembers = 0;
@@ -40,7 +44,21 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData();
+    _authorizeAndFetch();
+  }
+
+  Future<void> _authorizeAndFetch() async {
+    final email = FirebaseAuth.instance.currentUser?.email;
+    final isAuthorized = isAdminEmail(email);
+
+    if (!mounted) return;
+    setState(() {
+      _isAuthorized = isAuthorized;
+      _isAuthorizing = false;
+    });
+
+    if (!isAuthorized) return;
+    await _fetchDashboardData();
   }
 
   Future<void> _fetchDashboardData() async {
@@ -59,7 +77,7 @@ class _AdminScreenState extends State<AdminScreen> {
         if (career.isEmpty) career = 'No especificada';
         tempCareerCounts[career] = (tempCareerCounts[career] ?? 0) + 1;
 
-        if (data['status'] == 'Suspendido') {
+        if (isSuspendedUserStatus(data['status'])) {
           suspendedCount++;
         }
       }
@@ -86,12 +104,13 @@ class _AdminScreenState extends State<AdminScreen> {
         }
       }
 
-      // 3. OBTENER TOTAL DE INTERCAMBIOS Y SUMAR CONTRIBUCIONES (SOLO COMPLETADOS)
+      // 3. OBTENER TOTAL DE INTERCAMBIOS (TODOS) Y SUMAR CONTRIBUCIONES (SOLO COMPLETADOS)
       int exchangesCount = 0;
       double tempContributions = 0.0;
       
       try {
         final exchangesSnap = await FirebaseFirestore.instance.collection('exchanges').get();
+        exchangesCount = exchangesSnap.docs.length;
 
         for (var doc in exchangesSnap.docs) {
           final data = doc.data();
@@ -99,10 +118,8 @@ class _AdminScreenState extends State<AdminScreen> {
           // Buscamos el campo de estado ('status' o 'estado')
           String status = (data['status'] ?? data['estado'] ?? '').toString().toLowerCase();
           
-          // Si el estado es "completado" o "completed", lo contamos
+          // Si el estado es "completado" o "completed", sumamos su contribución
           if (status == 'completado' || status == 'completed') {
-            exchangesCount++; // Aumentamos el contador de intercambios
-            
             // Solo si está completado, sumamos el dinero (si es que tiene el campo 'price')
             if (data.containsKey('price') && data['price'] != null) {
               tempContributions += (data['price'] as num).toDouble();
@@ -153,7 +170,11 @@ class _AdminScreenState extends State<AdminScreen> {
           const SizedBox(height: 20),
 
           Expanded(
-            child: _isLoading
+            child: _isAuthorizing
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
+                : !_isAuthorized
+                    ? _buildUnauthorizedState()
+                    : _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
                 : SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 10.0),
@@ -171,7 +192,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       'Total productos', 
                                       _totalProducts.toString(), 
                                       Icons.computer,
-                                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManagePostsScreen())),
+                                      onTap: _openManagePosts,
                                     ),
                                   ),
                                   const SizedBox(width: 15),
@@ -180,7 +201,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       'Miembros', 
                                       _totalMembers.toString(), 
                                       Icons.person,
-                                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageProfilesScreen())),
+                                      onTap: _openManageProfiles,
                                     ),
                                   ),
                                   const SizedBox(width: 15),
@@ -189,12 +210,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       'Suspendidos', 
                                       _suspendedUsers.toString(), 
                                       Icons.person_off,
-                                      onTap: () => Navigator.push(
-                                        context, 
-                                        MaterialPageRoute(
-                                          builder: (context) => const ManageProfilesScreen(showOnlySuspended: true) 
-                                        ),
-                                      ),
+                                      onTap: () => _openManageProfiles(showOnlySuspended: true),
                                     ),
                                   ),
                                 ],
@@ -384,6 +400,52 @@ class _AdminScreenState extends State<AdminScreen> {
                   ),
           ),
           const MetroSwapFooter(),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openManagePosts() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ManagePostsScreen()),
+    );
+    if (!mounted || !_isAuthorized) return;
+    setState(() => _isLoading = true);
+    await _fetchDashboardData();
+  }
+
+  Future<void> _openManageProfiles({bool showOnlySuspended = false}) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ManageProfilesScreen(showOnlySuspended: showOnlySuspended),
+      ),
+    );
+    if (!mounted || !_isAuthorized) return;
+    setState(() => _isLoading = true);
+    await _fetchDashboardData();
+  }
+
+  Widget _buildUnauthorizedState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.lock_outline, size: 52, color: Colors.grey),
+          const SizedBox(height: 12),
+          const Text(
+            'No tienes permisos de administrador para acceder a este panel.',
+            style: TextStyle(fontSize: 16, color: Colors.black87),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Volver'),
+          ),
         ],
       ),
     );

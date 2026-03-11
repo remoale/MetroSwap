@@ -7,6 +7,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {getAuth} from "firebase-admin/auth";
 
 // Configuración global para controlar costos y concurrencia.
 setGlobalOptions({maxInstances: 10});
@@ -14,6 +15,7 @@ setGlobalOptions({maxInstances: 10});
 initializeApp();
 
 const db = getFirestore();
+const auth = getAuth();
 
 /**
  * Retorna string con trim cuando el valor es texto; si no, retorna vacío.
@@ -42,6 +44,16 @@ function pickNumber(value: unknown): number | null {
   }
 
   return null;
+}
+
+/**
+ * Normaliza estado de usuario y determina si está suspendido.
+ * @param {unknown} value Estado crudo.
+ * @return {boolean} True cuando representa "Suspendido/Suspended".
+ */
+function isSuspendedStatus(value: unknown): boolean {
+  const normalized = pickString(value).toLowerCase();
+  return normalized === "suspendido" || normalized === "suspended";
 }
 
 /**
@@ -463,3 +475,41 @@ export const createExchangePayment = onCall(async (request) => {
     status: "pending",
   };
 });
+
+export const onUserSuspensionStatusChangedSyncAuth = onDocumentUpdated(
+  "users/{userId}",
+  async (event) => {
+    const userId = event.params.userId;
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+
+    if (!after) {
+      return;
+    }
+
+    const beforeSuspended = isSuspendedStatus(before?.["status"]);
+    const afterSuspended = isSuspendedStatus(after["status"]);
+
+    if (beforeSuspended === afterSuspended) {
+      return;
+    }
+
+    try {
+      await auth.updateUser(userId, {disabled: afterSuspended});
+      if (afterSuspended) {
+        await auth.revokeRefreshTokens(userId);
+      }
+      logger.info("Sincronizado estado de suspensión hacia Firebase Auth", {
+        userId,
+        disabled: afterSuspended,
+      });
+    } catch (error) {
+      logger.error("No se pudo sincronizar suspensión en Firebase Auth", {
+        userId,
+        disabled: afterSuspended,
+        error,
+      });
+      throw error;
+    }
+  },
+);

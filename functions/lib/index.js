@@ -33,17 +33,19 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createExchangePayment = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
+exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const logger = __importStar(require("firebase-functions/logger"));
 const app_1 = require("firebase-admin/app");
 const firestore_2 = require("firebase-admin/firestore");
+const auth_1 = require("firebase-admin/auth");
 // Configuración global para controlar costos y concurrencia.
 (0, firebase_functions_1.setGlobalOptions)({ maxInstances: 10 });
 (0, app_1.initializeApp)();
 const db = (0, firestore_2.getFirestore)();
+const auth = (0, auth_1.getAuth)();
 /**
  * Retorna string con trim cuando el valor es texto; si no, retorna vacío.
  * @param {unknown} value Valor de entrada.
@@ -68,6 +70,15 @@ function pickNumber(value) {
         }
     }
     return null;
+}
+/**
+ * Normaliza estado de usuario y determina si está suspendido.
+ * @param {unknown} value Estado crudo.
+ * @return {boolean} True cuando representa "Suspendido/Suspended".
+ */
+function isSuspendedStatus(value) {
+    const normalized = pickString(value).toLowerCase();
+    return normalized === "suspendido" || normalized === "suspended";
 }
 /**
  * Crea un documento de notificación para un usuario destino.
@@ -404,5 +415,37 @@ exports.createExchangePayment = (0, https_1.onCall)(async (request) => {
         currency: "USD",
         status: "pending",
     };
+});
+exports.onUserSuspensionStatusChangedSyncAuth = (0, firestore_1.onDocumentUpdated)("users/{userId}", async (event) => {
+    var _a, _b;
+    const userId = event.params.userId;
+    const before = (_a = event.data) === null || _a === void 0 ? void 0 : _a.before.data();
+    const after = (_b = event.data) === null || _b === void 0 ? void 0 : _b.after.data();
+    if (!after) {
+        return;
+    }
+    const beforeSuspended = isSuspendedStatus(before === null || before === void 0 ? void 0 : before["status"]);
+    const afterSuspended = isSuspendedStatus(after["status"]);
+    if (beforeSuspended === afterSuspended) {
+        return;
+    }
+    try {
+        await auth.updateUser(userId, { disabled: afterSuspended });
+        if (afterSuspended) {
+            await auth.revokeRefreshTokens(userId);
+        }
+        logger.info("Sincronizado estado de suspensión hacia Firebase Auth", {
+            userId,
+            disabled: afterSuspended,
+        });
+    }
+    catch (error) {
+        logger.error("No se pudo sincronizar suspensión en Firebase Auth", {
+            userId,
+            disabled: afterSuspended,
+            error,
+        });
+        throw error;
+    }
 });
 //# sourceMappingURL=index.js.map

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metroswap/utils/admin_utils.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 
@@ -11,13 +13,29 @@ class ManagePostsScreen extends StatefulWidget {
 }
 
 class _ManagePostsScreenState extends State<ManagePostsScreen> {
+  bool _isAuthorizing = true;
+  bool _isAuthorized = false;
   bool _isLoading = true;
   List<Map<String, dynamic>> _posts = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchPosts();
+    _authorizeAndFetch();
+  }
+
+  Future<void> _authorizeAndFetch() async {
+    final email = FirebaseAuth.instance.currentUser?.email;
+    final isAuthorized = isAdminEmail(email);
+
+    if (!mounted) return;
+    setState(() {
+      _isAuthorized = isAuthorized;
+      _isAuthorizing = false;
+    });
+
+    if (!isAuthorized) return;
+    await _fetchPosts();
   }
 
   // --- OBTENER PUBLICACIONES DE FIREBASE ---
@@ -133,7 +151,11 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
           const MetroSwapNavbar(developmentNav: false, heading: 'Gestionar Publicaciones'),
           
           Expanded(
-            child: _isLoading
+            child: _isAuthorizing
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
+                : !_isAuthorized
+                    ? _buildUnauthorizedState()
+                    : _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(30.0),
@@ -242,6 +264,29 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
           ),
           
           const MetroSwapFooter(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnauthorizedState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.lock_outline, size: 52, color: Colors.grey),
+          const SizedBox(height: 12),
+          const Text(
+            'No tienes permisos de administrador para gestionar publicaciones.',
+            style: TextStyle(fontSize: 16, color: Colors.black87),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Volver'),
+          ),
         ],
       ),
     );

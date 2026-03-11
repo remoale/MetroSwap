@@ -9,6 +9,7 @@ import 'package:metroswap/screens/notifications/notifications_screen.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/screens/publish/publish_screen.dart';
 import 'package:metroswap/services/auth_service.dart';
+import 'package:metroswap/utils/admin_utils.dart';
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
 class MetroSwapNavbar extends StatefulWidget {
@@ -32,9 +33,6 @@ class MetroSwapNavbar extends StatefulWidget {
 }
 
 class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
-  static const String _adminEmail =
-      'administrador.metroswap@correo.unimet.edu.ve';
-
   bool _isAdmin = false;
   final Color _colorOriginal = const Color(0xFF2C2C2C);
   final Color _colorAdmin = const Color(0xFFC93C20);
@@ -43,7 +41,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
   void initState() {
     super.initState();
     final email = FirebaseAuth.instance.currentUser?.email?.trim().toLowerCase();
-    _isAdmin = email == _adminEmail;
+    _isAdmin = isAdminEmail(email);
   }
 
   void _navigateToAdmin(BuildContext context) {

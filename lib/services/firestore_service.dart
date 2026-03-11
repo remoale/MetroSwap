@@ -3,16 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/user_model.dart';
 import 'storage_service.dart';
+import '../utils/admin_utils.dart';
 
 class FirestoreService {
-  static const String _adminEmail = 'administrador.metroswap@correo.unimet.edu.ve';
-
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final StorageService _storage = StorageService();
 
   String _resolveRoleFromEmail(String? email) {
     final normalized = email?.trim().toLowerCase() ?? '';
-    if (normalized == _adminEmail) {
+    if (isAdminEmail(normalized)) {
       return 'admin';
     }
     if (normalized.endsWith('@unimet.edu.ve')) {

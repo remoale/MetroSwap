@@ -6,6 +6,7 @@ import 'package:metroswap/screens/auth/register_screen.dart';
 import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:metroswap/services/auth_service.dart';
+import 'package:metroswap/utils/admin_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -54,8 +55,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (currentUser != null) {
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
         if (userDoc.exists) {
-          final status = userDoc.data()?['status'] ?? 'Activo';
-          if (status == 'Suspendido') {
+          final status = userDoc.data()?['status'];
+          if (isSuspendedUserStatus(status)) {
             await FirebaseAuth.instance.signOut(); // Forzamos el cierre de sesión
             throw Exception('Tu cuenta ha sido suspendida por un administrador.');
           }
@@ -90,8 +91,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (currentUser != null) {
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
         if (userDoc.exists) {
-          final status = userDoc.data()?['status'] ?? 'Activo';
-          if (status == 'Suspendido') {
+          final status = userDoc.data()?['status'];
+          if (isSuspendedUserStatus(status)) {
             await FirebaseAuth.instance.signOut(); // Forzamos el cierre de sesión
             throw Exception('Tu cuenta ha sido suspendida por un administrador.');
           }

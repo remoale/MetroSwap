@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:metroswap/screens/home_screen.dart';
+import 'package:metroswap/utils/admin_utils.dart';
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -12,8 +13,6 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  static const String _adminEmail = 'administrador.metroswap@correo.unimet.edu.ve';
-
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _carnetController = TextEditingController();
   final TextEditingController _telefonoController = TextEditingController();
@@ -74,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String _resolveRoleFromEmail(String email) {
     final normalized = email.trim().toLowerCase();
-    if (normalized == _adminEmail) {
+    if (isAdminEmail(normalized)) {
       return 'admin';
     }
     if (normalized.endsWith('@unimet.edu.ve')) {
