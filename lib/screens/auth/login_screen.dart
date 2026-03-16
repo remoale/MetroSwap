@@ -126,249 +126,315 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          Expanded(
-            flex: 1,
-            child: Container(
-              color: const Color(0xFF333333),
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: SafeArea(
-                child: Stack(
-                  children: [
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 24),
-                        child: IconButton(
-                          onPressed: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LandingScreen(),
-                              ),
-                            );
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          tooltip: 'Volver',
-                        ),
-                      ),
+  // --- WIDGETS REUTILIZABLES ---
+  
+  Widget _buildBackButton() {
+    return IconButton(
+      onPressed: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LandingScreen(),
+          ),
+        );
+      },
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      icon: const Icon(
+        Icons.arrow_back_ios_new,
+        color: Colors.white,
+        size: 20,
+      ),
+      tooltip: 'Volver',
+    );
+  }
+
+  Widget _buildFormContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'BIENVENIDO A METROSWAP',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 30),
+        TextField(
+          controller: _emailController,
+          decoration: InputDecoration(
+            hintText: 'Correo institucional',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 15,
+              vertical: 15,
+            ),
+          ),
+        ),
+        const SizedBox(height: 15),
+        TextField(
+          controller: _passwordController,
+          obscureText: _obscurePassword, 
+          decoration: InputDecoration(
+            hintText: 'Contraseña',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 15,
+              vertical: 15,
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: Colors.grey.shade600,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ForgotPasswordScreen(),
+              ),
+            );
+          },
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+          child: const Text(
+            '¿OLVIDASTE LA CONTRASEÑA?',
+            style: TextStyle(color: Colors.white60, fontSize: 10),
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: 45,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _handleEmailLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF6B00),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'BIENVENIDO A METROSWAP',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-                          TextField(
-                            controller: _emailController,
-                            decoration: InputDecoration(
-                              hintText: 'Correo institucional',
-                              filled: true,
-                              fillColor: Colors.white,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 15,
-                                vertical: 15,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 15),
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword, 
-                            decoration: InputDecoration(
-                              hintText: 'Contraseña',
-                              filled: true,
-                              fillColor: Colors.white,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 15,
-                                vertical: 15,
-                              ),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                  color: Colors.grey.shade600,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ForgotPasswordScreen(),
-                                ),
-                              );
-                            },
-                            style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                            child: const Text(
-                              '¿OLVIDASTE LA CONTRASEÑA?',
-                              style: TextStyle(color: Colors.white60, fontSize: 10),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 45,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleEmailLogin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF6B00),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Iniciar Sesión',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          const Center(
-                            child: Text(
-                              'o',
-                              style: TextStyle(color: Colors.white60, fontSize: 14),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 45,
-                            child: OutlinedButton(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const RegisterScreen(),
-                                        ),
-                                      );
-                                    },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.white60),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Registrarse',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 15),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 45,
-                            child: OutlinedButton.icon(
-                              onPressed: _isLoading ? null : _handleGoogleLogin,
-                              icon: const Icon(
-                                Icons.g_mobiledata,
-                                color: Colors.white,
-                                size: 30,
-                              ),
-                              label: const Text(
-                                'Continuar con Google',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.blue.shade700,
-                                side: BorderSide.none,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                  )
+                : const Text(
+                    'Iniciar Sesión',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        const Center(
+          child: Text(
+            'o',
+            style: TextStyle(color: Colors.white60, fontSize: 14),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 45,
+          child: OutlinedButton(
+            onPressed: _isLoading
+                ? null
+                : () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RegisterScreen(),
+                      ),
+                    );
+                  },
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.white60),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Registrarse',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(height: 15),
+        SizedBox(
+          width: double.infinity,
+          height: 45,
+          child: OutlinedButton.icon(
+            onPressed: _isLoading ? null : _handleGoogleLogin,
+            icon: const Icon(
+              Icons.g_mobiledata,
+              color: Colors.white,
+              size: 30,
+            ),
+            label: const Text(
+              'Continuar con Google',
+              style: TextStyle(color: Colors.white),
+            ),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.blue.shade700,
+              side: BorderSide.none,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
-          Expanded(
-            flex: 3,
-            child: Container(
-              color: const Color(0xFFE5E5E5),
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 50.0),
-              child: Column(
-                children: [
-                  const Spacer(),
-                  Expanded(
-                    flex: 6,
-                    child: Container(
-                      width: double.infinity,
-                      alignment: Alignment.center,
+        ),
+      ],
+    );
+  }
+
+  // --- LAYOUTS (Móvil y Escritorio) ---
+
+  Widget _buildMobileLayout(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height - 
+                       MediaQuery.of(context).padding.top - 
+                       MediaQuery.of(context).padding.bottom,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildBackButton(),
+                    const SizedBox(height: 30), 
+                    Center(
                       child: Image.asset(
                         'assets/images/logo_grande.png',
+                        height: 140, 
                         fit: BoxFit.contain,
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 10.0),
+                    
+                    const SizedBox(height: 40), 
+                    _buildFormContent(),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: Center(
                     child: Text(
                       '© 2026 MetroSwap - Universidad Metropolitana.',
-                      style: TextStyle(color: Colors.black54, fontSize: 13),
+                      style: TextStyle(color: Colors.white54, fontSize: 12),
                     ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 1,
+          child: Container(
+            color: const Color(0xFF333333),
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 24),
+                      child: _buildBackButton(),
+                    ),
+                  ),
+                  Center(
+                    child: _buildFormContent(),
                   ),
                 ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Container(
+            color: const Color(0xFFE5E5E5),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 50.0),
+            child: Column(
+              children: [
+                const Spacer(),
+                Expanded(
+                  flex: 6,
+                  child: Container(
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    child: Image.asset(
+                      'assets/images/logo_grande.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 10.0),
+                  child: Text(
+                    '© 2026 MetroSwap - Universidad Metropolitana.',
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
+    return Scaffold(
+      backgroundColor: isMobile ? const Color(0xFF333333) : Colors.white,
+      body: isMobile ? _buildMobileLayout(context) : _buildDesktopLayout(),
     );
   }
 }
