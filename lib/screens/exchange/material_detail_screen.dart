@@ -120,7 +120,8 @@ class MaterialDetailScreen extends StatelessWidget {
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
                                               color: Colors.blue[700],
-                                              decoration: TextDecoration.underline,
+                                              decoration:
+                                                  TextDecoration.underline,
                                               decorationColor: Colors.blue[700],
                                             ),
                                           ),
@@ -153,7 +154,8 @@ class MaterialDetailScreen extends StatelessWidget {
                                         _buildMetaChip('Carrera', career),
                                       if (condition.isNotEmpty)
                                         _buildMetaChip('Estado', condition),
-                                      _buildMetaChip('Cantidad', quantity.toString()),
+                                      _buildMetaChip(
+                                          'Cantidad', quantity.toString()),
                                       if (priceUsd != null)
                                         _buildMetaChip(
                                           'Precio',
@@ -200,142 +202,23 @@ class MaterialDetailScreen extends StatelessWidget {
                                       ),
                                       elevation: 2,
                                     ),
-                                    onPressed: () async {
-                                      if (currentPost == null) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'No se pudo cargar la publicacion.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      final currentUser =
-                                          FirebaseAuth.instance.currentUser;
-                                      if (currentUser == null) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Debes iniciar sesion para intercambiar.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      if (currentUser.uid == currentPost.ownerUid) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'No puedes intercambiar tu propia publicacion.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      final postId = currentPost.id.trim();
-                                      if (postId.isEmpty) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'No se pudo cargar la publicacion.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      final firestore = FirebaseFirestore.instance;
-                                      String tradeId = '';
-                                      final autoAccept = hasPrice;
-
-                                      try {
-                                        final requesterSnapshot = await firestore
-                                            .collection('users')
-                                            .doc(currentUser.uid)
-                                            .get();
-                                        final requesterData = requesterSnapshot.data();
-                                        final requesterName = (requesterData?['name'] ??
-                                                requesterData?['displayName'] ??
-                                                currentUser.displayName ??
-                                                currentUser.email ??
-                                                'Usuario')
-                                            .toString()
-                                            .trim();
-
-                                        final exchangeRef =
-                                            firestore.collection('exchanges').doc();
-                                        tradeId = exchangeRef.id;
-                                        await exchangeRef.set({
-                                          'id': tradeId,
-                                          'postId': postId,
-                                          'postTitle': currentPost.title,
-                                          'imageUrl': currentPost.imageUrl,
-                                          'method': currentPost.method,
-                                          'ownerUid': currentPost.ownerUid,
-                                          'ownerName': currentPost.ownerName,
-                                          'targetUid': currentPost.ownerUid,
-                                          'requesterUid': currentUser.uid,
-                                          'requesterName': requesterName.isEmpty
-                                              ? 'Usuario'
-                                              : requesterName,
-                                          'status': 'requested',
-                                          'createdAt': FieldValue.serverTimestamp(),
-                                          'updatedAt': FieldValue.serverTimestamp(),
-                                        });
-
-                                        if (autoAccept) {
-                                          await exchangeRef.update({
-                                            'status': 'accepted',
-                                            'updatedAt': FieldValue.serverTimestamp(),
-                                          });
-                                        }
-                                      } on FirebaseException catch (e) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              e.message ??
-                                                  'No se pudo iniciar el intercambio.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      } catch (_) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'No se pudo iniciar el intercambio.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      if (!context.mounted) return;
-
-                                      Navigator.push(
+                                    onPressed: () {
+                                      _handleActionPressed(
                                         context,
-                                        MaterialPageRoute(
-                                          builder: (context) => TradeChatScreen(
-                                            tradeId: tradeId,
-                                          ),
-                                        ),
+                                        currentPost,
+                                        quantity,
+                                        hasPrice,
                                       );
                                     },
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(
+                                        const Icon(
                                           Icons.handshake_outlined,
                                           color: Colors.white,
                                           size: 28,
                                         ),
-                                        SizedBox(width: 10),
+                                        const SizedBox(width: 10),
                                         Text(
                                           hasPrice ? 'Comprar' : 'Intercambiar',
                                           style: const TextStyle(
@@ -365,6 +248,188 @@ class MaterialDetailScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  // Lógica de validación principal antes de confirmar el trade
+  void _handleActionPressed(BuildContext context, PostModel? currentPost, int maxQuantity, bool hasPrice) {
+    if (currentPost == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo cargar la publicación.')),
+      );
+      return;
+    }
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes iniciar sesión para realizar esta acción.')),
+      );
+      return;
+    }
+
+    if (currentUser.uid == currentPost.ownerUid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No puedes interactuar con tu propia publicación.')),
+      );
+      return;
+    }
+
+    // Si hay más de 1 artículo, mostramos el diálogo
+    if (maxQuantity > 1) {
+      _showQuantityDialog(context, maxQuantity, (selectedQty) {
+        _executeTrade(context, currentPost, currentUser, hasPrice, selectedQty);
+      });
+    } else {
+      // Si solo hay 1, procedemos directo para ahorrarle clics al usuario
+      _executeTrade(context, currentPost, currentUser, hasPrice, 1);
+    }
+  }
+
+  // Diálogo para seleccionar la cantidad
+  void _showQuantityDialog(BuildContext context, int maxQuantity, Function(int) onConfirm) {
+    int selectedQuantity = 1;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              title: const Text(
+                '¿Qué cantidad deseas?',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Disponible: $maxQuantity',
+                    style: const TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, size: 32),
+                        color: const Color(0xFFFF6B00),
+                        onPressed: selectedQuantity > 1
+                            ? () => setState(() => selectedQuantity--)
+                            : null,
+                      ),
+                      const SizedBox(width: 20),
+                      Text(
+                        '$selectedQuantity',
+                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 20),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline, size: 32),
+                        color: const Color(0xFFFF6B00),
+                        onPressed: selectedQuantity < maxQuantity
+                            ? () => setState(() => selectedQuantity++)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actionsAlignment: MainAxisAlignment.spaceEvenly,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6B00),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(dialogContext); // Cerramos el diálogo
+                    onConfirm(selectedQuantity); // Ejecutamos la función de confirmación
+                  },
+                  child: const Text('Confirmar', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Lógica de base de datos que antes tenías suelta en el onPressed
+  Future<void> _executeTrade(
+    BuildContext context,
+    PostModel currentPost,
+    User currentUser,
+    bool autoAccept,
+    int selectedQuantity,
+  ) async {
+    final postId = currentPost.id.trim();
+    if (postId.isEmpty) return;
+
+    final firestore = FirebaseFirestore.instance;
+    String tradeId = '';
+
+    try {
+      final requesterSnapshot =
+          await firestore.collection('users').doc(currentUser.uid).get();
+      final requesterData = requesterSnapshot.data();
+      final requesterName = (requesterData?['name'] ??
+              requesterData?['displayName'] ??
+              currentUser.displayName ??
+              currentUser.email ??
+              'Usuario')
+          .toString()
+          .trim();
+
+      final exchangeRef = firestore.collection('exchanges').doc();
+      tradeId = exchangeRef.id;
+      
+      await exchangeRef.set({
+        'id': tradeId,
+        'postId': postId,
+        'postTitle': currentPost.title,
+        'imageUrl': currentPost.imageUrl,
+        'method': currentPost.method,
+        'ownerUid': currentPost.ownerUid,
+        'ownerName': currentPost.ownerName,
+        'targetUid': currentPost.ownerUid,
+        'requesterUid': currentUser.uid,
+        'requesterName': requesterName.isEmpty ? 'Usuario' : requesterName,
+        'requestedQuantity': selectedQuantity, // <--- Aquí guardamos la cantidad elegida
+        'status': 'requested',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (autoAccept) {
+        await exchangeRef.update({
+          'status': 'accepted',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (!context.mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TradeChatScreen(tradeId: tradeId),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo iniciar la operación.')),
+      );
+    }
   }
 
   Widget _buildImageFallback() {
