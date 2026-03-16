@@ -173,13 +173,51 @@ class HomeScreen extends StatelessWidget {
                             }
 
                             return results.map((data) {
-                              final title =
-                                  data['title']?.toString() ?? 'Sin titulo';
+                              final title = data['title']?.toString() ?? 'Sin titulo';
+                              final imageUrl = data['imageUrl']?.toString();
                               final post = PostModel.fromMap(data);
+                              
                               return ListTile(
-                                leading: const Icon(Icons.book),
-                                title: Text(title),
-                                subtitle: Text(_buildSuggestionSubtitle(data)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                leading: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: SizedBox(
+                                    width: 60,
+                                    height: 60,
+                                    child: imageUrl != null && imageUrl.isNotEmpty
+                                        ? Image.network(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            webHtmlElementStrategy: kIsWeb
+                                                ? WebHtmlElementStrategy.prefer
+                                                : WebHtmlElementStrategy.never,
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              color: Colors.grey[300],
+                                              child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                            ),
+                                          )
+                                        : Container(
+                                            color: Colors.grey[300],
+                                            child: const Icon(Icons.book, color: Colors.grey),
+                                          ),
+                                  ),
+                                ),
+                                title: Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    _buildSuggestionSubtitle(data),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                                  ),
+                                ),
                                 onTap: () {
                                   controller.closeView(title);
                                   Navigator.push(
