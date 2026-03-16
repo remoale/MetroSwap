@@ -7,6 +7,11 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import * as functions from "firebase-functions";
+import fetch from "node-fetch"; 
+import { Buffer } from "node:buffer";
+
+
 
 // Configuración global para controlar costos y concurrencia.
 setGlobalOptions({maxInstances: 10});
@@ -462,4 +467,123 @@ export const createExchangePayment = onCall(async (request) => {
     currency: "USD",
     status: "pending",
   };
+});
+
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || "";
+const PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"; // Cambiar a live en producción
+
+async function getPayPalAccessToken(): Promise<string> {
+  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+
+  const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+export const createPayPalOrder = onCall(async (request) => {
+  const amount = pickNumber(request.data?.amount);
+
+  if (!amount || amount <= 0) {
+    throw new HttpsError("invalid-argument", "Monto inválido.");
+  }
+
+  const accessToken = await getPayPalAccessToken();
+
+  const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          amount: {
+            currency_code: "USD",
+            value: amount.toString(),
+          },
+        },
+      ],
+      application_context: {
+        return_url: "myapp://paypal-success",
+        cancel_url: "myapp://paypal-cancel",
+      },
+    }),
+  });
+
+  const data = await response.json();
+
+  logger.info("PayPal order created", data);
+
+  return data;
+});
+
+export const capturePayPalOrder = onCall(async (request) => {
+  const orderId = pickString(request.data?.orderId);
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "orderId es obligatorio.");
+  }
+
+  const accessToken = await getPayPalAccessToken();
+
+  const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await response.json();
+
+  logger.info("PayPal order captured", data);
+
+  // Guardar en Firestore si quieres
+  if (data.status === "COMPLETED") {
+    await db.collection("paypalPayments").doc(orderId).set({
+      orderId,
+      status: "completed",
+      amount: data.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value || null,
+      currency: "USD",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  }
+
+  return data;
+});
+
+export const paypalWebhook = functions.https.onRequest(async (req, res) => {
+  const event = req.body;
+
+  logger.info("PayPal webhook received", event);
+
+  const eventType = event.event_type;
+
+  if (eventType === "PAYMENT.CAPTURE.COMPLETED") {
+    const capture = event.resource;
+    const orderId = capture.supplementary_data?.related_ids?.order_id;
+
+    await db.collection("paypalPayments").doc(orderId).set({
+      orderId,
+      status: "completed",
+      amount: capture.amount?.value,
+      currency: capture.amount?.currency_code,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    logger.info("Pago completado guardado en Firestore", { orderId });
+  }
+
+  res.status(200).send("OK");
 });
