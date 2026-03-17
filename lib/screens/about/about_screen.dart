@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
+import 'package:firebase_auth/firebase_auth.dart'; 
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
+import 'package:metroswap/widgets/metroswap_layout.dart'; 
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -9,33 +11,45 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = MediaQuery.of(context).size.width > 850;
+    final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
+
+    Widget pageContent = Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 850) {
+            return _buildDesktopLayout();
+          } else {
+            return _buildMobileLayout();
+          }
+        },
+      ),
+    );
+
+    if (isLoggedIn) {
+      return MetroSwapLayout(
+        body: Column(
+          children: [
+            if (isDesktop)
+              const MetroSwapNavbar(
+                developmentNav: false, 
+                heading: 'Conócenos',
+              ),
+            pageContent,
+            const MetroSwapFooter(),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF333333), 
       body: Column(
         children: [
-          // 1. Navbar 
           MetroSwapNavbar(
             developmentNav: true, 
             heading: isDesktop ? 'Conócenos' : '', 
           ),
-
-          // 2. Cuerpo principal
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Si la pantalla es ancha (Computadora)
-                if (constraints.maxWidth > 850) {
-                  return _buildDesktopLayout();
-                } 
-                // Si la pantalla es pequeña (Teléfono)
-                else {
-                  return _buildMobileLayout();
-                }
-              },
-            ),
-          ),
-          // 3. Footer
+          pageContent,
           const MetroSwapFooter(), 
         ],
       ),

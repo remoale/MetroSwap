@@ -12,7 +12,6 @@ class MetroSwapLayout extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFE4E1E6),
-      // 1. Aquí enganchamos tu Drawer recién creado
       endDrawer: isMobile ? const MetroSwapDrawer() : null, 
       
       appBar: isMobile
@@ -26,10 +25,8 @@ class MetroSwapLayout extends StatelessWidget {
                   builder: (context) {
                     return IconButton(
                       padding: const EdgeInsets.only(right: 20),
-                      // 2. ¡AQUÍ ESTÁN LAS TRES RAYAS NARANJAS!
                       icon: const Icon(Icons.menu, color: Color(0xFFFF6B00), size: 40), 
                       onPressed: () {
-                        // 3. Este botón abre el Drawer
                         Scaffold.of(context).openEndDrawer(); 
                       },
                     );
@@ -38,7 +35,7 @@ class MetroSwapLayout extends StatelessWidget {
               ],
             )
           : null,
-      body: body, // El contenido de tu pantalla
+      body: body, 
     );
   }
 }
