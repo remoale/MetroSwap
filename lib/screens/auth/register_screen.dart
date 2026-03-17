@@ -190,14 +190,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Variable para detectar si estamos en móvil o escritorio
+    final isMobile = MediaQuery.of(context).size.width < 800;
+    final columnaIzquierda = [
+      _buildInputField("Nombre completo:", _nombreController, false),
+      _buildDropdownField("Carrera:"),
+      _buildInputField("Teléfono:", _telefonoController, false, esNumero: true),
+    ];
+
+    final columnaDerecha = [
+      _buildInputField("Correo Unimet:", _correoController, false),
+      _buildPasswordField("Contraseña:", _passwordController),
+      _buildInputField("Carnet:", _carnetController, false, esNumero: true),
+    ];
+
     return Scaffold(
       backgroundColor: grisFondoPajina,
       body: Column(
         children: [
+          // Header adaptativo
           Container(
             color: grisOscuroHeader,
-            height: 85,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            height: isMobile ? 70 : 85, 
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 24),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -210,25 +225,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      const MetroSwapBrand(),
+                      if (!isMobile) const MetroSwapBrand(),
                     ],
                   ),
                 ),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       "Crea tu cuenta",
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
-                        fontSize: 22,
+                        fontSize: isMobile ? 18 : 22, 
                         letterSpacing: 0.3,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
-                      width: 110,
+                      width: isMobile ? 80 : 110,
                       height: 3,
                       decoration: BoxDecoration(
                         color: naranjaM,
@@ -240,41 +255,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ],
             ),
           ),
+          
+          // Contenido principal del formulario
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 60.0, vertical: 40),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 20.0 : 60.0, 
+                vertical: isMobile ? 20.0 : 40.0,
+              ),
               child: Column(
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildFormCard([
-                          _buildInputField("Nombre completo:", _nombreController, false),
-                          _buildDropdownField("Carrera:"),
-                          _buildInputField("Teléfono:", _telefonoController, false, esNumero: true),
-                        ]),
-                      ),
-                      const SizedBox(width: 40),
-                      Expanded(
-                        child: _buildFormCard([
-                          _buildInputField("Correo Unimet:", _correoController, false),
-                          _buildPasswordField("Contraseña:", _passwordController),
-                          _buildInputField("Carnet:", _carnetController, false, esNumero: true),
-                        ]),
-                      ),
-                    ],
-                  ),
+                  if (isMobile) ...[
+                    // Layout Móvil: Una columna debajo de la otra
+                    _buildFormCard(columnaIzquierda, isMobile: true),
+                    const SizedBox(height: 20),
+                    _buildFormCard(columnaDerecha, isMobile: true),
+                  ] else ...[
+                    // Layout Desktop: Dos columnas lado a lado
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildFormCard(columnaIzquierda)),
+                        const SizedBox(width: 40),
+                        Expanded(child: _buildFormCard(columnaDerecha)),
+                      ],
+                    ),
+                  ],
 
-                  const SizedBox(height: 50),
+                  SizedBox(height: isMobile ? 30 : 50),
 
+                  // Botón de registro
                   SizedBox(
                     height: 60,
+                    width: isMobile ? double.infinity : null, 
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _validarYRegistrar,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: naranjaM,
-                        padding: const EdgeInsets.symmetric(horizontal: 100),
+                        padding: EdgeInsets.symmetric(horizontal: isMobile ? 0 : 100),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -284,7 +302,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               "Registrarse",
-                              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold),
                             ),
                     ),
                   ),
@@ -293,6 +314,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
+          
+          // Footer
           Container(
             width: double.infinity,
             color: const Color(0xFF2C2C2C),
@@ -308,6 +331,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // --- Widgets de formulario ---
+
   Widget _buildDropdownField(String label){
     return Padding (
       padding: const EdgeInsets.only(bottom : 25.0),
@@ -317,29 +342,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Text (label,style: const TextStyle(color: Colors.white,fontSize: 16)),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-          initialValue : _carreraSeleccionada,
-          dropdownColor : const Color(0xFF444444),
-          style: const TextStyle(color:Colors.white,fontSize: 16),
-          decoration :InputDecoration(
-            filled:true,
-            fillColor: naranjaM,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15,vertical: 15),
-            border: OutlineInputBorder(borderRadius:BorderRadius.circular(8),borderSide: BorderSide.none ),
+            isExpanded: true, 
+            initialValue : _carreraSeleccionada,
+            dropdownColor : const Color(0xFF444444),
+            style: const TextStyle(color:Colors.white,fontSize: 16),
+            decoration :InputDecoration(
+              filled:true,
+              fillColor: naranjaM,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 15,vertical: 15),
+              border: OutlineInputBorder(borderRadius:BorderRadius.circular(8),borderSide: BorderSide.none ),
             ),
             hint :const Text("Seleccionar carrera", style: TextStyle(color: Colors.white60)),
             icon : const Icon (Icons.arrow_drop_down,color :Colors.white),
             items:  _carrerasUnimet.map((c)=> DropdownMenuItem(value: c , child :Text(c))).toList(),
             onChanged : (val)=> setState(()=> _carreraSeleccionada= val),
-            ),
-            ],
-            ),
-        );
-      
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildFormCard(List<Widget> children) {
+  Widget _buildFormCard(List<Widget> children, {bool isMobile = false}) {
     return Container(
-      padding: const EdgeInsets.all(35),
+      padding: EdgeInsets.all(isMobile ? 25 : 35), 
       decoration: BoxDecoration(
         color: cuadroGrisFormulario,
         borderRadius: BorderRadius.circular(15),
@@ -407,8 +432,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             obscureText: _obscurePassword, 
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: "Insertar (mínimo 8 caracteres)",
-              hintStyle: const TextStyle(color: Colors.white60),
+              hintText: "Mínimo 8 caracteres", 
+              hintStyle: const TextStyle(color: Colors.white60, fontSize: 14),
               filled: true,
               fillColor: naranjaM,
               contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
