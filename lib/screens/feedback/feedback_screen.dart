@@ -25,7 +25,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  int _rating = 5;
+  int _rating = 0; 
   bool _sending = false;
 
   @override
@@ -35,7 +35,18 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Future<void> _finishExchange() async {
+    if (_rating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Selecciona una calificación (1 a 5 estrellas).'),
+          backgroundColor: Colors.red.shade700, 
+        ),
+      );
+      return;
+    }
+
     if (_sending) return;
+    
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,7 +107,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Intercambio completado y feedback enviado.')),
+        SnackBar(
+          content: const Text('Intercambio completado y feedback enviado.'),
+          backgroundColor: Colors.green, 
+        )
       );
       Navigator.pushAndRemoveUntil(
         context,
@@ -160,7 +174,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         ),
                         const SizedBox(height: 22),
                         const Text(
-                          'Calificación',
+                          'Calificación (Obligatorio)', 
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 8),
@@ -181,7 +195,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                           controller: _commentController,
                           maxLines: 4,
                           decoration: const InputDecoration(
-                            labelText: 'Comentario',
+                            labelText: 'Comentario (Opcional)',
                             hintText: 'Cuéntanos cómo fue el intercambio',
                             border: OutlineInputBorder(),
                           ),
