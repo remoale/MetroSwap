@@ -13,7 +13,6 @@ import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/screens/publish/publish_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -167,15 +166,16 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                       child: SearchAnchor(
+                        isFullScreen: false, 
                         builder: (context, controller) {
                           return SearchBar(
                             controller: controller,
-                            hintText: 'Buscar por titulo, material o materia..',
+                            hintText: 'Buscar por título, material o materia...',
                             hintStyle: const WidgetStatePropertyAll(
                               TextStyle(color: Colors.grey, fontSize: 16),
                             ),
-                            backgroundColor:
-                                const WidgetStatePropertyAll(Colors.transparent),
+                            backgroundColor: 
+                            const WidgetStatePropertyAll(Colors.transparent),
                             elevation: const WidgetStatePropertyAll(0),
                             onTap: controller.openView,
                             onChanged: (_) => controller.openView(),
@@ -348,8 +348,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Widget del menú lateral
-Widget _buildMobileDrawer(BuildContext context) {
+  Widget _buildMobileDrawer(BuildContext context) {
     return Drawer(
       backgroundColor: const Color(0xFF2C2C2C),
       child: ListView(
