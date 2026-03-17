@@ -1,16 +1,26 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
-
 class PaymentController {
-  final _functions = FirebaseFunctions.instance;
+  PaymentController()
+    : _functions = FirebaseFunctions.instanceFor(region: "us-central1");
+
+  final FirebaseFunctions _functions;
 
   /// 1. Crear orden en PayPal (via Cloud Function)
-  Future<String?> createPayment(double amount) async {
+  Future<String?> createPayment({
+    required double amount,
+    required String returnUrl,
+    required String cancelUrl,
+  }) async {
     try {
       final result = await _functions
           .httpsCallable("createPayPalOrder")
-          .call({"amount": amount});
+          .call({
+            "amount": amount,
+            "returnUrl": returnUrl,
+            "cancelUrl": cancelUrl,
+          });
 
       final data = result.data;
 
@@ -31,11 +41,18 @@ class PaymentController {
   }
 
   /// 2. Capturar el pago después del returnUrl
-  Future<Map<String, dynamic>?> capturePayment(String orderId) async {
+  Future<Map<String, dynamic>?> capturePayment({
+    required String orderId,
+    String? exchangeId,
+  }) async {
     try {
       final result = await _functions
           .httpsCallable("capturePayPalOrder")
-          .call({"orderId": orderId});
+          .call({
+            "orderId": orderId,
+            if (exchangeId != null && exchangeId.trim().isNotEmpty)
+              "exchangeId": exchangeId.trim(),
+          });
 
       return Map<String, dynamic>.from(result.data);
     } catch (e) {

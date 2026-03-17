@@ -7,8 +7,6 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
-import * as functions from "firebase-functions";
-import fetch from "node-fetch"; 
 import { Buffer } from "node:buffer";
 
 
@@ -469,12 +467,20 @@ export const createExchangePayment = onCall(async (request) => {
   };
 });
 
-const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";
-const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || "";
 const PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"; // Cambiar a live en producción
 
 async function getPayPalAccessToken(): Promise<string> {
-  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+  const paypalClientId = process.env.PAYPAL_CLIENT_ID || "";
+  const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET || "";
+
+  if (!paypalClientId || !paypalClientSecret) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Las credenciales de PayPal no estan configuradas.",
+    );
+  }
+
+  const auth = Buffer.from(`${paypalClientId}:${paypalClientSecret}`).toString("base64");
 
   const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
     method: "POST",
@@ -489,11 +495,19 @@ async function getPayPalAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-export const createPayPalOrder = onCall(async (request) => {
+export const createPayPalOrder = onCall({
+  secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+}, async (request) => {
   const amount = pickNumber(request.data?.amount);
+  const returnUrl = pickString(request.data?.returnUrl);
+  const cancelUrl = pickString(request.data?.cancelUrl);
 
   if (!amount || amount <= 0) {
     throw new HttpsError("invalid-argument", "Monto inválido.");
+  }
+
+  if (!returnUrl || !cancelUrl) {
+    throw new HttpsError("invalid-argument", "returnUrl y cancelUrl son obligatorios.");
   }
 
   const accessToken = await getPayPalAccessToken();
@@ -515,8 +529,9 @@ export const createPayPalOrder = onCall(async (request) => {
         },
       ],
       application_context: {
-        return_url: "myapp://paypal-success",
-        cancel_url: "myapp://paypal-cancel",
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+        user_action: "PAY_NOW",
       },
     }),
   });
@@ -528,8 +543,13 @@ export const createPayPalOrder = onCall(async (request) => {
   return data;
 });
 
-export const capturePayPalOrder = onCall(async (request) => {
+export const capturePayPalOrder = onCall({
+  secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+}, async (request) => {
+  const auth = request.auth;
+  const uid = auth?.uid || "";
   const orderId = pickString(request.data?.orderId);
+  const exchangeId = pickString(request.data?.exchangeId);
 
   if (!orderId) {
     throw new HttpsError("invalid-argument", "orderId es obligatorio.");
@@ -551,39 +571,74 @@ export const capturePayPalOrder = onCall(async (request) => {
 
   // Guardar en Firestore si quieres
   if (data.status === "COMPLETED") {
+    const amountValue = data.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value || null;
     await db.collection("paypalPayments").doc(orderId).set({
       orderId,
       status: "completed",
-      amount: data.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value || null,
+      amount: amountValue,
       currency: "USD",
       createdAt: FieldValue.serverTimestamp(),
     });
+
+    if (exchangeId) {
+      const exchangeSnapshot = await db.collection("exchanges").doc(exchangeId).get();
+      const exchangeData = exchangeSnapshot.data() || {};
+      const ownerUid =
+        pickString(exchangeData["targetUid"]) ||
+        pickString(exchangeData["ownerUid"]) ||
+        pickString(exchangeData["sellerUid"]);
+      const requesterUid =
+        pickString(exchangeData["requesterUid"]) ||
+        pickString(exchangeData["actorUid"]) ||
+        pickString(exchangeData["buyerUid"]);
+      const ownerName = pickString(exchangeData["ownerName"]) || "El usuario";
+      const requesterName = pickString(exchangeData["requesterName"]) || "Un usuario";
+      const postId = pickString(exchangeData["postId"]);
+      const postTitle = pickString(exchangeData["postTitle"]) || pickString(exchangeData["title"]);
+
+      await db.collection("exchanges").doc(exchangeId).set({
+        status: "completed",
+        paymentStatus: "completed",
+        paymentProvider: "paypal",
+        paypalOrderId: orderId,
+        paypalAmount: amountValue,
+        updatedBy: uid || null,
+        updatedAt: FieldValue.serverTimestamp(),
+        completedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      const completionNotifications: Promise<string>[] = [];
+      if (ownerUid) {
+        completionNotifications.push(createNotification({
+          targetUid: ownerUid,
+          type: "exchange_completed",
+          title: "Intercambio completado",
+          body: `Intercambio de "${postTitle || "material"}" completado con ${requesterName}`,
+          actorUid: requesterUid || undefined,
+          exchangeId,
+          postId,
+          postTitle,
+          status: "completed",
+          actorName: requesterName,
+        }));
+      }
+      if (requesterUid) {
+        completionNotifications.push(createNotification({
+          targetUid: requesterUid,
+          type: "exchange_completed",
+          title: "Intercambio completado",
+          body: `Intercambio de "${postTitle || "material"}" completado con ${ownerName}`,
+          actorUid: ownerUid || undefined,
+          exchangeId,
+          postId,
+          postTitle,
+          status: "completed",
+          actorName: ownerName,
+        }));
+      }
+      await Promise.all(completionNotifications);
+    }
   }
 
   return data;
-});
-
-export const paypalWebhook = functions.https.onRequest(async (req, res) => {
-  const event = req.body;
-
-  logger.info("PayPal webhook received", event);
-
-  const eventType = event.event_type;
-
-  if (eventType === "PAYMENT.CAPTURE.COMPLETED") {
-    const capture = event.resource;
-    const orderId = capture.supplementary_data?.related_ids?.order_id;
-
-    await db.collection("paypalPayments").doc(orderId).set({
-      orderId,
-      status: "completed",
-      amount: capture.amount?.value,
-      currency: capture.amount?.currency_code,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-
-    logger.info("Pago completado guardado en Firestore", { orderId });
-  }
-
-  res.status(200).send("OK");
 });

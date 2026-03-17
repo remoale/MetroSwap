@@ -17,6 +17,8 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final NotificationService _notificationService = NotificationService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ScrollController _historyScrollController = ScrollController();
+  final ScrollController _inProgressScrollController = ScrollController();
   Map<String, String>? _userNameCache;
   Set<String>? _loadingUserNames;
   Map<String, String>? _exchangeTitleCache;
@@ -34,6 +36,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     _uid = FirebaseAuth.instance.currentUser?.uid;
+  }
+
+  @override
+  void dispose() {
+    _historyScrollController.dispose();
+    _inProgressScrollController.dispose();
+    super.dispose();
   }
 
   bool _isInProgress(NotificationModel notification) {
@@ -469,6 +478,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         child: _buildSection(
                                           title: 'Historial',
                                           notifications: history,
+                                          scrollController: _historyScrollController,
                                         ),
                                       ),
                                       Container(
@@ -480,6 +490,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         child: _buildSection(
                                           title: 'En curso',
                                           notifications: inProgress,
+                                          scrollController: _inProgressScrollController,
                                         ),
                                       ),
                                     ],
@@ -572,6 +583,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildSection({
     required String title,
     required List<NotificationModel> notifications,
+    required ScrollController scrollController,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -591,7 +603,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: notifications.isEmpty
               ? const _EmptyStateCard(message: 'Sin notificaciones en esta sección.')
               : Scrollbar(
+                  controller: scrollController,
                   child: ListView.separated(
+                    controller: scrollController,
                     primary: false,
                     itemCount: notifications.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 14),

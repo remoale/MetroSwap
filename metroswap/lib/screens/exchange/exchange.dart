@@ -6,6 +6,7 @@ import 'package:metroswap/models/exchange_model.dart';
 import 'package:metroswap/screens/feedback/feedback_screen.dart';
 import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/payments/contribution_payment_screen.dart';
+import 'package:metroswap/screens/payments/payment_confirmation_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
@@ -217,6 +218,19 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
   }
 
+  Future<void> _goToPaymentSuccessful(ExchangeModel exchange) async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentConfirmationScreen(
+          amount: exchange.paypalAmount ?? 0,
+          exchangeId: widget.tradeId,
+        ),
+      ),
+    );
+  }
+
   Future<void> _cancelExchange() async {
     try {
       await _firestore.collection('exchanges').doc(widget.tradeId).update({
@@ -365,6 +379,9 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                   exchange.status == ExchangeModel.statusRequested;
                               final isAccepted =
                                   exchange.status == ExchangeModel.statusAccepted;
+                              final hasCompletedPayment =
+                                  exchange.status == ExchangeModel.statusCompleted &&
+                                  exchange.paymentStatus.trim().toLowerCase() == 'completed';
                               final isFinalStatus =
                                   exchange.status == ExchangeModel.statusCompleted ||
                                       exchange.status == ExchangeModel.statusRejected ||
@@ -558,6 +575,28 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                               ),
                                               child: const Text(
                                                 'Terminar intercambio',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        if (hasCompletedPayment)
+                                          SizedBox(
+                                            width: 250,
+                                            height: 45,
+                                            child: ElevatedButton(
+                                              onPressed: () => _goToPaymentSuccessful(exchange),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF2F3035),
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Ver pago completado',
                                                 style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w700,
