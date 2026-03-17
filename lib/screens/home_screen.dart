@@ -2,9 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/post_model.dart';
+import 'package:metroswap/screens/about/about_screen.dart';
 import 'package:metroswap/screens/exchange/material_detail_screen.dart';
+import 'package:metroswap/screens/landing_screen.dart';
+import 'package:metroswap/screens/notifications/notifications_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+import 'package:metroswap/widgets/metroswap_brand.dart'; 
+import 'package:metroswap/screens/profile/profile_screen.dart'; 
+import 'package:metroswap/screens/publish/publish_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -69,20 +77,53 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
     return Scaffold(
       backgroundColor: const Color(0xFFE4E1E6),
+      endDrawer: isMobile ? _buildMobileDrawer(context) : null,
+      appBar: isMobile
+          ? AppBar(
+              toolbarHeight: 70,
+              automaticallyImplyLeading: false,
+              titleSpacing: 16,
+              backgroundColor: const Color(0xFF2C2C2C),
+              title: const MetroSwapBrand(),
+              actions: [
+                Builder(
+                  builder: (context) {
+                    return IconButton(
+                      padding: const EdgeInsets.only(right: 20),
+                      icon: const Icon(
+                        Icons.menu,
+                        color: Color(0xFFFF6B00),
+                        size: 40,
+                      ),
+                      onPressed: () {
+                        Scaffold.of(context).openEndDrawer();
+                      },
+                    );
+                  },
+                )
+              ],
+            )
+          : null,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const MetroSwapNavbar(developmentNav: true, heading: 'Inicio'),
+            if (!isMobile)
+              const MetroSwapNavbar(developmentNav: true, heading: 'Inicio'),
+            
             SizedBox(
-              height: 330,
+              height: isMobile ? 280 : 330, 
               child: Stack(
                 alignment: Alignment.topCenter,
                 children: [
                   Container(
-                    height: 300,
+                    height: isMobile ? 250 : 300,
                     width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
                       image: DecorationImage(
                         image: const AssetImage(
@@ -96,19 +137,23 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
+                    child: Text(
                       'Todo lo que necesitas para tu trimestre',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 42,
+                        fontSize: isMobile ? 32 : 42, 
                         fontWeight: FontWeight.w300,
+                        shadows: const [
+                          Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54),
+                        ],
                       ),
                     ),
                   ),
                   Positioned(
                     bottom: 0,
                     child: Container(
-                      width: 600,
+                      width: isMobile ? screenWidth - 40 : 600, 
                       height: 60,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -130,9 +175,7 @@ class HomeScreen extends StatelessWidget {
                               TextStyle(color: Colors.grey, fontSize: 16),
                             ),
                             backgroundColor:
-                                const WidgetStatePropertyAll(
-                                  Colors.transparent,
-                                ),
+                                const WidgetStatePropertyAll(Colors.transparent),
                             elevation: const WidgetStatePropertyAll(0),
                             onTap: controller.openView,
                             onChanged: (_) => controller.openView(),
@@ -157,9 +200,7 @@ class HomeScreen extends StatelessWidget {
                           }
 
                           try {
-                            final results = await _searchPosts(
-                              controller.text,
-                            );
+                            final results = await _searchPosts(controller.text);
                             if (results.isEmpty) {
                               return const [
                                 ListTile(
@@ -176,7 +217,7 @@ class HomeScreen extends StatelessWidget {
                               final title = data['title']?.toString() ?? 'Sin titulo';
                               final imageUrl = data['imageUrl']?.toString();
                               final post = PostModel.fromMap(data);
-                              
+
                               return ListTile(
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 leading: ClipRRect(
@@ -235,12 +276,8 @@ class HomeScreen extends StatelessWidget {
                             return [
                               ListTile(
                                 leading: const Icon(Icons.lock_outline),
-                                title: const Text(
-                                  'No se pudo consultar publicaciones.',
-                                ),
-                                subtitle: Text(
-                                  e.message ?? 'Intenta nuevamente.',
-                                ),
+                                title: const Text('No se pudo consultar publicaciones.'),
+                                subtitle: Text(e.message ?? 'Intenta nuevamente.'),
                               ),
                             ];
                           }
@@ -251,22 +288,29 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 80),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            
+            SizedBox(height: isMobile ? 40 : 80),
+            Wrap(
+              spacing: 80, 
+              runSpacing: 40, 
+              alignment: WrapAlignment.center,
               children: [
                 _buildCategoryCard(
                   title: 'Libros',
                   imagePath: 'assets/images/libros.png',
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
                 ),
-                const SizedBox(width: 80),
                 _buildCategoryCard(
                   title: 'Materiales',
                   imagePath: 'assets/images/materiales.png',
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
                 ),
               ],
             ),
-            const SizedBox(height: 100),
+            
+            SizedBox(height: isMobile ? 60 : 100),
             const MetroSwapFooter(),
           ],
         ),
@@ -277,6 +321,8 @@ class HomeScreen extends StatelessWidget {
   Widget _buildCategoryCard({
     required String title,
     required String imagePath,
+    required bool isMobile,
+    required double screenWidth,
   }) {
     return Column(
       children: [
@@ -284,21 +330,108 @@ class HomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
             imagePath,
-            width: 300,
-            height: 200,
+            width: isMobile ? screenWidth - 60 : 300, 
+            height: isMobile ? 180 : 200,
             fit: BoxFit.cover,
           ),
         ),
         const SizedBox(height: 15),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.black87,
-            fontSize: 32,
+            fontSize: isMobile ? 28 : 32, 
             fontWeight: FontWeight.w300,
           ),
         ),
       ],
+    );
+  }
+
+  // Widget del menú lateral
+Widget _buildMobileDrawer(BuildContext context) {
+    return Drawer(
+      backgroundColor: const Color(0xFF2C2C2C),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+        children: [
+          const MetroSwapBrand(),
+          const SizedBox(height: 40),
+          
+          ListTile(
+            leading: const Icon(Icons.home, color: Colors.white),
+            title: const Text('Inicio', style: TextStyle(color: Colors.white, fontSize: 18)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context)  =>HomeScreen()));
+            },
+          ),
+          
+          ListTile(
+            leading: const Icon(Icons.add_circle_outline, color: Colors.white),
+            title: const Text('Publicar', style: TextStyle(color: Colors.white, fontSize: 18)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context)  => PublishScreen()));
+            },
+          ),
+          
+          ListTile(
+            leading: const Icon(Icons.info_outline, color: Colors.white),
+            title: const Text('Conócenos', style: TextStyle(color: Colors.white, fontSize: 18)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context)  => AboutScreen()));
+            },
+          ),
+          
+          ListTile(
+            leading: const Icon(Icons.notifications_none, color: Colors.white),
+            title: const Text('Notificaciones', style: TextStyle(color: Colors.white, fontSize: 18)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context)  => NotificationsScreen()));
+            },
+          ),
+
+          const Divider(color: Colors.white54, height: 40),
+          ListTile(
+            leading: const Icon(Icons.person_outline, color: Colors.white),
+            title: const Text('Mi Perfil', style: TextStyle(color: Colors.white, fontSize: 18)),
+            onTap: () {
+              final user = FirebaseAuth.instance.currentUser;
+              Navigator.pop(context); 
+              if (user != null){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfileScreen(uid: user.uid)),
+                );
+              }
+            },
+          ),
+
+          const Divider(color: Colors.white54, height: 40),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Color(0xFFFF5C00)),
+            title: const Text('Cerrar sesión', style: TextStyle(color: Color(0xFFFF5C00), fontSize: 18)),
+            onTap: () async {
+              Navigator.pop(context); 
+              
+              await FirebaseAuth.instance.signOut();
+              
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LandingScreen(), 
+                  ),
+                  (Route<dynamic> route) => false, 
+                );
+              }
+            }
+          ),
+        ],
+      ),
     );
   }
 }
