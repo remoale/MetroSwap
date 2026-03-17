@@ -2,16 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/post_model.dart';
-import 'package:metroswap/screens/about/about_screen.dart';
 import 'package:metroswap/screens/exchange/material_detail_screen.dart';
-import 'package:metroswap/screens/landing_screen.dart';
-import 'package:metroswap/screens/notifications/notifications_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
-import 'package:metroswap/widgets/metroswap_brand.dart'; 
-import 'package:metroswap/screens/profile/profile_screen.dart'; 
-import 'package:metroswap/screens/publish/publish_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metroswap/widgets/metroswap_layout.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -79,35 +73,7 @@ class HomeScreen extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 700;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFE4E1E6),
-      endDrawer: isMobile ? _buildMobileDrawer(context) : null,
-      appBar: isMobile
-          ? AppBar(
-              toolbarHeight: 70,
-              automaticallyImplyLeading: false,
-              titleSpacing: 16,
-              backgroundColor: const Color(0xFF2C2C2C),
-              title: const MetroSwapBrand(),
-              actions: [
-                Builder(
-                  builder: (context) {
-                    return IconButton(
-                      padding: const EdgeInsets.only(right: 20),
-                      icon: const Icon(
-                        Icons.menu,
-                        color: Color(0xFFFF6B00),
-                        size: 40,
-                      ),
-                      onPressed: () {
-                        Scaffold.of(context).openEndDrawer();
-                      },
-                    );
-                  },
-                )
-              ],
-            )
-          : null,
+    return MetroSwapLayout(
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -345,92 +311,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildMobileDrawer(BuildContext context) {
-    return Drawer(
-      backgroundColor: const Color(0xFF2C2C2C),
-      child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-        children: [
-          const MetroSwapBrand(),
-          const SizedBox(height: 40),
-          
-          ListTile(
-            leading: const Icon(Icons.home, color: Colors.white),
-            title: const Text('Inicio', style: TextStyle(color: Colors.white, fontSize: 18)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context)  =>HomeScreen()));
-            },
-          ),
-          
-          ListTile(
-            leading: const Icon(Icons.add_circle_outline, color: Colors.white),
-            title: const Text('Publicar', style: TextStyle(color: Colors.white, fontSize: 18)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context)  => PublishScreen()));
-            },
-          ),
-          
-          ListTile(
-            leading: const Icon(Icons.info_outline, color: Colors.white),
-            title: const Text('Conócenos', style: TextStyle(color: Colors.white, fontSize: 18)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context)  => AboutScreen()));
-            },
-          ),
-          
-          ListTile(
-            leading: const Icon(Icons.notifications_none, color: Colors.white),
-            title: const Text('Notificaciones', style: TextStyle(color: Colors.white, fontSize: 18)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context)  => NotificationsScreen()));
-            },
-          ),
-
-          const Divider(color: Colors.white54, height: 40),
-          ListTile(
-            leading: const Icon(Icons.person_outline, color: Colors.white),
-            title: const Text('Mi Perfil', style: TextStyle(color: Colors.white, fontSize: 18)),
-            onTap: () {
-              final user = FirebaseAuth.instance.currentUser;
-              Navigator.pop(context); 
-              if (user != null){
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfileScreen(uid: user.uid)),
-                );
-              }
-            },
-          ),
-
-          const Divider(color: Colors.white54, height: 40),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Color(0xFFFF5C00)),
-            title: const Text('Cerrar sesión', style: TextStyle(color: Color(0xFFFF5C00), fontSize: 18)),
-            onTap: () async {
-              Navigator.pop(context); 
-              
-              await FirebaseAuth.instance.signOut();
-              
-              if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LandingScreen(), 
-                  ),
-                  (Route<dynamic> route) => false, 
-                );
-              }
-            }
-          ),
-        ],
-      ),
     );
   }
 }
