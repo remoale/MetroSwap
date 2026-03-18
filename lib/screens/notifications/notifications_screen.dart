@@ -422,8 +422,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewportHeight = MediaQuery.of(context).size.height;
     final viewportWidth = MediaQuery.of(context).size.width;
     final isMobile = viewportWidth < 700;
+    final desktopSectionsHeight = viewportHeight >= 950
+        ? 480.0
+        : viewportHeight >= 860
+            ? 420.0
+            : 360.0;
     final uid = _uid;
     if (uid == null) {
       return Scaffold(
@@ -529,7 +535,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   ],
                                 ),
                                 SizedBox(
-                                  height: isMobile ? 760 : 520,
+                                  height: isMobile ? 760 : desktopSectionsHeight,
                                   child: isMobile
                                       ? Column(
                                           crossAxisAlignment: CrossAxisAlignment.stretch,
