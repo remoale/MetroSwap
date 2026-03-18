@@ -767,7 +767,7 @@ class _HistoryCard extends StatelessWidget {
               SizedBox(width: compact ? 10 : 14),
               CircleAvatar(
                 radius: compact ? 18 : 20,
-                backgroundColor: Color(0xFFD7C9F0),
+                backgroundColor: const Color(0xFFD7C9F0),
                 child: const Text(
                   'A',
                   style: TextStyle(
@@ -799,22 +799,26 @@ class _HistoryCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (timeText.isNotEmpty) ...[
-                            SizedBox(width: compact ? 6 : 10),
-                            Flexible(
-                              child: Text(
-                                timeText,
-                                textAlign: TextAlign.right,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: compact ? 12 : 13,
-                                  color: const Color(0xFF9A96A1),
+                          if (timeText.isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(left: compact ? 6 : 10),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: compact ? 88 : 120,
+                                ),
+                                child: Text(
+                                  timeText,
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: compact ? 12 : 13,
+                                    color: const Color(0xFF9A96A1),
+                                  ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                        ],
                       ),
                       SizedBox(height: compact ? 6 : 3),
                       Text(
