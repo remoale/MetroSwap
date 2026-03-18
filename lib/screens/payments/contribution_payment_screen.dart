@@ -17,12 +17,14 @@ class ContributionPaymentScreen extends StatefulWidget {
   final String tradeId;
   final String title;
   final String imageUrl;
+  final double amount; // <-- Añadimos el monto exacto requerido
 
   const ContributionPaymentScreen({
     super.key,
     required this.tradeId,
     required this.title,
     required this.imageUrl,
+    required this.amount, // <-- Se requiere al llamar a esta pantalla
   });
 
   @override
@@ -31,10 +33,9 @@ class ContributionPaymentScreen extends StatefulWidget {
 
 class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
   final PaymentController _paymentController = PaymentController();
-  double _amount = 30;
   bool _loadingPayPal = false;
   StreamSubscription? _linkSub;
-  static const List<int> _quickAmounts = [1, 5, 10, 25, 50, 100];
+  // Eliminamos _amount y _quickAmounts porque ahora el precio es fijo
 
   @override
   void initState() {
@@ -48,7 +49,8 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => PaymentConfirmationScreen(amount: _amount),
+              // Usamos el monto fijo del widget
+              builder: (context) => PaymentConfirmationScreen(amount: widget.amount),
             ),
           );
         } else if (link.contains("paypal-cancel")) {
@@ -86,7 +88,7 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
         .toString();
 
     final url = await _paymentController.createPayment(
-      amount: _amount,
+      amount: widget.amount,
       returnUrl: returnUrl,
       cancelUrl: cancelUrl,
     );
@@ -238,48 +240,11 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
           const Text('Contribucion', style: TextStyle(color: Colors.white60, fontSize: 14)),
           const SizedBox(height: 2),
           Text(
-            '\$${_amount.toStringAsFixed(0)}',
+            // Mostramos el monto fijo
+            '\$${widget.amount.toStringAsFixed(0)}',
             style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
           ),
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Disminuir',
-                onPressed: _amount <= 0 ? null : () => setState(() => _amount -= 1),
-                icon: const Icon(Icons.remove_circle_outline, color: Colors.white70),
-              ),
-              Expanded(
-                child: Slider(
-                  value: _amount,
-                  min: 0,
-                  max: 100,
-                  divisions: 100,
-                  activeColor: const Color(0xFFEE6F2E),
-                  inactiveColor: const Color(0xFFB8BBC4),
-                  onChanged: (value) => setState(() => _amount = value),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Aumentar',
-                onPressed: _amount >= 100 ? null : () => setState(() => _amount += 1),
-                icon: const Icon(Icons.add_circle_outline, color: Colors.white70),
-              ),
-            ],
-          ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center, 
-            children: _quickAmounts
-                .map(
-                  (value) => _QuickAmountButton(
-                    amount: value,
-                    selected: _amount.round() == value,
-                    onPressed: () => setState(() => _amount = value.toDouble()),
-                  ),
-                )
-                .toList(),
-          ),
+          // Se eliminaron los botones de '+' y '-' el Slider y la lista de botones rápidos.
         ],
       ),
     );
@@ -336,7 +301,8 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Monto a pagar: \$${_amount.toStringAsFixed(0)}',
+                // Mostramos el monto fijo
+                'Monto a pagar: \$${widget.amount.toStringAsFixed(0)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
@@ -364,29 +330,4 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
   }
 }
 
-class _QuickAmountButton extends StatelessWidget {
-  final int amount;
-  final bool selected;
-  final VoidCallback onPressed;
-
-  const _QuickAmountButton({
-    required this.amount,
-    required this.selected,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        backgroundColor: selected ? const Color(0xFFEE6F2E) : null,
-        foregroundColor: selected ? Colors.white : Colors.white70,
-        side: BorderSide(color: selected ? const Color(0xFFEE6F2E) : Colors.white24),
-        visualDensity: VisualDensity.compact,
-      ),
-      child: Text('\$$amount'),
-    );
-  }
-}
+// La clase _QuickAmountButton fue eliminada completamente ya que no se usará más.

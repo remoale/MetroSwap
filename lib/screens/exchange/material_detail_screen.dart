@@ -7,8 +7,6 @@ import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
-// Agrega esta importación en la parte superior
-import 'package:metroswap/screens/publish/publish_screen.dart';
 
 /// Muestra el detalle completo de una publicación disponible.
 class MaterialDetailScreen extends StatelessWidget {
@@ -574,6 +572,7 @@ class MaterialDetailScreen extends StatelessWidget {
         'requesterUid': currentUser.uid,
         'requesterName': requesterName.isEmpty ? 'Usuario' : requesterName,
         'requestedQuantity': selectedQuantity, // Guarda la cantidad solicitada.
+        'priceUsd': currentPost.priceUsd,
         'status': 'requested',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),

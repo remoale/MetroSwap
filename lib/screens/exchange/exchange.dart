@@ -213,6 +213,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           tradeId: widget.tradeId,
           title: exchange.postTitle,
           imageUrl: exchange.imageUrl,
+          amount: exchange.priceUsd ?? 0.0,
+
         ),
       ),
     );
@@ -251,7 +253,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => PaymentConfirmationScreen(
-          amount: exchange.paypalAmount ?? 0,
+          amount: exchange.priceUsd ?? 0,
           exchangeId: widget.tradeId,
         ),
       ),

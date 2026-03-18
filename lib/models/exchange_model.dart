@@ -21,7 +21,9 @@ class ExchangeModel {
   final String paymentStatus;
   final bool ownerFeedbackSubmitted;
   final bool requesterFeedbackSubmitted;
-  final double? paypalAmount;
+  final double? paypalAmount; 
+  final double? priceUsd;     
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -40,6 +42,7 @@ class ExchangeModel {
     required this.ownerFeedbackSubmitted,
     required this.requesterFeedbackSubmitted,
     this.paypalAmount,
+    this.priceUsd, 
     this.createdAt,
     this.updatedAt,
   });
@@ -82,6 +85,7 @@ class ExchangeModel {
       ownerFeedbackSubmitted: map['ownerFeedbackSubmitted'] == true,
       requesterFeedbackSubmitted: map['requesterFeedbackSubmitted'] == true,
       paypalAmount: parseNumber(map['paypalAmount']),
+      priceUsd: parseNumber(map['priceUsd']), 
       createdAt: parseDate(map['createdAt']),
       updatedAt: parseDate(map['updatedAt']),
     );
@@ -103,6 +107,7 @@ class ExchangeModel {
       'ownerFeedbackSubmitted': ownerFeedbackSubmitted,
       'requesterFeedbackSubmitted': requesterFeedbackSubmitted,
       if (paypalAmount != null) 'paypalAmount': paypalAmount,
+      if (priceUsd != null) 'priceUsd': priceUsd,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
