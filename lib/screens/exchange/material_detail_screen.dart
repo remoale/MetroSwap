@@ -7,6 +7,8 @@ import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+// Agrega esta importación en la parte superior
+import 'package:metroswap/screens/publish/publish_screen.dart';
 
 /// Muestra el detalle completo de una publicación disponible.
 class MaterialDetailScreen extends StatelessWidget {
@@ -384,7 +386,12 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   // Valida la operación antes de iniciar el intercambio.
-  void _handleActionPressed(BuildContext context, PostModel? currentPost, int maxQuantity, bool hasPrice) {
+  void _handleActionPressed(
+    BuildContext context,
+    PostModel? currentPost,
+    int maxQuantity,
+    bool hasPrice,
+  ) {
     if (currentPost == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo cargar la publicación.')),
@@ -405,14 +412,19 @@ class MaterialDetailScreen extends StatelessWidget {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes iniciar sesión para realizar esta acción.')),
+        const SnackBar(
+          content: Text('Debes iniciar sesión para realizar esta acción.'),
+        ),
       );
       return;
     }
 
+    // Doble verificación de seguridad (aunque ya no se debería ver el botón).
     if (currentUser.uid == currentPost.ownerUid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No puedes interactuar con tu propia publicación.')),
+        const SnackBar(
+          content: Text('No puedes interactuar con tu propia publicación.'),
+        ),
       );
       return;
     }
@@ -429,7 +441,11 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   // Muestra el diálogo para seleccionar la cantidad.
-  void _showQuantityDialog(BuildContext context, int maxQuantity, Function(int) onConfirm) {
+  void _showQuantityDialog(
+    BuildContext context,
+    int maxQuantity,
+    Function(int) onConfirm,
+  ) {
     int selectedQuantity = 1;
 
     showDialog(
@@ -438,7 +454,9 @@ class MaterialDetailScreen extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               title: const Text(
                 '¿Qué cantidad deseas?',
                 textAlign: TextAlign.center,
@@ -465,7 +483,10 @@ class MaterialDetailScreen extends StatelessWidget {
                       const SizedBox(width: 20),
                       Text(
                         '$selectedQuantity',
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(width: 20),
                       IconButton(
@@ -483,7 +504,10 @@ class MaterialDetailScreen extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -496,7 +520,10 @@ class MaterialDetailScreen extends StatelessWidget {
                     Navigator.pop(dialogContext); // Cierra el diálogo.
                     onConfirm(selectedQuantity); // Confirma la cantidad elegida.
                   },
-                  child: const Text('Confirmar', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'Confirmar',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             );
@@ -534,7 +561,7 @@ class MaterialDetailScreen extends StatelessWidget {
 
       final exchangeRef = firestore.collection('exchanges').doc();
       tradeId = exchangeRef.id;
-      
+
       await exchangeRef.set({
         'id': tradeId,
         'postId': postId,
@@ -665,7 +692,8 @@ class _OwnerAvatar extends StatelessWidget {
     }
 
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('users').doc(ownerUid).get(),
+      future:
+          FirebaseFirestore.instance.collection('users').doc(ownerUid).get(),
       builder: (context, snapshot) {
         final photoUrl = snapshot.data?.data()?['photoUrl']?.toString() ?? '';
         if (photoUrl.isEmpty) {
