@@ -82,7 +82,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           email: data['email']?.toString(),
           phone: (data['phone'] ?? data['phoneNumber'])?.toString(),
           career: data['career']?.toString(),
-          studentId: (data['studentId'] ?? data['carnet'])?.toString(),
+          studentId: data['studentId']?.toString(),
           photoUrl: (data['photoUrl'] ?? data['photoURL'])?.toString(),
         );
       } catch (_) {
@@ -225,6 +225,20 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         builder: (_) => FeedbackScreen(
           tradeId: widget.tradeId,
           postTitle: exchange.postTitle,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _goToOwnerFeedback(ExchangeModel exchange) async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FeedbackScreen(
+          tradeId: widget.tradeId,
+          postTitle: exchange.postTitle,
+          isRequesterReview: true,
         ),
       ),
     );
@@ -608,6 +622,30 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                               ),
                                               child: const Text(
                                                 'Terminar intercambio',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        if (!isPostOwner &&
+                                            exchange.status == ExchangeModel.statusCompleted &&
+                                            !exchange.requesterFeedbackSubmitted)
+                                          SizedBox(
+                                            width: useCompactLayout ? 220 : 250,
+                                            height: useCompactLayout ? 40 : 45,
+                                            child: ElevatedButton(
+                                              onPressed: () => _goToOwnerFeedback(exchange),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF4E69E8),
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Calificar propietario',
                                                 style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w700,

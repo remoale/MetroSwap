@@ -29,6 +29,10 @@ class MaterialDetailScreen extends StatelessWidget {
     final quantity = currentPost?.quantity ?? 1;
     final priceUsd = currentPost?.priceUsd;
     final hasPrice = priceUsd != null;
+    final isOutOfStock = currentPost == null ||
+        quantity <= 0 ||
+        currentPost.status == PostModel.statusInactive ||
+        currentPost.lifecycleStatus == PostModel.lifecycleOutOfStock;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE4E1E6),
@@ -156,6 +160,14 @@ class MaterialDetailScreen extends StatelessWidget {
                                         _buildMetaChip('Estado', condition),
                                       _buildMetaChip(
                                           'Cantidad', quantity.toString()),
+                                      if (isOutOfStock)
+                                        _buildMetaChip(
+                                          'Disponibilidad',
+                                          PostModel.lifecycleOutOfStock,
+                                          backgroundColor: const Color(0xFFFCE8E6),
+                                          textColor: const Color(0xFFB3261E),
+                                          borderColor: const Color(0xFFF1B5AF),
+                                        ),
                                       if (priceUsd != null)
                                         _buildMetaChip(
                                           'Precio',
@@ -196,13 +208,15 @@ class MaterialDetailScreen extends StatelessWidget {
                                   height: 60,
                                   child: ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFF6B00),
+                                      backgroundColor: isOutOfStock
+                                          ? const Color(0xFF9A969F)
+                                          : const Color(0xFFFF6B00),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       elevation: 2,
                                     ),
-                                    onPressed: () {
+                                    onPressed: isOutOfStock ? null : () {
                                       _handleActionPressed(
                                         context,
                                         currentPost,
@@ -220,7 +234,11 @@ class MaterialDetailScreen extends StatelessWidget {
                                         ),
                                         const SizedBox(width: 10),
                                         Text(
-                                          hasPrice ? 'Comprar' : 'Intercambiar',
+                                          isOutOfStock
+                                              ? PostModel.lifecycleOutOfStock
+                                              : hasPrice
+                                                  ? 'Comprar'
+                                                  : 'Intercambiar',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 22,
@@ -255,6 +273,16 @@ class MaterialDetailScreen extends StatelessWidget {
     if (currentPost == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo cargar la publicación.')),
+      );
+      return;
+    }
+
+    final isOutOfStock = maxQuantity <= 0 ||
+        currentPost.status == PostModel.statusInactive ||
+        currentPost.lifecycleStatus == PostModel.lifecycleOutOfStock;
+    if (isOutOfStock) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Este material está agotado.')),
       );
       return;
     }
@@ -470,18 +498,24 @@ class MaterialDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMetaChip(String label, String value) {
+  Widget _buildMetaChip(
+    String label,
+    String value, {
+    Color backgroundColor = Colors.white,
+    Color textColor = const Color(0xFF333333),
+    Color borderColor = const Color(0xFFD4CFD8),
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD4CFD8)),
+        border: Border.all(color: borderColor),
       ),
       child: RichText(
         text: TextSpan(
-          style: const TextStyle(
-            color: Color(0xFF333333),
+          style: TextStyle(
+            color: textColor,
             fontSize: 14,
           ),
           children: [

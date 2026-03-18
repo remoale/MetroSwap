@@ -127,13 +127,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    final carnet = studentIdCtrl.text.trim();
-    final formatoCarnet = RegExp(r'^[0-9]{6,15}$');
+    final studentId = studentIdCtrl.text.trim();
+    final studentIdPattern = RegExp(r'^[0-9]{6,15}$');
     
-    if (carnet.isEmpty || !formatoCarnet.hasMatch(carnet)) {
+    if (studentId.isEmpty || !studentIdPattern.hasMatch(studentId)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Ingrese un carnet válido (entre 6 y 15 dígitos numéricos)."),
+          content: const Text("Ingrese un Student ID válido (entre 6 y 15 dígitos numéricos)."),
           backgroundColor: Colors.red.shade700,
           duration: const Duration(seconds: 4),
         ),

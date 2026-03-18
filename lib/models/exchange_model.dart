@@ -18,6 +18,8 @@ class ExchangeModel {
   final String requesterName;
   final String status;
   final String paymentStatus;
+  final bool ownerFeedbackSubmitted;
+  final bool requesterFeedbackSubmitted;
   final double? paypalAmount;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -34,6 +36,8 @@ class ExchangeModel {
     required this.requesterName,
     required this.status,
     required this.paymentStatus,
+    required this.ownerFeedbackSubmitted,
+    required this.requesterFeedbackSubmitted,
     this.paypalAmount,
     this.createdAt,
     this.updatedAt,
@@ -74,6 +78,8 @@ class ExchangeModel {
       requesterName: (map['requesterName'] ?? '').toString(),
       status: (map['status'] ?? statusRequested).toString(),
       paymentStatus: (map['paymentStatus'] ?? '').toString(),
+      ownerFeedbackSubmitted: map['ownerFeedbackSubmitted'] == true,
+      requesterFeedbackSubmitted: map['requesterFeedbackSubmitted'] == true,
       paypalAmount: parseNumber(map['paypalAmount']),
       createdAt: parseDate(map['createdAt']),
       updatedAt: parseDate(map['updatedAt']),
@@ -93,6 +99,8 @@ class ExchangeModel {
       'requesterName': requesterName,
       'status': status,
       'paymentStatus': paymentStatus,
+      'ownerFeedbackSubmitted': ownerFeedbackSubmitted,
+      'requesterFeedbackSubmitted': requesterFeedbackSubmitted,
       if (paypalAmount != null) 'paypalAmount': paypalAmount,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),

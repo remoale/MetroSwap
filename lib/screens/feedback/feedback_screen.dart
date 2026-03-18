@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/exchange_model.dart';
+import 'package:metroswap/models/post_model.dart';
 import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
@@ -9,11 +10,13 @@ import 'package:metroswap/widgets/metroswap_navbar.dart';
 class FeedbackScreen extends StatefulWidget {
   final String tradeId;
   final String postTitle;
+  final bool isRequesterReview;
 
   const FeedbackScreen({
     super.key,
     required this.tradeId,
     required this.postTitle,
+    this.isRequesterReview = false,
   });
 
   @override
@@ -69,46 +72,117 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ? exchange.ownerUid.trim()
           : exchange.targetUid.trim();
       final requesterUid = exchange.requesterUid.trim();
-
-      if (ownerUid != currentUser.uid) {
-        throw StateError('Solo el dueño del post puede calificar y finalizar.');
-      }
-      if (exchange.status != ExchangeModel.statusAccepted) {
-        throw StateError('Solo puedes finalizar un intercambio aceptado.');
-      }
-      if (requesterUid.isEmpty) {
-        throw StateError('No se pudo identificar al usuario calificado.');
-      }
-
-      final ratingRef = _firestore
-          .collection('user_ratings')
-          .doc(requesterUid)
-          .collection('entries')
-          .doc(widget.tradeId);
-
+      final exchangeData = exchangeSnapshot.data() ?? <String, dynamic>{};
       final comment = _commentController.text.trim();
 
       final batch = _firestore.batch();
-      batch.set(ratingRef, {
-        'tradeId': widget.tradeId,
-        'fromUid': currentUser.uid,
-        'toUid': requesterUid,
-        'postTitle': exchange.postTitle,
-        'rating': _rating,
-        'comment': comment.isEmpty ? null : comment,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      batch.update(exchangeRef, {
-        'status': ExchangeModel.statusCompleted,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+
+      if (widget.isRequesterReview) {
+        if (requesterUid != currentUser.uid) {
+          throw StateError('Solo el solicitante puede calificar al propietario.');
+        }
+        if (exchange.status != ExchangeModel.statusCompleted) {
+          throw StateError('Solo puedes calificar al propietario cuando el intercambio esté completado.');
+        }
+        if (ownerUid.isEmpty) {
+          throw StateError('No se pudo identificar al propietario.');
+        }
+        if (exchange.requesterFeedbackSubmitted) {
+          throw StateError('Ya enviaste tu feedback para este intercambio.');
+        }
+
+        final ratingRef = _firestore
+            .collection('user_ratings')
+            .doc(ownerUid)
+            .collection('entries')
+            .doc('${widget.tradeId}_requester');
+
+        batch.set(ratingRef, {
+          'tradeId': widget.tradeId,
+          'fromUid': currentUser.uid,
+          'toUid': ownerUid,
+          'postTitle': exchange.postTitle,
+          'rating': _rating,
+          'comment': comment.isEmpty ? null : comment,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        batch.update(exchangeRef, {
+          'requesterFeedbackSubmitted': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        if (ownerUid != currentUser.uid) {
+          throw StateError('Solo el dueño del post puede calificar y finalizar.');
+        }
+        if (exchange.status != ExchangeModel.statusAccepted) {
+          throw StateError('Solo puedes finalizar un intercambio aceptado.');
+        }
+        if (requesterUid.isEmpty) {
+          throw StateError('No se pudo identificar al usuario calificado.');
+        }
+        if (exchange.ownerFeedbackSubmitted) {
+          throw StateError('Ya enviaste tu feedback para este intercambio.');
+        }
+
+        final requestedQuantity =
+            int.tryParse(exchangeData['requestedQuantity']?.toString() ?? '') ?? 1;
+        final postId = exchange.postId.trim();
+        if (postId.isEmpty) {
+          throw StateError('No se pudo identificar la publicación del intercambio.');
+        }
+
+        final postRef = _firestore.collection('posts').doc(postId);
+        final postSnapshot = await postRef.get();
+        if (!postSnapshot.exists) {
+          throw StateError('La publicación asociada ya no existe.');
+        }
+
+        final postData = postSnapshot.data() ?? <String, dynamic>{};
+        final currentQuantity =
+            int.tryParse(postData['quantity']?.toString() ?? '') ?? 1;
+        final remainingQuantity = currentQuantity - requestedQuantity;
+        final safeQuantity = remainingQuantity < 0 ? 0 : remainingQuantity;
+
+        final ratingRef = _firestore
+            .collection('user_ratings')
+            .doc(requesterUid)
+            .collection('entries')
+            .doc(widget.tradeId);
+
+        batch.set(ratingRef, {
+          'tradeId': widget.tradeId,
+          'fromUid': currentUser.uid,
+          'toUid': requesterUid,
+          'postTitle': exchange.postTitle,
+          'rating': _rating,
+          'comment': comment.isEmpty ? null : comment,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        batch.update(exchangeRef, {
+          'status': ExchangeModel.statusCompleted,
+          'ownerFeedbackSubmitted': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        batch.update(postRef, {
+          'quantity': safeQuantity,
+          'lifecycleStatus': safeQuantity == 0
+              ? PostModel.lifecycleOutOfStock
+              : PostModel.lifecyclePublished,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
       await batch.commit();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Intercambio completado y feedback enviado.'),
+          content: Text(
+            widget.isRequesterReview
+                ? 'Feedback enviado al propietario.'
+                : 'Intercambio completado y feedback enviado.',
+          ),
           backgroundColor: Colors.green, 
         )
       );
@@ -132,6 +206,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.postTitle.trim().isEmpty ? 'Intercambio' : widget.postTitle.trim();
+    final screenTitle = widget.isRequesterReview
+        ? 'Calificar propietario'
+        : 'Finalizar intercambio';
 
     return Scaffold(
       backgroundColor: const Color(0xFFE6E3E8),
@@ -159,7 +236,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Finalizar intercambio',
+                          screenTitle,
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -203,15 +280,19 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         const SizedBox(height: 18),
                         SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _sending ? null : _finishExchange,
+                            child: ElevatedButton(
+                              onPressed: _sending ? null : _finishExchange,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF8A4C),
                               foregroundColor: Colors.black,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             child: Text(
-                              _sending ? 'Enviando...' : 'Enviar feedback y terminar',
+                              _sending
+                                  ? 'Enviando...'
+                                  : widget.isRequesterReview
+                                      ? 'Enviar feedback'
+                                      : 'Enviar feedback y terminar',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                               ),

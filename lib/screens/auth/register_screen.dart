@@ -14,7 +14,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _nombreController = TextEditingController();
-  final TextEditingController _carnetController = TextEditingController();
+  final TextEditingController _studentIdController = TextEditingController();
   final TextEditingController _telefonoController = TextEditingController();
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -55,7 +55,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override 
   void dispose(){
     _nombreController.dispose();
-    _carnetController.dispose();
+    _studentIdController.dispose();
     _telefonoController.dispose();
     _correoController.dispose();
     _passwordController.dispose();
@@ -91,14 +91,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _validarYRegistrar() async {
     final nombre = _nombreController.text.trim();
-    final carnet = _carnetController.text.trim();
+    final studentId = _studentIdController.text.trim();
     final telefono = _telefonoController.text.trim();
     final correo = _correoController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final role = _resolveRoleFromEmail(correo);
     final carrera  = _resolveCareerForRole(role);
 
-    if (nombre.isEmpty || carnet.isEmpty || telefono.isEmpty || correo.isEmpty || password.isEmpty) {
+    if (nombre.isEmpty || studentId.isEmpty || telefono.isEmpty || correo.isEmpty || password.isEmpty) {
       _showError("Por favor, llena todos los campos.");
       return;
     }
@@ -124,9 +124,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final formatoCarnet = RegExp(r'^\d{6,15}$');
-    if (!formatoCarnet.hasMatch(carnet)) {
-      _showError("El carnet debe tener entre 6 y 15 dígitos numéricos.");
+    final studentIdPattern = RegExp(r'^\d{6,15}$');
+    if (!studentIdPattern.hasMatch(studentId)) {
+      _showError("El Student ID debe tener entre 6 y 15 dígitos numéricos.");
       return;
     }
 
@@ -149,7 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
         'name': nombre, 
         'email': correo,       
-        'studentId': carnet,   
+        'studentId': studentId,
         'phone': telefono,     
         'career': carrera,
         'role': role,
@@ -201,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final columnaDerecha = [
       _buildInputField("Correo Unimet:", _correoController, false),
       _buildPasswordField("Contraseña:", _passwordController),
-      _buildInputField("Carnet:", _carnetController, false, esNumero: true),
+      _buildInputField("Student ID:", _studentIdController, false, esNumero: true),
     ];
 
     return Scaffold(
