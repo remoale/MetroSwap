@@ -29,6 +29,16 @@ service cloud.firestore {
         ];
     }
 
+    function isValidRatingPayload(userId) {
+      return request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid == userId
+        && request.resource.data.tradeId is string
+        && request.resource.data.tradeId.size() > 0
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+    }
+
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
@@ -69,20 +79,10 @@ service cloud.firestore {
     match /user_ratings/{userId}/entries/{entryId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
-        && request.auth.uid == request.resource.data.fromUid
-        && request.resource.data.toUid == userId
-        && request.resource.data.tradeId == entryId
-        && request.resource.data.rating is int
-        && request.resource.data.rating >= 1
-        && request.resource.data.rating <= 5;
+        && isValidRatingPayload(userId);
       allow update: if isSignedIn()
         && resource.data.fromUid == request.auth.uid
-        && request.resource.data.fromUid == request.auth.uid
-        && request.resource.data.toUid == userId
-        && request.resource.data.tradeId == entryId
-        && request.resource.data.rating is int
-        && request.resource.data.rating >= 1
-        && request.resource.data.rating <= 5;
+        && isValidRatingPayload(userId);
       allow delete: if false;
     }
 
@@ -102,6 +102,8 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).changedKeys().hasOnly([
           'status',
           'updatedAt',
+          'ownerFeedbackSubmitted',
+          'requesterFeedbackSubmitted',
         ]);
       allow delete: if false;
 

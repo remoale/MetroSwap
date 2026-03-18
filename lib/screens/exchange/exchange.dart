@@ -6,6 +6,8 @@ import 'package:metroswap/models/exchange_model.dart';
 import 'package:metroswap/screens/feedback/feedback_screen.dart';
 import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/payments/contribution_payment_screen.dart';
+import 'package:metroswap/screens/payments/payment_confirmation_screen.dart';
+import 'package:metroswap/services/presence_service.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
@@ -75,15 +77,16 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
             .toString()
             .trim();
         return _UserSummary(
+          uid: uid,
           name: rawName.isEmpty ? fallbackName : rawName,
           email: data['email']?.toString(),
           phone: (data['phone'] ?? data['phoneNumber'])?.toString(),
           career: data['career']?.toString(),
-          studentId: (data['studentId'] ?? data['carnet'])?.toString(),
+          studentId: data['studentId']?.toString(),
           photoUrl: (data['photoUrl'] ?? data['photoURL'])?.toString(),
         );
       } catch (_) {
-        return _UserSummary(name: fallbackName);
+        return _UserSummary(uid: uid, name: fallbackName);
       }
     }
 
@@ -227,6 +230,33 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
   }
 
+  Future<void> _goToOwnerFeedback(ExchangeModel exchange) async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FeedbackScreen(
+          tradeId: widget.tradeId,
+          postTitle: exchange.postTitle,
+          isRequesterReview: true,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _goToPaymentSuccessful(ExchangeModel exchange) async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentConfirmationScreen(
+          amount: exchange.paypalAmount ?? 0,
+          exchangeId: widget.tradeId,
+        ),
+      ),
+    );
+  }
+
   Future<void> _cancelExchange() async {
     try {
       await _firestore.collection('exchanges').doc(widget.tradeId).update({
@@ -314,6 +344,11 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewport = MediaQuery.sizeOf(context);
+    final isMobileViewport = viewport.width < 600;
+    final isShortViewport = viewport.height <= 700;
+    final useCompactLayout = isShortViewport || isMobileViewport;
+
     return Scaffold(
       backgroundColor: const Color(0xFFEFECEF),
       body: SafeArea(
@@ -332,19 +367,25 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1100),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: useCompactLayout ? 16 : 24,
+                      vertical: useCompactLayout ? 8 : 16,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         IconButton(
-                          icon: const Icon(
+                          visualDensity: isShortViewport ? VisualDensity.compact : VisualDensity.standard,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(
                             Icons.arrow_back_ios_new_rounded,
                             color: Colors.black,
-                            size: 28,
+                            size: useCompactLayout ? 24 : 28,
                           ),
                           onPressed: () => Navigator.pop(context),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: useCompactLayout ? 6 : 10),
                         Expanded(
                           child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                             stream: _exchangeStream(),
@@ -375,6 +416,9 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                   exchange.status == ExchangeModel.statusRequested;
                               final isAccepted =
                                   exchange.status == ExchangeModel.statusAccepted;
+                              final hasCompletedPayment =
+                                  exchange.status == ExchangeModel.statusCompleted &&
+                                  exchange.paymentStatus.trim().toLowerCase() == 'completed';
                               final isFinalStatus =
                                   exchange.status == ExchangeModel.statusCompleted ||
                                       exchange.status == ExchangeModel.statusRejected ||
@@ -390,17 +434,25 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                         exchange: exchange,
                                         requester: participants?.requester ??
                                             _UserSummary(
+                                              uid: exchange.requesterUid,
                                               name: exchange.requesterName.trim().isEmpty
                                                   ? 'Solicitante'
                                                   : exchange.requesterName.trim(),
                                             ),
                                         owner: participants?.owner ??
-                                            const _UserSummary(name: 'Propietario'),
+                                            _UserSummary(
+                                              uid: exchange.targetUid.trim().isEmpty
+                                                  ? exchange.ownerUid
+                                                  : exchange.targetUid,
+                                              name: 'Propietario',
+                                            ),
                                         currentUid: _auth.currentUser?.uid ?? '',
+                                        compact: useCompactLayout,
+                                        mobile: isMobileViewport,
                                       );
                                     },
                                   ),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: useCompactLayout ? 12 : 20),
                                   Expanded(
                                     child: Container(
                                       width: double.infinity,
@@ -408,7 +460,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      padding: const EdgeInsets.all(20),
+                                      padding: EdgeInsets.all(useCompactLayout ? 14 : 20),
                                       child: StreamBuilder<List<_ExchangeMessage>>(
                                         stream: _messagesStream(),
                                         builder: (context, messagesSnapshot) {
@@ -447,6 +499,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                               return _buildMessageBubble(
                                                 text: msg.text,
                                                 isMe: msg.senderUid == currentUid,
+                                                compact: useCompactLayout,
                                               );
                                             },
                                           );
@@ -454,17 +507,18 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: useCompactLayout ? 12 : 20),
                                   _buildInputArea(
                                     exchange,
                                     canSendMessages:
                                         exchange.status != ExchangeModel.statusRejected &&
                                         exchange.status != ExchangeModel.statusDeclined,
+                                    compact: useCompactLayout,
                                   ),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: useCompactLayout ? 12 : 20),
                                   if (isRequested)
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
+                                      padding: EdgeInsets.only(bottom: useCompactLayout ? 8 : 12),
                                       child: Text(
                                         isPostOwner
                                             ? 'Esta solicitud esta pendiente por tu aceptacion.'
@@ -485,8 +539,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                       children: [
                                         if (isAccepted && !isPostOwner)
                                           SizedBox(
-                                            width: 250,
-                                            height: 45,
+                                            width: useCompactLayout ? 220 : 250,
+                                            height: useCompactLayout ? 40 : 45,
                                             child: ElevatedButton(
                                               onPressed: () => _goToContributionPayment(exchange),
                                               style: ElevatedButton.styleFrom(
@@ -507,8 +561,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                           ),
                                         if (isPostOwner && isRequested)
                                           SizedBox(
-                                            width: 250,
-                                            height: 45,
+                                            width: useCompactLayout ? 220 : 250,
+                                            height: useCompactLayout ? 40 : 45,
                                             child: ElevatedButton(
                                               onPressed: _acceptExchange,
                                               style: ElevatedButton.styleFrom(
@@ -529,8 +583,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                           ),
                                         if (isPostOwner && isRequested)
                                           SizedBox(
-                                            width: 250,
-                                            height: 45,
+                                            width: useCompactLayout ? 220 : 250,
+                                            height: useCompactLayout ? 40 : 45,
                                             child: OutlinedButton(
                                               onPressed: _rejectExchange,
                                               style: OutlinedButton.styleFrom(
@@ -553,8 +607,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                           ),
                                         if (isPostOwner && isAccepted)
                                           SizedBox(
-                                            width: 250,
-                                            height: 45,
+                                            width: useCompactLayout ? 220 : 250,
+                                            height: useCompactLayout ? 40 : 45,
                                             child: OutlinedButton(
                                               onPressed: () => _goToFeedback(exchange),
                                               style: OutlinedButton.styleFrom(
@@ -576,10 +630,56 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                             ),
                                           ),
                                         if (!isPostOwner &&
+                                            exchange.status == ExchangeModel.statusCompleted &&
+                                            !exchange.requesterFeedbackSubmitted)
+                                          SizedBox(
+                                            width: useCompactLayout ? 220 : 250,
+                                            height: useCompactLayout ? 40 : 45,
+                                            child: ElevatedButton(
+                                              onPressed: () => _goToOwnerFeedback(exchange),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF4E69E8),
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Calificar propietario',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        if (hasCompletedPayment)
+                                          SizedBox(
+                                            width: useCompactLayout ? 220 : 250,
+                                            height: useCompactLayout ? 40 : 45,
+                                            child: ElevatedButton(
+                                              onPressed: () => _goToPaymentSuccessful(exchange),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(0xFF2F3035),
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                'Ver pago completado',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        if (!isPostOwner &&
                                             !isFinalStatus)
                                           SizedBox(
-                                            width: 250,
-                                            height: 45,
+                                            width: useCompactLayout ? 220 : 250,
+                                            height: useCompactLayout ? 40 : 45,
                                             child: OutlinedButton(
                                               onPressed: _cancelExchange,
                                               style: OutlinedButton.styleFrom(
@@ -603,7 +703,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: useCompactLayout ? 8 : 20),
                                 ],
                               );
                             },
@@ -615,7 +715,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                 ),
               ),
             ),
-            const MetroSwapFooter(),
+            if (!useCompactLayout) const MetroSwapFooter(),
           ],
         ),
       ),
@@ -627,6 +727,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     required _UserSummary requester,
     required _UserSummary owner,
     required String currentUid,
+    required bool compact,
+    required bool mobile,
   }) {
     final isRequesterCurrentUser =
         currentUid.isNotEmpty && currentUid == exchange.requesterUid;
@@ -640,26 +742,55 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         final isCompact = constraints.maxWidth < 800;
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+          padding: EdgeInsets.symmetric(
+            vertical: compact ? 14 : 20,
+            horizontal: compact ? 16 : 24,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(40),
+            borderRadius: BorderRadius.circular(compact ? 24 : 40),
           ),
-          child: isCompact
+          child: mobile
               ? Column(
                   children: [
                     _buildUserColumn(
                       leftUser,
                       isRightAligned: false,
                       isOwner: leftIsOwner,
+                      compact: true,
+                      mobile: true,
                     ),
-                    const Divider(height: 30),
-                    _buildItemInfo(exchange),
-                    const Divider(height: 30),
+                    const Divider(height: 18),
+                    _buildItemInfo(exchange, compact: true, mobile: true),
+                    const Divider(height: 18),
+                    _buildUserColumn(
+                      rightUser,
+                      isRightAligned: false,
+                      isOwner: rightIsOwner,
+                      compact: true,
+                      mobile: true,
+                    ),
+                  ],
+                )
+              : isCompact
+              ? Column(
+                  children: [
+                    _buildUserColumn(
+                      leftUser,
+                      isRightAligned: false,
+                      isOwner: leftIsOwner,
+                      compact: compact,
+                      mobile: false,
+                    ),
+                    Divider(height: compact ? 20 : 30),
+                    _buildItemInfo(exchange, compact: compact, mobile: false),
+                    Divider(height: compact ? 20 : 30),
                     _buildUserColumn(
                       rightUser,
                       isRightAligned: true,
                       isOwner: rightIsOwner,
+                      compact: compact,
+                      mobile: false,
                     ),
                   ],
                 )
@@ -672,16 +803,20 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                         leftUser,
                         isRightAligned: false,
                         isOwner: leftIsOwner,
+                        compact: compact,
+                        mobile: false,
                       ),
                     ),
-                    Container(height: 80, width: 2, color: Colors.grey.shade300),
-                    Expanded(child: _buildItemInfo(exchange)),
-                    Container(height: 80, width: 2, color: Colors.grey.shade300),
+                    Container(height: compact ? 60 : 80, width: 2, color: Colors.grey.shade300),
+                    Expanded(child: _buildItemInfo(exchange, compact: compact, mobile: false)),
+                    Container(height: compact ? 60 : 80, width: 2, color: Colors.grey.shade300),
                     Expanded(
                       child: _buildUserColumn(
                         rightUser,
                         isRightAligned: true,
                         isOwner: rightIsOwner,
+                        compact: compact,
+                        mobile: false,
                       ),
                     ),
                   ],
@@ -695,33 +830,37 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     _UserSummary user, {
     required bool isRightAligned,
     required bool isOwner,
+    required bool compact,
+    required bool mobile,
   }) {
     final photoUrl = user.photoUrl?.trim() ?? '';
+    final avatarRadius = compact ? 30.0 : 40.0;
+    final avatarIconSize = compact ? 28.0 : 36.0;
     final avatarBase = photoUrl.isEmpty
         ? CircleAvatar(
-            radius: 40,
+            radius: avatarRadius,
             backgroundColor: const Color(0xFF5A5860),
             child: Icon(
               Icons.person,
               color: Colors.grey.shade100,
-              size: 36,
+              size: avatarIconSize,
             ),
           )
         : CircleAvatar(
-            radius: 40,
+            radius: avatarRadius,
             backgroundColor: Colors.grey.shade300,
             child: ClipOval(
               child: Image.network(
                 photoUrl,
-                width: 80,
-                height: 80,
+                width: avatarRadius * 2,
+                height: avatarRadius * 2,
                 fit: BoxFit.cover,
                 webHtmlElementStrategy:
                     kIsWeb ? WebHtmlElementStrategy.prefer : WebHtmlElementStrategy.never,
                 errorBuilder: (context, error, stackTrace) => Icon(
                   Icons.person,
                   color: Colors.grey.shade700,
-                  size: 36,
+                  size: avatarIconSize,
                 ),
               ),
             ),
@@ -731,11 +870,11 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       children: [
         avatarBase,
         if (isOwner)
-          const Positioned(
-            top: -12,
+          Positioned(
+            top: compact ? -10 : -12,
             left: 0,
             right: 0,
-            child: Center(child: _OwnerBadge()),
+            child: Center(child: _OwnerBadge(compact: compact)),
           ),
       ],
     );
@@ -749,73 +888,173 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
             Flexible(
               child: Text(
                 user.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: compact ? 14 : 16,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        Text(
-          user.studentId?.trim().isNotEmpty == true ? user.studentId! : 'Carnet no disponible',
-          style: const TextStyle(fontSize: 10),
-        ),
-        Text(
-          user.email?.trim().isNotEmpty == true ? user.email! : 'Correo no disponible',
-          style: const TextStyle(fontSize: 10),
-        ),
-        Text(
-          user.phone?.trim().isNotEmpty == true ? user.phone! : 'Telefono no disponible',
-          style: const TextStyle(fontSize: 10),
-        ),
-        Text(
-          user.career?.trim().isNotEmpty == true ? user.career! : 'Carrera no disponible',
-          style: const TextStyle(fontSize: 10),
-        ),
-        const SizedBox(height: 8),
+        if (!mobile) ...[
+          Text(
+            user.studentId?.trim().isNotEmpty == true ? user.studentId! : 'Carnet no disponible',
+            style: TextStyle(fontSize: compact ? 9 : 10),
+          ),
+          Text(
+            user.email?.trim().isNotEmpty == true ? user.email! : 'Correo no disponible',
+            style: TextStyle(fontSize: compact ? 9 : 10),
+          ),
+          Text(
+            user.phone?.trim().isNotEmpty == true ? user.phone! : 'Telefono no disponible',
+            style: TextStyle(fontSize: compact ? 9 : 10),
+          ),
+          Text(
+            user.career?.trim().isNotEmpty == true ? user.career! : 'Carrera no disponible',
+            style: TextStyle(fontSize: compact ? 9 : 10),
+          ),
+        ] else ...[
+          if (user.career?.trim().isNotEmpty == true)
+            Text(
+              user.career!,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF6A6671)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
+        SizedBox(height: compact ? 6 : 8),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isRightAligned) _statusDot(),
-            if (!isRightAligned) const SizedBox(width: 4),
-            const Text(
-              'En linea',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            StreamBuilder<UserPresence>(
+              stream: PresenceService.instance.watchUserPresence(user.uid),
+              builder: (context, snapshot) {
+                final presence = snapshot.data ?? const UserPresence.offline();
+                final statusLabel = _presenceLabel(presence);
+                final statusColor =
+                    presence.isOnline ? Colors.green : const Color(0xFF8A858F);
+
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isRightAligned) _statusDot(statusColor),
+                    if (!isRightAligned) const SizedBox(width: 4),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: compact ? 11 : 12,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                    if (isRightAligned) const SizedBox(width: 4),
+                    if (isRightAligned) _statusDot(statusColor),
+                  ],
+                );
+              },
             ),
-            if (isRightAligned) const SizedBox(width: 4),
-            if (isRightAligned) _statusDot(),
           ],
         ),
       ],
     );
 
     return Row(
-      mainAxisAlignment: isRightAligned ? MainAxisAlignment.end : MainAxisAlignment.start,
-      children: isRightAligned
-          ? [Flexible(child: info), const SizedBox(width: 16), avatar]
-          : [avatar, const SizedBox(width: 16), Flexible(child: info)],
+      mainAxisAlignment: mobile
+          ? MainAxisAlignment.start
+          : isRightAligned
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
+      children: mobile
+          ? [avatar, SizedBox(width: compact ? 10 : 16), Expanded(child: info)]
+          : isRightAligned
+              ? [Flexible(child: info), SizedBox(width: compact ? 10 : 16), avatar]
+              : [avatar, SizedBox(width: compact ? 10 : 16), Flexible(child: info)],
     );
   }
 
-  Widget _buildItemInfo(ExchangeModel exchange) {
+  Widget _buildItemInfo(
+    ExchangeModel exchange, {
+    required bool compact,
+    required bool mobile,
+  }) {
     final imageUrl = exchange.imageUrl.trim();
-    return Column(
+    return mobile
+        ? Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: imageUrl.isEmpty
+                    ? const Icon(Icons.image, color: Colors.grey)
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        webHtmlElementStrategy: kIsWeb
+                            ? WebHtmlElementStrategy.prefer
+                            : WebHtmlElementStrategy.never,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.image, color: Colors.grey),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      exchange.postTitle.trim().isEmpty
+                          ? 'Publicacion sin titulo'
+                          : exchange.postTitle.trim(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      exchange.method.trim().isEmpty ? 'No definido' : exchange.method.trim(),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _statusLabel(exchange.status),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6A6671),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          )
+        : Column(
       children: [
         Text(
           exchange.postTitle.trim().isEmpty
               ? 'Publicacion sin titulo'
               : exchange.postTitle.trim(),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 13 : 14),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: compact ? 6 : 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 50,
-              height: 50,
+              width: compact ? 42 : 50,
+              height: compact ? 42 : 50,
               decoration: BoxDecoration(
                 color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(8),
@@ -833,49 +1072,86 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                 const Icon(Icons.image, color: Colors.grey),
                           ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: compact ? 12 : 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tipo de metodo',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: compact ? 13 : 14,
+                  ),
                 ),
                 Text(
                   exchange.method.trim().isEmpty ? 'No definido' : exchange.method.trim(),
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: compact ? 11 : 12),
                 ),
               ],
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        const Text(
+        SizedBox(height: compact ? 6 : 8),
+        Text(
           'Estado de la solicitud',
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: compact ? 9 : 10, fontWeight: FontWeight.bold),
         ),
-        Text(_statusLabel(exchange.status), style: const TextStyle(fontSize: 10)),
+        Text(_statusLabel(exchange.status), style: TextStyle(fontSize: compact ? 9 : 10)),
       ],
     );
   }
 
-  Widget _statusDot() {
+  String _presenceLabel(UserPresence presence) {
+    if (presence.isOnline) return 'En linea';
+
+    final lastSeen = presence.lastSeen;
+    if (lastSeen == null) {
+      return 'Desconectado';
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(lastSeen);
+
+    if (difference.inMinutes < 1) {
+      return 'Activo hace un momento';
+    }
+    if (difference.inHours < 1) {
+      final minutes = difference.inMinutes;
+      return 'Activo hace $minutes min';
+    }
+    if (difference.inDays < 1) {
+      final hours = difference.inHours;
+      return 'Activo hace $hours h';
+    }
+
+    final days = difference.inDays;
+    return 'Activo hace $days d';
+  }
+
+  Widget _statusDot(Color color) {
     return Container(
       width: 10,
       height: 10,
-      decoration: const BoxDecoration(
-        color: Colors.green,
+      decoration: BoxDecoration(
+        color: color,
         shape: BoxShape.circle,
       ),
     );
   }
 
-  Widget _buildMessageBubble({required String text, required bool isMe}) {
+  Widget _buildMessageBubble({
+    required String text,
+    required bool isMe,
+    required bool compact,
+  }) {
     return Align(
       alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        margin: EdgeInsets.symmetric(vertical: compact ? 6 : 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 16 : 20,
+          vertical: compact ? 10 : 12,
+        ),
         decoration: BoxDecoration(
           color: isMe ? const Color(0xFFFF8A4C) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
@@ -884,7 +1160,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           text,
           style: TextStyle(
             color: Colors.black,
-            fontSize: 16,
+            fontSize: compact ? 14 : 16,
             fontWeight: isMe ? FontWeight.w500 : FontWeight.w600,
           ),
         ),
@@ -895,6 +1171,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   Widget _buildInputArea(
     ExchangeModel exchange, {
     required bool canSendMessages,
+    required bool compact,
   }) {
     return Row(
       children: [
@@ -907,19 +1184,22 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
             child: TextField(
               controller: _messageController,
               enabled: canSendMessages,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Escribe un mensaje',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 18),
+                hintStyle: TextStyle(color: Colors.grey, fontSize: compact ? 16 : 18),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: compact ? 16 : 20,
+                  vertical: compact ? 12 : 15,
+                ),
               ),
               onSubmitted: canSendMessages ? (_) => _sendMessage(exchange) : null,
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: compact ? 10 : 16),
         SizedBox(
-          height: 50,
+          height: compact ? 44 : 50,
           child: ElevatedButton(
             onPressed: _isSending || !canSendMessages
                 ? null
@@ -927,14 +1207,17 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF8A4C),
               foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              padding: EdgeInsets.symmetric(horizontal: compact ? 20 : 30),
             ),
             child: Text(
               _isSending ? 'Enviando...' : 'Enviar',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: compact ? 14 : 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -944,7 +1227,9 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 }
 
 class _OwnerBadge extends StatelessWidget {
-  const _OwnerBadge();
+  final bool compact;
+
+  const _OwnerBadge({required this.compact});
 
   @override
   Widget build(BuildContext context) {
@@ -954,11 +1239,11 @@ class _OwnerBadge extends StatelessWidget {
         color: const Color(0xFF333333),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: const Text(
+      child: Text(
         'Propietario',
         style: TextStyle(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: compact ? 9 : 10,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -1004,6 +1289,7 @@ class _ParticipantsData {
 }
 
 class _UserSummary {
+  final String uid;
   final String name;
   final String? email;
   final String? phone;
@@ -1012,6 +1298,7 @@ class _UserSummary {
   final String? photoUrl;
 
   const _UserSummary({
+    this.uid = '',
     required this.name,
     this.email,
     this.phone,

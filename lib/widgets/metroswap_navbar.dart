@@ -177,28 +177,65 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final normalizedHeading = widget.heading.toLowerCase();
     final isHome = normalizedHeading == 'inicio';
     final isNotifications = normalizedHeading == 'notificaciones';
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final isMobile = screenWidth < 600;
+    final isCompactDesktop = !isMobile && screenWidth < 1100;
+    final isTightAdminDesktop = _isAdmin && isHome && !isMobile && screenWidth < 1250;
+    final showAdminBadge = _isAdmin;
+    final showMobileHeading = !isHome && !isMobile;
 
     return Container(
       height: 85,
       color: _isAdmin ? _colorAdmin : _colorOriginal,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 5 : 10),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 5 : 16),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => _navigateToAdmin(context),
-            child: const MetroSwapBrand(
-              color: Colors.white,
+            child: Transform.translate(
+              offset: Offset(isMobile ? 0 : -16, 0),
+              child: MetroSwapBrand(
+                color: Colors.white,
+                logoHeight: isMobile ? 44 : 64,
+                fontSize: isMobile ? 17 : 26,
+                logoYOffset: isMobile ? -3 : -6,
+              ),
             ),
           ),
-          if (_isAdmin) ...[
-            SizedBox(width: isMobile ? 5 : 15),
+          if (!isHome && isMobile) ...[
+            const SizedBox(width: 6),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        isLoggedIn ? const HomeScreen() : const LandingScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white70),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text('Inicio', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+          if (showAdminBadge) ...[
+            SizedBox(width: isMobile ? 5 : (isCompactDesktop ? 10 : 15)),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(
+                horizontal: isTightAdminDesktop ? 8 : (isCompactDesktop ? 10 : 12),
+                vertical: 6,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
@@ -208,13 +245,13 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
-                  fontSize: isMobile ? 14 : 20,
-                  letterSpacing: 0.5,
+                  fontSize: isMobile ? 14 : (isTightAdminDesktop ? 15 : (isCompactDesktop ? 16 : 20)),
+                  letterSpacing: isTightAdminDesktop ? 0 : (isCompactDesktop ? 0.2 : 0.5),
                 ),
               ),
             ),
           ],
-          if (!isHome) ...[
+          if (showMobileHeading) ...[
             SizedBox(width: isMobile ? 8 : 24),
             Expanded(
               child: Center(
@@ -232,9 +269,13 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
             ),
           ] else
             const Spacer(),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
               if (isHome) ...[
                 OutlinedButton(
                   onPressed: () {
@@ -246,11 +287,18 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white70),
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 20),
+                    minimumSize: Size(0, isMobile ? 36 : (isCompactDesktop ? 36 : 40)),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 8 : (isTightAdminDesktop ? 10 : (isCompactDesktop ? 14 : 20)),
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text('Publicar', style: TextStyle(fontSize: isMobile ? 14 : 16)),
+                  child: Text(
+                    'Publicar',
+                    style: TextStyle(fontSize: isMobile ? 14 : (isCompactDesktop ? 14 : 16)),
+                  ),
                 ),
-                SizedBox(width: isMobile ? 8 : 15),
+                SizedBox(width: isMobile ? 8 : (isTightAdminDesktop ? 6 : (isCompactDesktop ? 10 : 15))),
                 OutlinedButton(
                   onPressed: () {
                     Navigator.pushReplacement(
@@ -261,31 +309,44 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white70),
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 20),
+                    minimumSize: Size(0, isMobile ? 36 : (isCompactDesktop ? 36 : 40)),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 8 : (isTightAdminDesktop ? 10 : (isCompactDesktop ? 14 : 20)),
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text('Conócenos', style: TextStyle(fontSize: isMobile ? 14 : 16)),
+                  child: Text(
+                    'Conócenos',
+                    style: TextStyle(fontSize: isMobile ? 14 : (isCompactDesktop ? 14 : 16)),
+                  ),
                 ),
               ] else ...[
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            isLoggedIn ? const HomeScreen() : const LandingScreen(),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white70),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 20),
+                if (!isMobile)
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              isLoggedIn ? const HomeScreen() : const LandingScreen(),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white70),
+                      foregroundColor: Colors.white,
+                      minimumSize: Size(0, isCompactDesktop ? 36 : 40),
+                      padding: EdgeInsets.symmetric(horizontal: isCompactDesktop ? 14 : 20),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Inicio',
+                      style: TextStyle(fontSize: isCompactDesktop ? 14 : 16),
+                    ),
                   ),
-                  child: Text('Inicio', style: TextStyle(fontSize: isMobile ? 14 : 16)),
-                ),
               ],
-              if (widget.showLogoutButton) ...[
-                SizedBox(width: isMobile ? 6 : 12),
+                if (widget.showLogoutButton) ...[
+                SizedBox(width: isMobile ? 6 : (isTightAdminDesktop ? 6 : (isCompactDesktop ? 8 : 12))),
                 ElevatedButton.icon(
                   onPressed: () => _handleSignOut(context),
                   style: ElevatedButton.styleFrom(
@@ -296,28 +357,36 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 16),
+                    minimumSize: Size(0, isMobile ? 36 : (isCompactDesktop ? 36 : 40)),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 8 : (isTightAdminDesktop ? 10 : (isCompactDesktop ? 12 : 16)),
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   icon: const Icon(Icons.exit_to_app, size: 18),
                   // Ocultamos la palabra en móviles para que quepa el icono de salir
                   label: isMobile ? const SizedBox.shrink() : const Text('Cerrar sesion'),
                 ),
-              ],
-              if (widget.showNotificationsButton && isLoggedIn) ...[
-                SizedBox(width: isMobile ? 5 : 25),
+                ],
+                if (widget.showNotificationsButton && isLoggedIn) ...[
+                SizedBox(width: isMobile ? 0 : (isTightAdminDesktop ? 8 : (isCompactDesktop ? 12 : 25))),
                 _buildNotificationsButton(
                   context,
                   isNotifications,
                   FirebaseAuth.instance.currentUser!.uid,
                 ),
-              ],
+                ],
               if (widget.showProfileButton && isLoggedIn) ...[
-                SizedBox(width: isMobile ? 2 : 10),
+                SizedBox(width: isMobile ? 0 : (isCompactDesktop ? 6 : 10)),
                 IconButton(
+                  visualDensity:
+                      isMobile ? VisualDensity.compact : VisualDensity.standard,
+                  padding: EdgeInsets.all(isMobile ? 4 : 8),
+                  constraints: const BoxConstraints(),
                   icon: Icon(
                     Icons.account_circle,
                     color: Colors.white70,
-                    size: isMobile ? 28 : 35, 
+                    size: isMobile ? 24 : 35, 
                   ),
                   onPressed: () {
                     final currentUser = FirebaseAuth.instance.currentUser;
@@ -331,9 +400,10 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                     }
                   },
                 ),
-              ],
-              SizedBox(width: isMobile ? 5 : 28),
-            ],
+                ],
+                ],
+              ),
+            ),
           ),
         ],
       ),

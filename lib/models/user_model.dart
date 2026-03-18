@@ -84,7 +84,7 @@ class UserModel {
       photoUrl: rawPhoto?.toString(),
       phone: map['phone'],
       career: map['career'],
-      studentId: (map['studentId'] ?? map['carnet'])?.toString(),
+      studentId: map['studentId']?.toString(),
       books: map['books'] != null ? List<String>.from(map['books']) : null,
       role: normalizedRole,
       reputation: map['reputation'] ?? 0, 

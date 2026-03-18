@@ -6,9 +6,11 @@ import '../../controllers/profile_controller.dart';
 import '../../models/user_model.dart';
 import '../../services/storage_service.dart';
 import 'edit_profile_screen.dart';
+import 'user_reviews_screen.dart';
 import '../../widgets/profile_avatar.dart'; 
 import '../../widgets/metroswap_navbar.dart';
 import '../../widgets/metroswap_footer.dart';
+import '../../widgets/metroswap_layout.dart'; 
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -62,14 +64,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override 
   Widget build(BuildContext context) {
      if (isLoading) {
-       return const Scaffold(
-        body: Center(child: CircularProgressIndicator())
+       return MetroSwapLayout( 
+        body: const Center(child: CircularProgressIndicator())
         );
       }
 
       if (user == null) {
-        return Scaffold(
-          appBar: AppBar(title: const Text("Mi Perfil")),
+        return MetroSwapLayout( 
           body: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -89,162 +90,192 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
 
-      return Scaffold(
-        backgroundColor: const Color(0xFFEFECEF),
+      return MetroSwapLayout(
         body: SafeArea(
-          child: Column(
-            children: [
-              const MetroSwapNavbar(
-                developmentNav: true,
-                heading: 'Mi Perfil',
-                showLogoutButton: true,
-                showNotificationsButton: false,
-                showProfileButton: false,
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isCompact = constraints.maxWidth < 760;
-                    return SingleChildScrollView(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= 700;
+              final isCompact = constraints.maxWidth < 760;
+
+              return Column(
+                children: [
+                  if (isDesktop)
+                    const MetroSwapNavbar(
+                      developmentNav: true,
+                      heading: 'Perfil',
+                      showLogoutButton: true,
+                      showNotificationsButton: false,
+                      showProfileButton: false,
+                    ),
+                  
+                  Expanded(
+                    child: SingleChildScrollView(
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 1100),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 20,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    ProfileAvatar(
-                                      localImageBytes: profileImageBytes,
-                                      imageUrl: (user!.photoUrl != null &&
-                                              user!.photoUrl!.trim().isNotEmpty)
-                                          ? user!.photoUrl
-                                          : FirebaseAuth
-                                              .instance.currentUser?.photoURL,
-                                      size: 38,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  left: isDesktop ? 0 : 24.0, 
+                                  top: 16.0, 
+                                  bottom: 8.0,
+                                ),
+                                child: TextButton.icon(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: const Icon(Icons.arrow_back_ios, size: 16),
+                                  label: const Text(
+                                    "Volver", 
+                                    style: TextStyle(
+                                      fontSize: 16, 
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color.fromARGB(255, 51, 51, 50), 
+                                  ),
+                                ),
+                              ),
+
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isDesktop ? 0 : 24, 
+                                  vertical: 8, 
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        ProfileAvatar(
+                                          localImageBytes: profileImageBytes,
+                                          imageUrl: (user!.photoUrl != null &&
+                                                  user!.photoUrl!.trim().isNotEmpty)
+                                              ? user!.photoUrl
+                                              : FirebaseAuth
+                                                  .instance.currentUser?.photoURL,
+                                          size: 38,
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                user!.name,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 40,
+                                                  color: Color(0xFF54515A),
+                                                  fontWeight: FontWeight.w400,
+                                                  height: 1.1, 
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              _buildRatingSummary(isCompact),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 18),
+                                    Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: const Color(0xFF5A5860),
+                                          width: 3,
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 28,
+                                        vertical: 20,
+                                      ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            user!.name,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 40,
-                                              color: Color(0xFF54515A),
-                                              fontWeight: FontWeight.w400,
-                                              height: 1.1, 
+                                          const Text(
+                                            "Información del usuario",
+                                            style: TextStyle(
+                                              color: Color(0xFF6A6770),
+                                              fontSize: 26,
                                             ),
                                           ),
-                                          const SizedBox(height: 4),
-                                          _buildRatingSummary(),
+                                          const SizedBox(height: 18),
+                                          isCompact
+                                              ? Column(
+                                                  children: [
+                                                    _buildLeftInfo(),
+                                                    const SizedBox(height: 18),
+                                                    _buildRightInfo(),
+                                                  ],
+                                                )
+                                              : Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Expanded(
+                                                      child: _buildLeftInfo(),
+                                                    ),
+                                                    const SizedBox(width: 30),
+                                                    Expanded(
+                                                      child: _buildRightInfo(),
+                                                    ),
+                                                  ],
+                                                ),
+                                          const SizedBox(height: 24),
+                                          if (FirebaseAuth.instance.currentUser?.uid == widget.uid)
+                                            SizedBox(
+                                              width: 190,
+                                              child: ElevatedButton(
+                                                onPressed: () async {
+                                                  final updated =
+                                                      await Navigator.push<bool>(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          EditProfileScreen(
+                                                        user: user!,
+                                                      ),
+                                                    ),
+                                                  );
+                                                  if (updated == true) {
+                                                    setState(
+                                                      () => isLoading = true,
+                                                    );
+                                                    await loadUser();
+                                                  }
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color(0xFFFF5C00),
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(10),
+                                                  ),
+                                                ),
+                                                child: const Text("Editar perfil"),
+                                              ),
+                                            ),
                                         ],
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 18),
-                                Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: const Color(0xFF5A5860),
-                                      width: 3,
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 28,
-                                    vertical: 20,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      const Text(
-                                        "Información del usuario",
-                                        style: TextStyle(
-                                          color: Color(0xFF6A6770),
-                                          fontSize: 26,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 18),
-                                      isCompact
-                                          ? Column(
-                                              children: [
-                                                _buildLeftInfo(),
-                                                const SizedBox(height: 18),
-                                                _buildRightInfo(),
-                                              ],
-                                            )
-                                          : Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Expanded(
-                                                  child: _buildLeftInfo(),
-                                                ),
-                                                const SizedBox(width: 30),
-                                                Expanded(
-                                                  child: _buildRightInfo(),
-                                                ),
-                                              ],
-                                            ),
-                                      const SizedBox(height: 24),
-                                      if (FirebaseAuth.instance.currentUser?.uid == widget.uid)
-                                        SizedBox(
-                                          width: 190,
-                                          child: ElevatedButton(
-                                            onPressed: () async {
-                                              final updated =
-                                                  await Navigator.push<bool>(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      EditProfileScreen(
-                                                    user: user!,
-                                                  ),
-                                                ),
-                                              );
-                                              if (updated == true) {
-                                                setState(
-                                                  () => isLoading = true,
-                                                );
-                                                await loadUser();
-                                              }
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  const Color(0xFFFF5C00),
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                            ),
-                                            child: const Text("Editar perfil"),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              const MetroSwapFooter(),
-            ],
+                    ),
+                  ),
+                  const MetroSwapFooter(),
+                ],
+              );
+            },
           ),
         ),
       );
@@ -287,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 16),
         _buildInfoLabelValue(
-          "Libros publicados:",
+          "Materiales publicados:",
           _buildBooksValue(user!.books),
         ),
       ],
@@ -339,10 +370,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _buildBooksValue(List<String>? books) {
     final count = books?.where((book) => book.trim().isNotEmpty).length ?? 0;
-    return count > 0 ? "$count libro(s)" : "Sin publicaciones";
+    return count > 0 ? "$count material(es)" : "Sin publicaciones";
   }
 
-  Widget _buildRatingSummary() {
+  Widget _buildRatingSummary(bool isCompact) {
     final ratingsStream = FirebaseFirestore.instance
         .collection('user_ratings')
         .doc(widget.uid)
@@ -389,6 +420,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
                 color: Colors.black,
+              ),
+            ),
+            const SizedBox(width: 16),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserReviewsScreen(
+                      uid: widget.uid,
+                      userName: user!.name,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.comment_outlined, size: 18),
+              label: Text(isCompact ? "Ver" : "Ver Reseñas"),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFFF5C00), 
+                backgroundColor: const Color(0xFFFF5C00).withValues(alpha: 0.1),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
             ),
           ],

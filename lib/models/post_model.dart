@@ -9,6 +9,7 @@ class PostModel {
   static const String lifecycleRequested = 'Solicitado';
   static const String lifecycleAccepted = 'Aceptado';
   static const String lifecycleDelivered = 'Entregado';
+  static const String lifecycleOutOfStock = 'Agotado';
 
   static const String statusActive = 'active';
   static const String statusInactive = 'inactive';

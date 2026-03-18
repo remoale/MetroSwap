@@ -15,6 +15,9 @@ import 'package:flutter/foundation.dart'
 /// );
 /// ```
 class DefaultFirebaseOptions {
+  static const String realtimeDatabaseUrl =
+      "https://metroswap-73a05-default-rtdb.firebaseio.com";
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;
