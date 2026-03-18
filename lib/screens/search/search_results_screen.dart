@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/post_model.dart';
@@ -17,10 +18,6 @@ class SearchResultsScreen extends StatefulWidget {
 
   static Future<List<Map<String, dynamic>>> searchPosts(String rawTerm) async {
     final searchTerm = PostModel.normalizeSearchText(rawTerm);
-    if (searchTerm.isEmpty) {
-      return const [];
-    }
-
     final snapshot = await FirebaseFirestore.instance
         .collection('posts')
         .where('status', isEqualTo: PostModel.statusActive)
@@ -30,6 +27,9 @@ class SearchResultsScreen extends StatefulWidget {
     final matches = snapshot.docs
         .map((doc) => doc.data())
         .where((data) {
+          if (searchTerm.isEmpty) {
+            return true;
+          }
           final searchableText = buildSearchableText(data);
           return searchableText.contains(searchTerm);
         })
@@ -102,18 +102,30 @@ class SearchResultsScreen extends StatefulWidget {
 class _SearchResultsScreenState extends State<SearchResultsScreen> {
   late final TextEditingController _searchController;
   late Future<List<Map<String, dynamic>>> _resultsFuture;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.initialQuery.trim());
     _resultsFuture = SearchResultsScreen.searchPosts(_searchController.text);
+    _searchController.addListener(_handleSearchChanged);
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_handleSearchChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _handleSearchChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _runSearch();
+    });
   }
 
   void _runSearch() {
@@ -192,19 +204,15 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                             final results = snapshot.data ?? const <Map<String, dynamic>>[];
                             final query = _searchController.text.trim();
 
-                            if (query.isEmpty) {
-                              return const _SearchStateCard(
-                                title: 'Escribe algo para buscar',
-                                subtitle:
-                                    'Busca por titulo, materia, carrera o descripcion.',
-                              );
-                            }
-
                             if (results.isEmpty) {
                               return _SearchStateCard(
-                                title: 'Sin resultados para "$query"',
+                                title: query.isEmpty
+                                    ? 'No hay materiales disponibles'
+                                    : 'Sin resultados para "$query"',
                                 subtitle:
-                                    'Prueba otra palabra clave o revisa publicaciones activas.',
+                                    query.isEmpty
+                                        ? 'Cuando existan publicaciones activas apareceran aqui.'
+                                        : 'Prueba otra palabra clave o revisa publicaciones activas.',
                               );
                             }
 
@@ -214,7 +222,9 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 16),
                                   child: Text(
-                                    '${results.length} resultados para "$query"',
+                                    query.isEmpty
+                                        ? '${results.length} materiales disponibles'
+                                        : '${results.length} resultados para "$query"',
                                     style: TextStyle(
                                       fontSize: isMobile ? 18 : 22,
                                       fontWeight: FontWeight.w700,
