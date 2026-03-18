@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:metroswap/controllers/payment_controller.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+import 'package:metroswap/widgets/metroswap_layout.dart'; 
 import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -114,16 +115,17 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final resolvedTitle = widget.title.trim().isEmpty ? 'Titulo del Material' : widget.title;
+    final isMobile = MediaQuery.of(context).size.width < 700;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFDAD7DD),
+    return MetroSwapLayout(
       body: SafeArea(
         child: Column(
           children: [
-            const MetroSwapNavbar(
-              developmentNav: true,
-              heading: 'Contribuciones',
-            ),
+            if (!isMobile)
+              const MetroSwapNavbar(
+                developmentNav: true,
+                heading: 'Contribuciones',
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
               child: Align(
@@ -136,38 +138,52 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
               ),
             ),
             Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1100),
-                  child: Container(
-                    margin: const EdgeInsets.all(22),
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2F3035),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildLeftPanel(resolvedTitle),
-                        const SizedBox(width: 22),
-                        Expanded(child: _buildPaymentPanel()),
-                      ],
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 20), 
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1100),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 22),
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2F3035),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: isMobile
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildLeftPanel(resolvedTitle, isMobile: true),
+                                const SizedBox(height: 22),
+                                _buildPaymentPanel(isMobile: true),
+                              ],
+                            )
+                          : IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch, 
+                                children: [
+                                  _buildLeftPanel(resolvedTitle, isMobile: false),
+                                  const SizedBox(width: 22),
+                                  Expanded(child: _buildPaymentPanel(isMobile: false)),
+                                ],
+                              ),
+                            ),
                     ),
                   ),
                 ),
               ),
             ),
-            const MetroSwapFooter(),
+            if (!isMobile) const MetroSwapFooter(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLeftPanel(String resolvedTitle) {
+  Widget _buildLeftPanel(String resolvedTitle, {required bool isMobile}) {
     return Container(
-      width: 240,
+      width: isMobile ? double.infinity : 240, 
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF25262A),
@@ -175,6 +191,7 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min, 
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
@@ -251,6 +268,7 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
+            alignment: WrapAlignment.center, 
             children: _quickAmounts
                 .map(
                   (value) => _QuickAmountButton(
@@ -261,13 +279,12 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
                 )
                 .toList(),
           ),
-          const Spacer(),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentPanel() {
+  Widget _buildPaymentPanel({required bool isMobile}) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFD1CED4),
@@ -275,7 +292,8 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
       ),
       child: Center(
         child: Container(
-          width: 460,
+          width: isMobile ? double.infinity : 460,
+          margin: isMobile ? const EdgeInsets.all(16) : EdgeInsets.zero, 
           padding: const EdgeInsets.fromLTRB(26, 24, 26, 24),
           decoration: BoxDecoration(
             color: const Color(0xFFF0F0F1),

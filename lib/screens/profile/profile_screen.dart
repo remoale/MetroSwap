@@ -102,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (isDesktop)
                     const MetroSwapNavbar(
                       developmentNav: true,
-                      heading: 'Mi Perfil',
+                      heading: 'Perfil',
                       showLogoutButton: true,
                       showNotificationsButton: false,
                       showProfileButton: false,
