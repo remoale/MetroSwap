@@ -28,8 +28,6 @@ class _AdminScreenState extends State<AdminScreen> {
   
   Map<String, int> _careerCounts = {};
   List<double> _weeklyActivity = List.filled(7, 0.0);
-  
-  // NUEVO: Lista para guardar el Top 5 de libros más demandados
   List<MapEntry<String, int>> _topDemandedBooks = [];
 
   final List<Color> _chartColors = [
@@ -64,26 +62,19 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _fetchDashboardData() async {
     try {
-      // 1. OBTENER USUARIOS
       final usersSnap = await FirebaseFirestore.instance.collection('users').get();
-      
       int memberCount = usersSnap.docs.length;
       int suspendedCount = 0; 
       Map<String, int> tempCareerCounts = {};
 
       for (var doc in usersSnap.docs) {
         final data = doc.data();
-        
         String career = (data['career'] ?? 'No especificada').toString().trim();
         if (career.isEmpty) career = 'No especificada';
         tempCareerCounts[career] = (tempCareerCounts[career] ?? 0) + 1;
-
-        if (isSuspendedUserStatus(data['status'])) {
-          suspendedCount++;
-        }
+        if (isSuspendedUserStatus(data['status'])) suspendedCount++;
       }
 
-      // 2. OBTENER PUBLICACIONES Y CALCULAR ACTIVIDAD SEMANAL
       final postsSnap = await FirebaseFirestore.instance.collection('posts').get();
       int productsCount = postsSnap.docs.length;
       List<double> tempWeeklyActivity = List.filled(7, 0.0);
@@ -97,15 +88,11 @@ class _AdminScreenState extends State<AdminScreen> {
           } else {
             dt = DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now();
           }
-          
           int dayIndex = dt.weekday - 1; 
-          if (dayIndex >= 0 && dayIndex < 7) {
-            tempWeeklyActivity[dayIndex] += 1;
-          }
+          if (dayIndex >= 0 && dayIndex < 7) tempWeeklyActivity[dayIndex] += 1;
         }
       }
 
-      // 3. OBTENER INTERCAMBIOS, CONTRIBUCIONES Y DEMANDA DE LIBROS
       int exchangesCount = 0;
       double tempContributions = 0.0;
       Map<String, int> tempBookDemand = {};
@@ -116,8 +103,6 @@ class _AdminScreenState extends State<AdminScreen> {
 
         for (var doc in exchangesSnap.docs) {
           final data = doc.data();
-          
-          // Calcular dinero de completados
           String status = (data['status'] ?? '').toString().toLowerCase();
           if (status == 'completed') {
             var monto = data['paypalAmount'] ?? data['price'] ?? data['amount'] ?? data['contribution'];
@@ -125,8 +110,6 @@ class _AdminScreenState extends State<AdminScreen> {
               tempContributions += double.tryParse(monto.toString()) ?? 0.0;
             }
           }
-
-          // NUEVO: Calcular demanda contando cuántas veces aparece cada postTitle
           String bookTitle = (data['postTitle'] ?? 'Desconocido').toString();
           if (bookTitle.isNotEmpty && bookTitle != 'Desconocido') {
             tempBookDemand[bookTitle] = (tempBookDemand[bookTitle] ?? 0) + 1;
@@ -136,9 +119,8 @@ class _AdminScreenState extends State<AdminScreen> {
         debugPrint("Error al leer la colección exchanges: $e");
       }
 
-      // NUEVO: Ordenar los libros de mayor a menor demanda y sacar los top 5
       var sortedDemand = tempBookDemand.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value)); // Orden descendente
+        ..sort((a, b) => b.value.compareTo(a.value)); 
       List<MapEntry<String, int>> top5Books = sortedDemand.take(5).toList();
 
       if (mounted) {
@@ -150,15 +132,13 @@ class _AdminScreenState extends State<AdminScreen> {
           _weeklyActivity = tempWeeklyActivity;
           _totalExchanges = exchangesCount; 
           _totalContributions = tempContributions; 
-          _topDemandedBooks = top5Books; // Guardamos el Top 5
+          _topDemandedBooks = top5Books; 
           _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint("Error obteniendo datos del dashboard: $e");
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -170,7 +150,6 @@ class _AdminScreenState extends State<AdminScreen> {
     return maxVal + 2.0; 
   }
 
-  // NUEVO: Calcular techo para la gráfica de barras
   double _getMaxBarY() {
     if (_topDemandedBooks.isEmpty) return 5.0;
     double maxVal = _topDemandedBooks.first.value.toDouble();
@@ -179,6 +158,10 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // AQUÍ ESTÁ LA MAGIA RESPONSIVA
+    // Si el ancho de la pantalla es menor a 900, lo consideramos "Móvil/Tablet"
+    final bool isDesktop = MediaQuery.of(context).size.width >= 900;
+
     return Scaffold(
       backgroundColor: const Color(0xFFE8E9EB),
       body: Column(
@@ -193,52 +176,46 @@ class _AdminScreenState extends State<AdminScreen> {
                     : _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 10.0),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 30.0 : 15.0, // Menos padding en móvil
+                      vertical: 10.0
+                    ),
                     child: Column(
                       children: [
-                        // FILA SUPERIOR (KPIs, LineChart y PieChart)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 5,
-                              child: Column(
+                        // Diseño Condicional
+                        isDesktop
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Expanded(child: _buildKpiCard('Total productos', _totalProducts.toString(), Icons.computer, onTap: _openManagePosts)),
-                                      const SizedBox(width: 15),
-                                      Expanded(child: _buildKpiCard('Miembros', _totalMembers.toString(), Icons.person, onTap: _openManageProfiles)),
-                                      const SizedBox(width: 15),
-                                      Expanded(child: _buildKpiCard('Suspendidos', _suspendedUsers.toString(), Icons.person_off, onTap: () => _openManageProfiles(showOnlySuspended: true))),
-                                    ],
+                                  Expanded(
+                                    flex: 5,
+                                    child: Column(
+                                      children: [
+                                        _buildKpiSection(isDesktop: true),
+                                        const SizedBox(height: 15),
+                                        _buildLineChart(),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 15),
-                                  Row(
-                                    children: [
-                                      Expanded(child: _buildKpiCard('Total contribuciones', '\$${_totalContributions.toStringAsFixed(2)}', Icons.attach_money, isLarge: true)),
-                                      const SizedBox(width: 15),
-                                      Expanded(child: _buildKpiCard('Total Intercambios', _totalExchanges.toString(), Icons.swap_horiz, isLarge: true)),
-                                    ],
+                                  const SizedBox(width: 30),
+                                  Expanded(
+                                    flex: 4,
+                                    child: _buildPieChartCard(),
                                   ),
-                                  const SizedBox(height: 15),
-                                  _buildLineChart(), // Extraje el linechart a un widget para limpiar el código
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  _buildKpiSection(isDesktop: false),
+                                  const SizedBox(height: 20),
+                                  _buildLineChart(),
+                                  const SizedBox(height: 20),
+                                  _buildPieChartCard(),
                                 ],
                               ),
-                            ),
-                            const SizedBox(width: 30),
-                            Expanded(
-                              flex: 4,
-                              child: _buildPieChartCard(), // Extraje el piechart
-                            ),
-                          ],
-                        ),
                         
                         const SizedBox(height: 30),
-                        
-                        // NUEVA FILA: Gráfico de libros con mayor demanda
-                        _buildTopBooksBarChart(),
-                        
+                        _buildTopBooksBarChart(isDesktop),
                         const SizedBox(height: 30),
                       ],
                     ),
@@ -250,7 +227,48 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  // --- WIDGETS EXTRAÍDOS PARA MAYOR ORDEN ---
+  // WIDGETS
+
+  Widget _buildKpiSection({required bool isDesktop}) {
+    if (isDesktop) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildKpiCard('Total productos', _totalProducts.toString(), Icons.computer, onTap: _openManagePosts)),
+              const SizedBox(width: 15),
+              Expanded(child: _buildKpiCard('Miembros', _totalMembers.toString(), Icons.person, onTap: _openManageProfiles)),
+              const SizedBox(width: 15),
+              Expanded(child: _buildKpiCard('Suspendidos', _suspendedUsers.toString(), Icons.person_off, onTap: () => _openManageProfiles(showOnlySuspended: true))),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(child: _buildKpiCard('Total contribuciones', '\$${_totalContributions.toStringAsFixed(2)}', Icons.attach_money, isLarge: true)),
+              const SizedBox(width: 15),
+              Expanded(child: _buildKpiCard('Total Intercambios', _totalExchanges.toString(), Icons.swap_horiz, isLarge: true)),
+            ],
+          ),
+        ],
+      );
+    } else {
+      // En móvil, apilamos las tarjetas una debajo de otra
+      return Column(
+        children: [
+          _buildKpiCard('Total productos', _totalProducts.toString(), Icons.computer, onTap: _openManagePosts),
+          const SizedBox(height: 10),
+          _buildKpiCard('Miembros', _totalMembers.toString(), Icons.person, onTap: _openManageProfiles),
+          const SizedBox(height: 10),
+          _buildKpiCard('Suspendidos', _suspendedUsers.toString(), Icons.person_off, onTap: () => _openManageProfiles(showOnlySuspended: true)),
+          const SizedBox(height: 10),
+          _buildKpiCard('Total contribuciones', '\$${_totalContributions.toStringAsFixed(2)}', Icons.attach_money, isLarge: true),
+          const SizedBox(height: 10),
+          _buildKpiCard('Total Intercambios', _totalExchanges.toString(), Icons.swap_horiz, isLarge: true),
+        ],
+      );
+    }
+  }
 
   Widget _buildLineChart() {
     return Container(
@@ -332,6 +350,7 @@ class _AdminScreenState extends State<AdminScreen> {
   Widget _buildPieChartCard() {
     return Container(
       height: 480,
+      width: double.infinity,
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -363,12 +382,11 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  // NUEVO WIDGET: El gráfico de barras para el requerimiento #9
-  Widget _buildTopBooksBarChart() {
+  Widget _buildTopBooksBarChart(bool isDesktop) {
     return Container(
       width: double.infinity,
       height: 350,
-      padding: const EdgeInsets.all(25),
+      padding: EdgeInsets.all(isDesktop ? 25 : 15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -410,8 +428,9 @@ class _AdminScreenState extends State<AdminScreen> {
                             getTitlesWidget: (double value, TitleMeta meta) {
                               if (value.toInt() >= _topDemandedBooks.length) return const SizedBox.shrink();
                               String fullTitle = _topDemandedBooks[value.toInt()].key;
-                              // Acortar el título si es muy largo para que no se superpongan
-                              String shortTitle = fullTitle.length > 15 ? '${fullTitle.substring(0, 12)}...' : fullTitle;
+                              // En móvil acortamos más el título
+                              int maxLength = isDesktop ? 15 : 8; 
+                              String shortTitle = fullTitle.length > maxLength ? '${fullTitle.substring(0, maxLength)}...' : fullTitle;
                               
                               return SideTitleWidget(
                                 meta: meta,
@@ -429,7 +448,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             interval: 1,
                             reservedSize: 30,
                             getTitlesWidget: (value, meta) {
-                              if (value % 1 != 0) return const SizedBox.shrink(); // Solo números enteros
+                              if (value % 1 != 0) return const SizedBox.shrink(); 
                               return Text(value.toInt().toString(), style: const TextStyle(color: Colors.grey, fontSize: 12));
                             },
                           ),
@@ -452,7 +471,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             BarChartRodData(
                               toY: _topDemandedBooks[i].value.toDouble(),
                               color: _chartColors[i % _chartColors.length],
-                              width: 35,
+                              width: isDesktop ? 35 : 20, // Barras más delgadas en móvil
                               borderRadius: const BorderRadius.only(topLeft: Radius.circular(6), topRight: Radius.circular(6)),
                             ),
                           ],
@@ -484,15 +503,18 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Widget _buildUnauthorizedState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.lock_outline, size: 52, color: Colors.grey),
-          const SizedBox(height: 12),
-          const Text('No tienes permisos de administrador para acceder a este panel.', style: TextStyle(fontSize: 16, color: Colors.black87), textAlign: TextAlign.center),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back), label: const Text('Volver')),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, size: 52, color: Colors.grey),
+            const SizedBox(height: 12),
+            const Text('No tienes permisos de administrador para acceder a este panel.', style: TextStyle(fontSize: 16, color: Colors.black87), textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back), label: const Text('Volver')),
+          ],
+        ),
       ),
     );
   }
@@ -537,6 +559,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Widget _buildKpiCard(String title, String value, IconData icon, {bool isLarge = false, VoidCallback? onTap}) {
     return Container(
+      width: double.infinity, // Asegura que tome todo el ancho en móvil
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(15),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))],
