@@ -7,6 +7,8 @@ import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+// Agrega esta importación en la parte superior
+import 'package:metroswap/screens/publish/publish_screen.dart';
 
 /// Muestra el detalle completo de una publicación disponible.
 class MaterialDetailScreen extends StatelessWidget {
@@ -207,48 +209,88 @@ class MaterialDetailScreen extends StatelessWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   height: 60,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isOutOfStock
-                                          ? const Color(0xFF9A969F)
-                                          : const Color(0xFFFF6B00),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      elevation: 2,
-                                    ),
-                                    onPressed: isOutOfStock ? null : () {
-                                      _handleActionPressed(
-                                        context,
-                                        currentPost,
-                                        quantity,
-                                        hasPrice,
-                                      );
-                                    },
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(
-                                          Icons.handshake_outlined,
-                                          color: Colors.white,
-                                          size: 28,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          isOutOfStock
-                                              ? PostModel.lifecycleOutOfStock
-                                              : hasPrice
-                                                  ? 'Comprar'
-                                                  : 'Intercambiar',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold,
+                                  child: (FirebaseAuth.instance.currentUser?.uid ==
+                                          ownerUid)
+                                      ? OutlinedButton.icon(
+                                          // --- BOTÓN PARA EL DUEÑO DE LA PUBLICACIÓN ---
+                                          icon: const Icon(Icons.edit, size: 28),
+                                          label: const Text(
+                                            'Editar publicación',
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor:
+                                                const Color(0xFFFF6B00),
+                                            side: const BorderSide(
+                                              color: Color(0xFFFF6B00),
+                                              width: 2,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => PublishScreen(
+                                                  postToEdit: currentPost, // Le pasamos el objeto post completo
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : ElevatedButton(
+                                          // --- BOTÓN ORIGINAL PARA COMPRAR/INTERCAMBIAR ---
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: isOutOfStock
+                                                ? const Color(0xFF9A969F)
+                                                : const Color(0xFFFF6B00),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            elevation: 2,
+                                          ),
+                                          onPressed: isOutOfStock
+                                              ? null
+                                              : () {
+                                                  _handleActionPressed(
+                                                    context,
+                                                    currentPost,
+                                                    quantity,
+                                                    hasPrice,
+                                                  );
+                                                },
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.handshake_outlined,
+                                                color: Colors.white,
+                                                size: 28,
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                isOutOfStock
+                                                    ? PostModel
+                                                        .lifecycleOutOfStock
+                                                    : hasPrice
+                                                        ? 'Comprar'
+                                                        : 'Intercambiar',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
                                 ),
                               ],
                             ),
@@ -270,7 +312,12 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   // Valida la operación antes de iniciar el intercambio.
-  void _handleActionPressed(BuildContext context, PostModel? currentPost, int maxQuantity, bool hasPrice) {
+  void _handleActionPressed(
+    BuildContext context,
+    PostModel? currentPost,
+    int maxQuantity,
+    bool hasPrice,
+  ) {
     if (currentPost == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo cargar la publicación.')),
@@ -291,14 +338,19 @@ class MaterialDetailScreen extends StatelessWidget {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes iniciar sesión para realizar esta acción.')),
+        const SnackBar(
+          content: Text('Debes iniciar sesión para realizar esta acción.'),
+        ),
       );
       return;
     }
 
+    // Doble verificación de seguridad (aunque ya no se debería ver el botón).
     if (currentUser.uid == currentPost.ownerUid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No puedes interactuar con tu propia publicación.')),
+        const SnackBar(
+          content: Text('No puedes interactuar con tu propia publicación.'),
+        ),
       );
       return;
     }
@@ -315,7 +367,11 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   // Muestra el diálogo para seleccionar la cantidad.
-  void _showQuantityDialog(BuildContext context, int maxQuantity, Function(int) onConfirm) {
+  void _showQuantityDialog(
+    BuildContext context,
+    int maxQuantity,
+    Function(int) onConfirm,
+  ) {
     int selectedQuantity = 1;
 
     showDialog(
@@ -324,7 +380,9 @@ class MaterialDetailScreen extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               title: const Text(
                 '¿Qué cantidad deseas?',
                 textAlign: TextAlign.center,
@@ -351,7 +409,10 @@ class MaterialDetailScreen extends StatelessWidget {
                       const SizedBox(width: 20),
                       Text(
                         '$selectedQuantity',
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(width: 20),
                       IconButton(
@@ -369,7 +430,10 @@ class MaterialDetailScreen extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -382,7 +446,10 @@ class MaterialDetailScreen extends StatelessWidget {
                     Navigator.pop(dialogContext); // Cierra el diálogo.
                     onConfirm(selectedQuantity); // Confirma la cantidad elegida.
                   },
-                  child: const Text('Confirmar', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'Confirmar',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             );
@@ -420,7 +487,7 @@ class MaterialDetailScreen extends StatelessWidget {
 
       final exchangeRef = firestore.collection('exchanges').doc();
       tradeId = exchangeRef.id;
-      
+
       await exchangeRef.set({
         'id': tradeId,
         'postId': postId,
@@ -544,7 +611,8 @@ class _OwnerAvatar extends StatelessWidget {
     }
 
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('users').doc(ownerUid).get(),
+      future:
+          FirebaseFirestore.instance.collection('users').doc(ownerUid).get(),
       builder: (context, snapshot) {
         final photoUrl = snapshot.data?.data()?['photoUrl']?.toString() ?? '';
         if (photoUrl.isEmpty) {
