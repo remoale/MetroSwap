@@ -182,6 +182,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
     final isNotifications = normalizedHeading == 'notificaciones';
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final showMobileHeading = !isHome && !isMobile;
 
     return Container(
       height: 85,
@@ -191,10 +192,36 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
         children: [
           GestureDetector(
             onTap: () => _navigateToAdmin(context),
-            child: const MetroSwapBrand(
+            child: MetroSwapBrand(
               color: Colors.white,
+              logoHeight: isMobile ? 44 : 64,
+              fontSize: isMobile ? 17 : 26,
+              logoYOffset: isMobile ? -3 : -6,
             ),
           ),
+          if (!isHome && isMobile) ...[
+            const SizedBox(width: 6),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        isLoggedIn ? const HomeScreen() : const LandingScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white70),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text('Inicio', style: TextStyle(fontSize: 12)),
+            ),
+          ],
           if (_isAdmin) ...[
             SizedBox(width: isMobile ? 5 : 15),
             Container(
@@ -214,7 +241,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
               ),
             ),
           ],
-          if (!isHome) ...[
+          if (showMobileHeading) ...[
             SizedBox(width: isMobile ? 8 : 24),
             Expanded(
               child: Center(
@@ -232,9 +259,11 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
             ),
           ] else
             const Spacer(),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          Flexible(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
               if (isHome) ...[
                 OutlinedButton(
                   onPressed: () {
@@ -246,7 +275,9 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white70),
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 20),
+                    minimumSize: Size(0, isMobile ? 36 : 40),
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 20),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text('Publicar', style: TextStyle(fontSize: isMobile ? 14 : 16)),
                 ),
@@ -261,30 +292,35 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white70),
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 20),
+                    minimumSize: Size(0, isMobile ? 36 : 40),
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 20),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text('Conócenos', style: TextStyle(fontSize: isMobile ? 14 : 16)),
                 ),
               ] else ...[
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            isLoggedIn ? const HomeScreen() : const LandingScreen(),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white70),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 20),
+                if (!isMobile)
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              isLoggedIn ? const HomeScreen() : const LandingScreen(),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white70),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Inicio', style: TextStyle(fontSize: 16)),
                   ),
-                  child: Text('Inicio', style: TextStyle(fontSize: isMobile ? 14 : 16)),
-                ),
               ],
-              if (widget.showLogoutButton) ...[
+                if (widget.showLogoutButton) ...[
                 SizedBox(width: isMobile ? 6 : 12),
                 ElevatedButton.icon(
                   onPressed: () => _handleSignOut(context),
@@ -296,28 +332,34 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 16),
+                    minimumSize: Size(0, isMobile ? 36 : 40),
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   icon: const Icon(Icons.exit_to_app, size: 18),
                   // Ocultamos la palabra en móviles para que quepa el icono de salir
                   label: isMobile ? const SizedBox.shrink() : const Text('Cerrar sesion'),
                 ),
-              ],
-              if (widget.showNotificationsButton && isLoggedIn) ...[
-                SizedBox(width: isMobile ? 5 : 25),
+                ],
+                if (widget.showNotificationsButton && isLoggedIn) ...[
+                SizedBox(width: isMobile ? 0 : 25),
                 _buildNotificationsButton(
                   context,
                   isNotifications,
                   FirebaseAuth.instance.currentUser!.uid,
                 ),
-              ],
+                ],
               if (widget.showProfileButton && isLoggedIn) ...[
-                SizedBox(width: isMobile ? 2 : 10),
+                SizedBox(width: isMobile ? 0 : 10),
                 IconButton(
+                  visualDensity:
+                      isMobile ? VisualDensity.compact : VisualDensity.standard,
+                  padding: EdgeInsets.all(isMobile ? 4 : 8),
+                  constraints: const BoxConstraints(),
                   icon: Icon(
                     Icons.account_circle,
                     color: Colors.white70,
-                    size: isMobile ? 28 : 35, 
+                    size: isMobile ? 24 : 35, 
                   ),
                   onPressed: () {
                     final currentUser = FirebaseAuth.instance.currentUser;
@@ -331,9 +373,10 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                     }
                   },
                 ),
+                ],
+                SizedBox(width: isMobile ? 0 : 28),
               ],
-              SizedBox(width: isMobile ? 5 : 28),
-            ],
+            ),
           ),
         ],
       ),
