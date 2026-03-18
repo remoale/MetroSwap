@@ -422,6 +422,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewportHeight = MediaQuery.of(context).size.height;
+    final viewportWidth = MediaQuery.of(context).size.width;
+    final isMobile = viewportWidth < 700;
+    final desktopSectionsHeight = viewportHeight >= 950
+        ? 480.0
+        : viewportHeight >= 860
+            ? 420.0
+            : 360.0;
     final uid = _uid;
     if (uid == null) {
       return Scaffold(
@@ -509,42 +517,85 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             child: Column(
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  mainAxisAlignment: isMobile
+                                      ? MainAxisAlignment.center
+                                      : MainAxisAlignment.end,
                                   children: [
-                                    TextButton(
-                                      onPressed: notifications.isEmpty
-                                          ? null
-                                          : () => _notificationService.markAllAsRead(uid),
-                                      child: const Text('Marcar todas como leídas'),
+                                    Flexible(
+                                      child: TextButton(
+                                        onPressed: notifications.isEmpty
+                                            ? null
+                                            : () => _notificationService.markAllAsRead(uid),
+                                        child: const Text(
+                                          'Marcar todas como leídas',
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
                                 SizedBox(
-                                  height: 520,
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: _buildSection(
-                                          title: 'Historial',
-                                          notifications: history,
-                                          scrollController: _historyScrollController,
+                                  height: isMobile ? 760 : desktopSectionsHeight,
+                                  child: isMobile
+                                      ? Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            Expanded(
+                                              child: _buildSection(
+                                                title: 'Historial',
+                                                notifications: history,
+                                                scrollController:
+                                                    _historyScrollController,
+                                                compact: true,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 20),
+                                            const Divider(
+                                              color: Color(0xFF8D8A90),
+                                              height: 1,
+                                            ),
+                                            const SizedBox(height: 20),
+                                            Expanded(
+                                              child: _buildSection(
+                                                title: 'En curso',
+                                                notifications: inProgress,
+                                                scrollController:
+                                                    _inProgressScrollController,
+                                                compact: true,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: _buildSection(
+                                                title: 'Historial',
+                                                notifications: history,
+                                                scrollController:
+                                                    _historyScrollController,
+                                              ),
+                                            ),
+                                            Container(
+                                              width: 1,
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 24,
+                                                  ),
+                                              color: const Color(0xFF8D8A90),
+                                            ),
+                                            Expanded(
+                                              child: _buildSection(
+                                                title: 'En curso',
+                                                notifications: inProgress,
+                                                scrollController:
+                                                    _inProgressScrollController,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      Container(
-                                        width: 1,
-                                        margin: const EdgeInsets.symmetric(horizontal: 24),
-                                        color: const Color(0xFF8D8A90),
-                                      ),
-                                      Expanded(
-                                        child: _buildSection(
-                                          title: 'En curso',
-                                          notifications: inProgress,
-                                          scrollController: _inProgressScrollController,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                                 const SizedBox(height: 20),
                                 const Divider(color: Color(0xFF8D8A90), height: 1),
@@ -634,6 +685,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required String title,
     required List<NotificationModel> notifications,
     required ScrollController scrollController,
+    bool compact = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,10 +693,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         Center(
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 34,
+            style: TextStyle(
+              fontSize: compact ? 26 : 34,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1F1E21),
+              color: const Color(0xFF1F1E21),
             ),
           ),
         ),
@@ -669,6 +721,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         statusColor: _resolveStatusColor(notification, inProgress),
                         isUnread: !notification.read,
                         onTap: () => _openNotification(notification),
+                        compact: compact,
                       );
                     },
                   ),
@@ -686,6 +739,7 @@ class _HistoryCard extends StatelessWidget {
   final Color statusColor;
   final bool isUnread;
   final VoidCallback onTap;
+  final bool compact;
 
   const _HistoryCard({
     required this.username,
@@ -694,6 +748,7 @@ class _HistoryCard extends StatelessWidget {
     required this.statusColor,
     required this.isUnread,
     required this.onTap,
+    this.compact = false,
   });
 
   @override
@@ -704,7 +759,7 @@ class _HistoryCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          height: 118,
+          height: compact ? 132 : 118,
           decoration: BoxDecoration(
             color: const Color(0xFFF1EEF4),
             borderRadius: BorderRadius.circular(14),
@@ -715,11 +770,11 @@ class _HistoryCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const SizedBox(width: 14),
-              const CircleAvatar(
-                radius: 20,
-                backgroundColor: Color(0xFFD7C9F0),
-                child: Text(
+              SizedBox(width: compact ? 10 : 14),
+              CircleAvatar(
+                radius: compact ? 18 : 20,
+                backgroundColor: const Color(0xFFD7C9F0),
+                child: const Text(
                   'A',
                   style: TextStyle(
                     color: Color(0xFF5A4B76),
@@ -727,62 +782,67 @@ class _HistoryCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: compact ? 10 : 14),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
+                  padding: EdgeInsets.symmetric(vertical: compact ? 12 : 10),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              username,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF2A292C),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              message,
-                              maxLines: 3,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                height: 1.2,
-                                color: Color(0xFF4C4A50),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (timeText.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 10, right: 12, top: 4),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 56),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
                             child: Text(
-                              timeText,
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF9A96A1),
+                              username,
+                              style: TextStyle(
+                                fontSize: compact ? 16 : 20,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF2A292C),
                               ),
+                              maxLines: compact ? 2 : 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (timeText.isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(left: compact ? 6 : 10),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: compact ? 88 : 120,
+                                ),
+                                child: Text(
+                                  timeText,
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: compact ? 12 : 13,
+                                    color: const Color(0xFF9A96A1),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: compact ? 6 : 3),
+                      Text(
+                        message,
+                        maxLines: compact ? 4 : 3,
+                        style: TextStyle(
+                          fontSize: compact ? 14 : 16,
+                          height: 1.2,
+                          color: const Color(0xFF4C4A50),
                         ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
               ),
               Container(
-                width: 96,
+                width: compact ? 16 : 96,
                 decoration: BoxDecoration(
                   color: statusColor,
                   borderRadius: const BorderRadius.only(
@@ -822,6 +882,7 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.of(context).size.width < 700;
     final cardColor = isDark ? const Color(0xFFB9B8BB) : const Color(0xFFF1F1F2);
     final textColor = isDark ? const Color(0xFF242428) : const Color(0xFF2C2B30);
 
@@ -831,7 +892,10 @@ class _ActivityCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 14 : 18,
+            vertical: isCompact ? 12 : 14,
+          ),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(16),
@@ -843,8 +907,8 @@ class _ActivityCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: textColor, size: 34),
-              const SizedBox(width: 14),
+              Icon(icon, color: textColor, size: isCompact ? 26 : 34),
+              SizedBox(width: isCompact ? 10 : 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -852,16 +916,21 @@ class _ActivityCard extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: isCompact ? 20 : 28,
                         fontWeight: FontWeight.w700,
                         color: textColor,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       body,
+                      maxLines: isCompact ? 4 : null,
+                      overflow:
+                          isCompact ? TextOverflow.ellipsis : TextOverflow.visible,
                       style: TextStyle(
-                        fontSize: 17,
+                        fontSize: isCompact ? 14 : 17,
                         height: 1.3,
                         color: textColor.withValues(alpha: 0.9),
                       ),
@@ -869,28 +938,38 @@ class _ActivityCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: isCompact ? 6 : 8),
               Padding(
-                padding: const EdgeInsets.only(right: 6, top: 2),
+                padding: EdgeInsets.only(right: isCompact ? 0 : 6, top: 2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       trailingText,
-                      style: const TextStyle(
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
                         color: Color(0xFFA7A2AE),
-                        fontSize: 14,
+                        fontSize: isCompact ? 12 : 14,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: isCompact ? 8 : 10),
                     if (showAction)
                       OutlinedButton.icon(
                         onPressed: onTap,
-                        icon: const Icon(Icons.logout, size: 20),
-                        label: const Text('Ir'),
+                        icon: Icon(Icons.logout, size: isCompact ? 16 : 20),
+                        label: Text(
+                          'Ir',
+                          style: TextStyle(fontSize: isCompact ? 12 : 14),
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF55525D),
                           side: const BorderSide(color: Color(0xFFC2BECA)),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isCompact ? 10 : 14,
+                            vertical: isCompact ? 8 : 10,
+                          ),
+                          minimumSize: Size(isCompact ? 0 : 72, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
                   ],
