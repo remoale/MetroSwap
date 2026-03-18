@@ -244,8 +244,8 @@ class HomeScreen extends StatelessWidget {
             
             SizedBox(height: isMobile ? 40 : 80),
             Wrap(
-              spacing: 80, 
-              runSpacing: 40, 
+              spacing: isMobile ? 24 : 56,
+              runSpacing: 40,
               alignment: WrapAlignment.center,
               children: [
                 _buildCategoryCard(
@@ -253,14 +253,28 @@ class HomeScreen extends StatelessWidget {
                   imagePath: 'assets/images/libros.png',
                   isMobile: isMobile,
                   screenWidth: screenWidth,
-                  onTap: () => _openCategoryResults(context, 'libro'),
+                  onTap: () => _openCategoryResults(context, 'Libro'),
+                ),
+                _buildCategoryCard(
+                  title: 'Guias',
+                  imagePath: 'assets/images/guias.png',
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
+                  onTap: () => _openCategoryResults(context, 'Guía'),
                 ),
                 _buildCategoryCard(
                   title: 'Materiales',
                   imagePath: 'assets/images/materiales.png',
                   isMobile: isMobile,
                   screenWidth: screenWidth,
-                  onTap: () => _openCategoryResults(context, 'material'),
+                  onTap: () => _openCategoryResults(context, 'Material'),
+                ),
+                _buildCategoryCard(
+                  title: 'Otros',
+                  imagePath: 'assets/images/otros.png',
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
+                  onTap: () => _openCategoryResults(context, 'Otro'),
                 ),
               ],
             ),
@@ -300,9 +314,28 @@ class HomeScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               child: Image.asset(
                 imagePath,
-                width: isMobile ? screenWidth - 60 : 300,
+                width: isMobile ? screenWidth - 60 : 240,
                 height: isMobile ? 180 : 200,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: isMobile ? screenWidth - 60 : 240,
+                    height: isMobile ? 180 : 200,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD8D4DA),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF5E5963),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 15),

@@ -39,6 +39,8 @@ flutter:
     - assets/images/logo_grande.png
     - assets/images/materiales.png
     - assets/images/libros.png
+    - assets/images/guias.png
+    - assets/images/otros.png
     - assets/brands/
     - assets/images/remo.png
     - assets/images/andres.png
