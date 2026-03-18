@@ -616,6 +616,34 @@ class _ResultContent extends StatelessWidget {
             color: const Color(0xFF333333),
           ),
         ),
+        if (post.id.trim().isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            'ID: ${post.id}',
+            style: TextStyle(
+              fontSize: isMobile ? 11 : 12,
+              color: const Color(0xFF7A7480),
+            ),
+          ),
+        ],
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _ResultOwnerAvatar(ownerUid: post.ownerUid),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                post.ownerName.trim().isEmpty ? 'Usuario' : post.ownerName,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: isMobile ? 14 : 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF2E6FB5),
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 10),
         Wrap(
           spacing: 10,
@@ -662,6 +690,63 @@ class _ResultContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ResultOwnerAvatar extends StatelessWidget {
+  final String ownerUid;
+
+  const _ResultOwnerAvatar({required this.ownerUid});
+
+  @override
+  Widget build(BuildContext context) {
+    if (ownerUid.trim().isEmpty) {
+      return const _ResultOwnerAvatarFallback();
+    }
+
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance.collection('users').doc(ownerUid).get(),
+      builder: (context, snapshot) {
+        final photoUrl = snapshot.data?.data()?['photoUrl']?.toString() ?? '';
+        if (photoUrl.isEmpty) {
+          return const _ResultOwnerAvatarFallback();
+        }
+
+        return ClipOval(
+          child: SizedBox(
+            width: 32,
+            height: 32,
+            child: Image.network(
+              photoUrl,
+              fit: BoxFit.cover,
+              webHtmlElementStrategy: kIsWeb
+                  ? WebHtmlElementStrategy.prefer
+                  : WebHtmlElementStrategy.never,
+              errorBuilder: (context, error, stackTrace) {
+                return const _ResultOwnerAvatarFallback();
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ResultOwnerAvatarFallback extends StatelessWidget {
+  const _ResultOwnerAvatarFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const CircleAvatar(
+      radius: 16,
+      backgroundColor: Color(0xFF5A5860),
+      child: Icon(
+        Icons.person,
+        color: Colors.white,
+        size: 20,
+      ),
     );
   }
 }
