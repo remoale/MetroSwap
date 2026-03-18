@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/controllers/payment_controller.dart';
+import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'payment_cancel_screen.dart';
 import 'payment_confirmation_screen.dart';
 
 class ContributionPaymentScreen extends StatefulWidget {
@@ -46,13 +46,25 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => PaymentConfirmationScreen(amount: _amount),
+              builder: (context) => TradeChatScreen(tradeId: widget.tradeId),
+            ),
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Pago exitoso. Redirigiendo al chat del intercambio..."),
+            backgroundColor: Colors.green,
             ),
           );
         } else if (link.contains("paypal-cancel")) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const PaymentCancelScreen()),
+            MaterialPageRoute(builder: (context) => TradeChatScreen(tradeId: widget.tradeId)),
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Pago cancelado. Redirigiendo al chat del intercambio..."),
+            backgroundColor: Colors.red,
+            ),
           );
         }
       });
