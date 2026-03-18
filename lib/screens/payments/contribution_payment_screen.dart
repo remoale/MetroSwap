@@ -46,13 +46,7 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => TradeChatScreen(tradeId: widget.tradeId),
-            ),
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Pago exitoso. Redirigiendo al chat del intercambio..."),
-            backgroundColor: Colors.green,
+              builder: (context) => PaymentConfirmationScreen(amount: _amount),
             ),
           );
         } else if (link.contains("paypal-cancel")) {
@@ -62,7 +56,7 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
           );
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Pago cancelado. Redirigiendo al chat del intercambio..."),
+            const SnackBar(content: Text("Pago cancelado"),
             backgroundColor: Colors.red,
             ),
           );
