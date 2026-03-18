@@ -82,6 +82,10 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
   Future<void> _toggleUserStatus(String userId, String currentStatus) async {
     final isActive = normalizeUserStatus(currentStatus) == 'Activo';
     final newStatus = isActive ? 'Suspendido' : 'Activo';
+    
+    // El estado correspondiente para los posts en la base de datos
+    final newPostStatus = isActive ? 'suspended' : 'active';
+    
     final actionText = isActive ? 'suspender' : 'reactivar';
 
     final confirm = await showDialog<bool>(
@@ -89,7 +93,7 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         title: Text('${actionText.toUpperCase()} USUARIO', style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('¿Estás seguro de que deseas $actionText a este usuario?\n\n(Esto afectará su capacidad para iniciar sesión o publicar en el futuro).'),
+        content: Text('¿Estás seguro de que deseas $actionText a este usuario?\n\n(Esto también cambiará el estado de todas sus publicaciones a "$newPostStatus").'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -109,11 +113,28 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance.collection('users').doc(userId).set(
-          {'status': newStatus},
-          SetOptions(merge: true), 
-        );
+        // 1. Iniciamos un "Batch" de Firestore
+        final batch = FirebaseFirestore.instance.batch();
 
+        // 2. Preparamos la actualización del Usuario
+        final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+        batch.set(userRef, {'status': newStatus}, SetOptions(merge: true));
+
+        // 3. Buscamos todas las publicaciones de este usuario usando ownerUid
+        final postsSnapshot = await FirebaseFirestore.instance
+            .collection('posts')
+            .where('ownerUid', isEqualTo: userId)
+            .get();
+
+        // 4. Preparamos la actualización para CADA post encontrado
+        for (var doc in postsSnapshot.docs) {
+          batch.update(doc.reference, {'status': newPostStatus});
+        }
+
+        // 5. Ejecutamos el batch completo
+        await batch.commit();
+
+        // 6. Actualizamos el estado de la UI
         setState(() {
           final index = _users.indexWhere((u) => u['id'] == userId);
           if (index != -1) {
@@ -124,7 +145,7 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Usuario $newStatus exitosamente.'),
+              content: Text('Usuario y sus ${postsSnapshot.docs.length} publicaciones actualizados.'),
               backgroundColor: newStatus == 'Activo' ? Colors.green : Colors.orange,
             ),
           );
@@ -133,7 +154,7 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
         debugPrint("Error actualizando estado: $e");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al actualizar el usuario.'), backgroundColor: Colors.red),
+            const SnackBar(content: Text('Error al actualizar el usuario y sus publicaciones.'), backgroundColor: Colors.red),
           );
         }
       }
