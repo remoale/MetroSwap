@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/post_model.dart';
 import 'package:metroswap/screens/exchange/material_detail_screen.dart';
+import 'package:metroswap/screens/search/search_results_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_layout.dart';
@@ -12,61 +13,12 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   Future<List<Map<String, dynamic>>> _searchPosts(String rawTerm) async {
-    final searchTerm = PostModel.normalizeSearchText(rawTerm);
-    if (searchTerm.isEmpty) {
-      return const [];
-    }
-
-    final snapshot = await FirebaseFirestore.instance
-        .collection('posts')
-        .where('status', isEqualTo: PostModel.statusActive)
-        .limit(75)
-        .get();
-
-    final matches = snapshot.docs
-        .map((doc) => doc.data())
-        .where((data) {
-          final searchableText = _buildSearchableText(data);
-          return searchableText.contains(searchTerm);
-        })
-        .take(8)
-        .toList();
-
-    return matches;
-  }
-
-  String _buildSearchableText(Map<String, dynamic> data) {
-    final stored = data['searchableText']?.toString();
-    if (stored != null && stored.trim().isNotEmpty) {
-      return PostModel.normalizeSearchText(stored);
-    }
-
-    return PostModel.buildSearchableText(
-      title: data['title']?.toString() ?? '',
-      description: data['description']?.toString() ?? '',
-      materialType: data['materialType']?.toString() ?? '',
-      knowledgeArea: data['knowledgeArea']?.toString() ?? '',
-      career: data['career']?.toString() ?? '',
-      subject: data['subject']?.toString() ?? '',
-      ownerName: data['ownerName']?.toString() ?? '',
-    );
+    final matches = await SearchResultsScreen.searchPosts(rawTerm);
+    return matches.take(8).toList();
   }
 
   String _buildSuggestionSubtitle(Map<String, dynamic> data) {
-    final description = data['description']?.toString().trim() ?? '';
-    if (description.isNotEmpty) {
-      return description.length > 90
-          ? '${description.substring(0, 90)}...'
-          : description;
-    }
-
-    final pieces = [
-      data['materialType']?.toString().trim() ?? '',
-      data['subject']?.toString().trim() ?? '',
-      data['career']?.toString().trim() ?? '',
-    ].where((value) => value.isNotEmpty).toList();
-
-    return pieces.isEmpty ? 'Sin descripcion disponible.' : pieces.join(' • ');
+    return SearchResultsScreen.buildSuggestionSubtitle(data);
   }
 
   @override
@@ -134,6 +86,18 @@ class HomeScreen extends StatelessWidget {
                       ),
                       child: SearchAnchor(
                         isFullScreen: false, 
+                        viewOnSubmitted: (value) {
+                          final query = value.trim();
+                          if (query.isEmpty) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SearchResultsScreen(
+                                initialQuery: query,
+                              ),
+                            ),
+                          );
+                        },
                         builder: (context, controller) {
                           return SearchBar(
                             controller: controller,
@@ -180,7 +144,7 @@ class HomeScreen extends StatelessWidget {
                               ];
                             }
 
-                            return results.map((data) {
+                            final resultTiles = results.map((data) {
                               final title = data['title']?.toString() ?? 'Sin titulo';
                               final imageUrl = data['imageUrl']?.toString();
                               final post = PostModel.fromMap(data);
@@ -239,6 +203,28 @@ class HomeScreen extends StatelessWidget {
                                 },
                               );
                             }).toList();
+
+                            return [
+                              ...resultTiles,
+                              ListTile(
+                                leading: const Icon(Icons.manage_search),
+                                title: Text(
+                                  'Ver todos los resultados para "${controller.text.trim()}"',
+                                ),
+                                onTap: () {
+                                  final query = controller.text.trim();
+                                  controller.closeView(query);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SearchResultsScreen(
+                                        initialQuery: query,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ];
                           } on FirebaseException catch (e) {
                             return [
                               ListTile(
