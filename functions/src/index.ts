@@ -3,6 +3,7 @@ import {
   onDocumentCreated,
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
+import {onValueWritten} from "firebase-functions/v2/database";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
@@ -45,6 +46,21 @@ function pickNumber(value: unknown): number | null {
   }
 
   return null;
+}
+
+/**
+ * Convierte un timestamp unix en milisegundos a Date válido.
+ * @param {unknown} value Valor crudo.
+ * @return {Date | null} Fecha válida o null.
+ */
+function pickDateFromMillis(value: unknown): Date | null {
+  const millis = pickNumber(value);
+  if (millis === null) {
+    return null;
+  }
+
+  const date = new Date(millis);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /**
@@ -358,6 +374,44 @@ export const onExchangeUpdatedNotifyParticipants = onDocumentUpdated(
         requesterNotificationId,
       });
     }
+  },
+);
+
+export const onUserPresenceChangedSyncFirestore = onValueWritten(
+  "/status/{uid}",
+  async (event) => {
+    const uid = pickString(event.params.uid);
+
+    if (!uid) {
+      logger.warn("Cambio de presencia sin uid", {params: event.params});
+      return;
+    }
+
+    const after = event.data.after.val() as Record<string, unknown> | null;
+
+    if (!after) {
+      await db.collection("users").doc(uid).set({
+        isOnline: false,
+        lastSeen: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      logger.info("Presencia eliminada, usuario marcado offline", {uid});
+      return;
+    }
+
+    const state = pickString(after["state"]).toLowerCase();
+    const lastChanged = pickDateFromMillis(after["lastChanged"]);
+
+    await db.collection("users").doc(uid).set({
+      isOnline: state === "online",
+      lastSeen: lastChanged ?? FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    logger.info("Presencia sincronizada a Firestore", {
+      uid,
+      state,
+      lastChanged: lastChanged?.toISOString() ?? null,
+    });
   },
 );
 

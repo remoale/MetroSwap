@@ -187,16 +187,19 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
     return Container(
       height: 85,
       color: _isAdmin ? _colorAdmin : _colorOriginal,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 5 : 10),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 5 : 16),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => _navigateToAdmin(context),
-            child: MetroSwapBrand(
-              color: Colors.white,
-              logoHeight: isMobile ? 44 : 64,
-              fontSize: isMobile ? 17 : 26,
-              logoYOffset: isMobile ? -3 : -6,
+            child: Transform.translate(
+              offset: Offset(isMobile ? 0 : -16, 0),
+              child: MetroSwapBrand(
+                color: Colors.white,
+                logoHeight: isMobile ? 44 : 64,
+                fontSize: isMobile ? 17 : 26,
+                logoYOffset: isMobile ? -3 : -6,
+              ),
             ),
           ),
           if (!isHome && isMobile) ...[
@@ -259,11 +262,13 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
             ),
           ] else
             const Spacer(),
-          Flexible(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
               if (isHome) ...[
                 OutlinedButton(
                   onPressed: () {
@@ -374,8 +379,8 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                   },
                 ),
                 ],
-                SizedBox(width: isMobile ? 0 : 28),
-              ],
+                ],
+              ),
             ),
           ),
         ],

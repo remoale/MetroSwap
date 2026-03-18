@@ -7,6 +7,7 @@ import 'package:metroswap/screens/feedback/feedback_screen.dart';
 import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/payments/contribution_payment_screen.dart';
 import 'package:metroswap/screens/payments/payment_confirmation_screen.dart';
+import 'package:metroswap/services/presence_service.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
@@ -76,6 +77,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
             .toString()
             .trim();
         return _UserSummary(
+          uid: uid,
           name: rawName.isEmpty ? fallbackName : rawName,
           email: data['email']?.toString(),
           phone: (data['phone'] ?? data['phoneNumber'])?.toString(),
@@ -84,7 +86,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           photoUrl: (data['photoUrl'] ?? data['photoURL'])?.toString(),
         );
       } catch (_) {
-        return _UserSummary(name: fallbackName);
+        return _UserSummary(uid: uid, name: fallbackName);
       }
     }
 
@@ -418,12 +420,18 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                         exchange: exchange,
                                         requester: participants?.requester ??
                                             _UserSummary(
+                                              uid: exchange.requesterUid,
                                               name: exchange.requesterName.trim().isEmpty
                                                   ? 'Solicitante'
                                                   : exchange.requesterName.trim(),
                                             ),
                                         owner: participants?.owner ??
-                                            const _UserSummary(name: 'Propietario'),
+                                            _UserSummary(
+                                              uid: exchange.targetUid.trim().isEmpty
+                                                  ? exchange.ownerUid
+                                                  : exchange.targetUid,
+                                              name: 'Propietario',
+                                            ),
                                         currentUid: _auth.currentUser?.uid ?? '',
                                         compact: useCompactLayout,
                                         mobile: isMobileViewport,
@@ -882,17 +890,33 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isRightAligned) _statusDot(),
-            if (!isRightAligned) const SizedBox(width: 4),
-            Text(
-              'En linea',
-              style: TextStyle(
-                fontSize: compact ? 11 : 12,
-                fontWeight: FontWeight.bold,
-              ),
+            StreamBuilder<UserPresence>(
+              stream: PresenceService.instance.watchUserPresence(user.uid),
+              builder: (context, snapshot) {
+                final presence = snapshot.data ?? const UserPresence.offline();
+                final statusLabel = _presenceLabel(presence);
+                final statusColor =
+                    presence.isOnline ? Colors.green : const Color(0xFF8A858F);
+
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isRightAligned) _statusDot(statusColor),
+                    if (!isRightAligned) const SizedBox(width: 4),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: compact ? 11 : 12,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                    if (isRightAligned) const SizedBox(width: 4),
+                    if (isRightAligned) _statusDot(statusColor),
+                  ],
+                );
+              },
             ),
-            if (isRightAligned) const SizedBox(width: 4),
-            if (isRightAligned) _statusDot(),
           ],
         ),
       ],
@@ -1039,12 +1063,39 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
   }
 
-  Widget _statusDot() {
+  String _presenceLabel(UserPresence presence) {
+    if (presence.isOnline) return 'En linea';
+
+    final lastSeen = presence.lastSeen;
+    if (lastSeen == null) {
+      return 'Desconectado';
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(lastSeen);
+
+    if (difference.inMinutes < 1) {
+      return 'Activo hace un momento';
+    }
+    if (difference.inHours < 1) {
+      final minutes = difference.inMinutes;
+      return 'Activo hace $minutes min';
+    }
+    if (difference.inDays < 1) {
+      final hours = difference.inHours;
+      return 'Activo hace $hours h';
+    }
+
+    final days = difference.inDays;
+    return 'Activo hace $days d';
+  }
+
+  Widget _statusDot(Color color) {
     return Container(
       width: 10,
       height: 10,
-      decoration: const BoxDecoration(
-        color: Colors.green,
+      decoration: BoxDecoration(
+        color: color,
         shape: BoxShape.circle,
       ),
     );
@@ -1200,6 +1251,7 @@ class _ParticipantsData {
 }
 
 class _UserSummary {
+  final String uid;
   final String name;
   final String? email;
   final String? phone;
@@ -1208,6 +1260,7 @@ class _UserSummary {
   final String? photoUrl;
 
   const _UserSummary({
+    this.uid = '',
     required this.name,
     this.email,
     this.phone,

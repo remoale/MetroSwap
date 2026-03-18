@@ -33,9 +33,10 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.capturePayPalOrder = exports.createPayPalOrder = exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
+exports.capturePayPalOrder = exports.createPayPalOrder = exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onUserPresenceChangedSyncFirestore = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const firestore_1 = require("firebase-functions/v2/firestore");
+const database_1 = require("firebase-functions/v2/database");
 const https_1 = require("firebase-functions/v2/https");
 const logger = __importStar(require("firebase-functions/logger"));
 const app_1 = require("firebase-admin/app");
@@ -71,6 +72,19 @@ function pickNumber(value) {
         }
     }
     return null;
+}
+/**
+ * Convierte un timestamp unix en milisegundos a Date válido.
+ * @param {unknown} value Valor crudo.
+ * @return {Date | null} Fecha válida o null.
+ */
+function pickDateFromMillis(value) {
+    const millis = pickNumber(value);
+    if (millis === null) {
+        return null;
+    }
+    const date = new Date(millis);
+    return Number.isNaN(date.getTime()) ? null : date;
 }
 /**
  * Normaliza estado de usuario y determina si está suspendido.
@@ -336,6 +350,34 @@ exports.onExchangeUpdatedNotifyParticipants = (0, firestore_1.onDocumentUpdated)
         });
     }
 });
+exports.onUserPresenceChangedSyncFirestore = (0, database_1.onValueWritten)("/status/{uid}", async (event) => {
+    var _a;
+    const uid = pickString(event.params.uid);
+    if (!uid) {
+        logger.warn("Cambio de presencia sin uid", { params: event.params });
+        return;
+    }
+    const after = event.data.after.val();
+    if (!after) {
+        await db.collection("users").doc(uid).set({
+            isOnline: false,
+            lastSeen: firestore_2.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        logger.info("Presencia eliminada, usuario marcado offline", { uid });
+        return;
+    }
+    const state = pickString(after["state"]).toLowerCase();
+    const lastChanged = pickDateFromMillis(after["lastChanged"]);
+    await db.collection("users").doc(uid).set({
+        isOnline: state === "online",
+        lastSeen: lastChanged !== null && lastChanged !== void 0 ? lastChanged : firestore_2.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    logger.info("Presencia sincronizada a Firestore", {
+        uid,
+        state,
+        lastChanged: (_a = lastChanged === null || lastChanged === void 0 ? void 0 : lastChanged.toISOString()) !== null && _a !== void 0 ? _a : null,
+    });
+});
 exports.createExchangePayment = (0, https_1.onCall)(async (request) => {
     var _a;
     const auth = request.auth;
@@ -530,7 +572,6 @@ exports.capturePayPalOrder = (0, https_1.onCall)({
     });
     const data = await response.json();
     logger.info("PayPal order captured", data);
-    // Guardar en Firestore si quieres
     if (data.status === "COMPLETED") {
         const amountValue = ((_h = (_g = (_f = (_e = (_d = (_c = data.purchase_units) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.payments) === null || _e === void 0 ? void 0 : _e.captures) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.amount) === null || _h === void 0 ? void 0 : _h.value) || null;
         await db.collection("paypalPayments").doc(orderId).set({

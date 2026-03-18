@@ -4,6 +4,7 @@ import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:metroswap/services/presence_service.dart';
 import 'firebase_options.dart';
 import 'package:metroswap/screens/payments/paypal_return_screen.dart';
 
@@ -32,7 +33,7 @@ class MyApp extends StatelessWidget {
       return const PayPalReturnScreen(success: false);
     }
 
-    return const AuthGate();
+    return const PresenceBootstrap(child: AuthGate());
   }
 
   @override
@@ -89,5 +90,30 @@ class AuthGate extends StatelessWidget {
         return const LandingScreen();
       },
     );
+  }
+}
+
+class PresenceBootstrap extends StatefulWidget {
+  final Widget child;
+
+  const PresenceBootstrap({
+    super.key,
+    required this.child,
+  });
+
+  @override
+  State<PresenceBootstrap> createState() => _PresenceBootstrapState();
+}
+
+class _PresenceBootstrapState extends State<PresenceBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    PresenceService.instance.initialize();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
