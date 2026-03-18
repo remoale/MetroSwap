@@ -153,7 +153,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     editableUser.studentId = _normalizeOptional(studentIdCtrl.text);
     
-    // Convertir libros separados por coma a lista 
+    // Convertir materiales separados por coma a lista 
     editableUser.books = booksCtrl.text 
     .split(",") 
     .map((e) => e.trim()) 
@@ -184,11 +184,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos MetroSwapLayout como base, sin botón de volver
     return MetroSwapLayout(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Mantenemos tu lógica de responsividad para el contenido interno
           final isDesktop = constraints.maxWidth >= 700;
           final isCompact = constraints.maxWidth < 760;
 
@@ -372,7 +370,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           keyboardType: TextInputType.phone,
         ),
         const SizedBox(height: 16),
-        _buildFieldLabel("Libros:"),
+        _buildFieldLabel("Materiales:"),
         _buildEditableField(
           controller: booksCtrl,
           hintText: "Separados por coma",
