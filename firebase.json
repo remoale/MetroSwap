@@ -16,14 +16,6 @@
           "fileOutput": "ios/Runner/GoogleService-Info.plist"
         }
       },
-      "macos": {
-        "default": {
-          "projectId": "metroswap-73a05",
-          "appId": "1:614391071848:ios:5ed2ecc72888b575cce7dd",
-          "uploadDebugSymbols": false,
-          "fileOutput": "macos/Runner/GoogleService-Info.plist"
-        }
-      },
       "dart": {
         "lib/firebase_options.dart": {
           "projectId": "metroswap-73a05",
