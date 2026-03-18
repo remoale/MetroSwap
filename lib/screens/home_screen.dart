@@ -253,12 +253,14 @@ class HomeScreen extends StatelessWidget {
                   imagePath: 'assets/images/libros.png',
                   isMobile: isMobile,
                   screenWidth: screenWidth,
+                  onTap: () => _openCategoryResults(context, 'libro'),
                 ),
                 _buildCategoryCard(
                   title: 'Materiales',
                   imagePath: 'assets/images/materiales.png',
                   isMobile: isMobile,
                   screenWidth: screenWidth,
+                  onTap: () => _openCategoryResults(context, 'material'),
                 ),
               ],
             ),
@@ -271,33 +273,50 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  void _openCategoryResults(BuildContext context, String query) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchResultsScreen(initialQuery: query),
+      ),
+    );
+  }
+
   Widget _buildCategoryCard({
     required String title,
     required String imagePath,
     required bool isMobile,
     required double screenWidth,
+    required VoidCallback onTap,
   }) {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Image.asset(
-            imagePath,
-            width: isMobile ? screenWidth - 60 : 300, 
-            height: isMobile ? 180 : 200,
-            fit: BoxFit.cover,
-          ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                imagePath,
+                width: isMobile ? screenWidth - 60 : 300,
+                height: isMobile ? 180 : 200,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 15),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: isMobile ? 28 : 32,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 15),
-        Text(
-          title,
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: isMobile ? 28 : 32, 
-            fontWeight: FontWeight.w300,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
