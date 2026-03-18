@@ -13,19 +13,19 @@ class ProfileController {
   }) : _firestore = firestore ?? FirestoreService(), 
   _storage = storage ?? StorageService();
 
-  // Cargar los datos del usuario desde Firestore
+  // Carga los datos del usuario desde Firestore.
   Future<UserModel?> loadUser(String uid) async {
     final user = await _firestore.getUser(uid);
     if (user == null) return null;
-    return user.clone(); // PROTOTYPE: Devuelve una copia del usuario para evitar modificaciones directas.
+    return user.clone(); // Devuelve una copia para evitar modificaciones directas.
   }
 
-  // Subir una imagen de perfil y devolver la URL
+  // Sube una imagen de perfil y devuelve su URL.
   Future<String?> uploadImage(String uid, XFile file) async {
     return await _storage.uploadProfileImage(uid, file);
   }
 
-  // Actualizar los datos del usuario en Firestore
+  // Actualiza los datos del usuario en Firestore.
   Future<void> updateUser(UserModel user) async {
     await _firestore.updateUser(user.uid, user.toMap());
   }

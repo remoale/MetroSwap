@@ -11,6 +11,7 @@ import 'package:metroswap/services/presence_service.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
+/// Gestiona la conversación y el estado de un intercambio entre usuarios.
 class TradeChatScreen extends StatefulWidget {
   final String tradeId;
 

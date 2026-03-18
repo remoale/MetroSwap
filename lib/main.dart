@@ -82,7 +82,6 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // Si el usuario está logueado, lo enviamos al HomeScreen (el unificado)
         if (snapshot.hasData) {
           return const HomeScreen(); 
         }

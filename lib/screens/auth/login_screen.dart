@@ -50,20 +50,18 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
 
-      // Validacion de suspension
+      // Verifica si la cuenta está suspendida.
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
         if (userDoc.exists) {
           final status = userDoc.data()?['status'];
           if (isSuspendedUserStatus(status)) {
-            await FirebaseAuth.instance.signOut(); // Forzamos el cierre de sesión
+            await FirebaseAuth.instance.signOut(); // Cierra la sesión de inmediato.
             throw Exception('Tu cuenta ha sido suspendida por un administrador.');
           }
         }
       }
-      // Fin de la validacion de suspension 
-
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
@@ -86,20 +84,18 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await _authService.signInWithGoogle();
 
-      // Validacion de suspension
+      // Verifica si la cuenta está suspendida.
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
         if (userDoc.exists) {
           final status = userDoc.data()?['status'];
           if (isSuspendedUserStatus(status)) {
-            await FirebaseAuth.instance.signOut(); // Forzamos el cierre de sesión
+            await FirebaseAuth.instance.signOut(); // Cierra la sesión de inmediato.
             throw Exception('Tu cuenta ha sido suspendida por un administrador.');
           }
         }
       }
-      // Fin de la validacion de suspension
-
       if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
@@ -126,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // --- WIDGETS REUTILIZABLES ---
+  // Widgets reutilizables.
   
   Widget _buildBackButton() {
     return IconButton(
@@ -316,7 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // --- LAYOUTS (Móvil y Escritorio) ---
+  // Layouts para móvil y escritorio.
 
   Widget _buildMobileLayout(BuildContext context) {
     return SafeArea(

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Representa un intercambio asociado a una publicación.
 class ExchangeModel {
   static const String statusRequested = 'requested';
   static const String statusAccepted = 'accepted';

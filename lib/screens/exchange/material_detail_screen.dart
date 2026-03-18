@@ -8,6 +8,7 @@ import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 
+/// Muestra el detalle completo de una publicación disponible.
 class MaterialDetailScreen extends StatelessWidget {
   final PostModel? post;
 
@@ -268,7 +269,7 @@ class MaterialDetailScreen extends StatelessWidget {
     );
   }
 
-  // Lógica de validación principal antes de confirmar el trade
+  // Valida la operación antes de iniciar el intercambio.
   void _handleActionPressed(BuildContext context, PostModel? currentPost, int maxQuantity, bool hasPrice) {
     if (currentPost == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -302,18 +303,18 @@ class MaterialDetailScreen extends StatelessWidget {
       return;
     }
 
-    // Si hay más de 1 artículo, mostramos el diálogo
+    // Muestra un diálogo cuando hay más de un artículo disponible.
     if (maxQuantity > 1) {
       _showQuantityDialog(context, maxQuantity, (selectedQty) {
         _executeTrade(context, currentPost, currentUser, hasPrice, selectedQty);
       });
     } else {
-      // Si solo hay 1, procedemos directo para ahorrarle clics al usuario
+      // Continúa directamente cuando solo hay una unidad disponible.
       _executeTrade(context, currentPost, currentUser, hasPrice, 1);
     }
   }
 
-  // Diálogo para seleccionar la cantidad
+  // Muestra el diálogo para seleccionar la cantidad.
   void _showQuantityDialog(BuildContext context, int maxQuantity, Function(int) onConfirm) {
     int selectedQuantity = 1;
 
@@ -378,8 +379,8 @@ class MaterialDetailScreen extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.pop(dialogContext); // Cerramos el diálogo
-                    onConfirm(selectedQuantity); // Ejecutamos la función de confirmación
+                    Navigator.pop(dialogContext); // Cierra el diálogo.
+                    onConfirm(selectedQuantity); // Confirma la cantidad elegida.
                   },
                   child: const Text('Confirmar', style: TextStyle(color: Colors.white)),
                 ),
@@ -391,7 +392,7 @@ class MaterialDetailScreen extends StatelessWidget {
     );
   }
 
-  // Lógica de base de datos que antes tenías suelta en el onPressed
+  // Registra el intercambio en Firestore y abre el chat asociado.
   Future<void> _executeTrade(
     BuildContext context,
     PostModel currentPost,
@@ -431,7 +432,7 @@ class MaterialDetailScreen extends StatelessWidget {
         'targetUid': currentPost.ownerUid,
         'requesterUid': currentUser.uid,
         'requesterName': requesterName.isEmpty ? 'Usuario' : requesterName,
-        'requestedQuantity': selectedQuantity, // <--- Aquí guardamos la cantidad elegida
+        'requestedQuantity': selectedQuantity, // Guarda la cantidad solicitada.
         'status': 'requested',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),

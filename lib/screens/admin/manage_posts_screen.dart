@@ -38,7 +38,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
     await _fetchPosts();
   }
 
-  // --- OBTENER PUBLICACIONES DE FIREBASE ---
+  // Obtiene las publicaciones desde Firestore.
   Future<void> _fetchPosts() async {
     try {
       final postsSnap = await FirebaseFirestore.instance.collection('posts').get();
@@ -47,7 +47,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
       for (var doc in postsSnap.docs) {
         final data = doc.data();
         
-        // Formateo de fecha
+        // Formatea la fecha de creación.
         String dateStr = 'Sin fecha';
         if (data['createdAt'] != null) {
           if (data['createdAt'] is Timestamp) {
@@ -58,7 +58,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
           }
         }
 
-        // TRADUCCIÓN AUTOMÁTICA DEL ESTADO
+        // Normaliza el estado para mostrarlo en español.
         String rawStatus = data['status'] ?? 'Activo';
         if (rawStatus.toLowerCase() == 'active') {
           rawStatus = 'Activo';
@@ -87,7 +87,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
     }
   }
 
-  // --- ELIMINAR PUBLICACIÓN ---
+  // Elimina una publicación después de confirmar la acción.
   Future<void> _deletePost(String postId, String title) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -228,7 +228,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                             decoration: BoxDecoration(
-                                              // LÓGICA DE COLORES UNIFICADA
+                                              // Usa el mismo color para cada estado.
                                               color: post['status'] == 'Activo' 
                                                   ? Colors.green.withValues(alpha: 0.1) 
                                                   : Colors.orange.withValues(alpha: 0.1),
@@ -237,7 +237,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                             child: Text(
                                               post['status'],
                                               style: TextStyle(
-                                                // LÓGICA DE COLORES UNIFICADA
+                                                // Usa el mismo color para cada estado.
                                                 color: post['status'] == 'Activo' ? Colors.green[700] : Colors.orange[700],
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,

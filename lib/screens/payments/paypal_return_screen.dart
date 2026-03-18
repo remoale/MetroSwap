@@ -4,6 +4,7 @@ import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/payments/payment_cancel_screen.dart';
 import 'package:metroswap/screens/payments/payment_confirmation_screen.dart';
 
+/// Procesa el retorno desde PayPal después de aprobar o cancelar el pago.
 class PayPalReturnScreen extends StatefulWidget {
   final bool success;
 

@@ -8,6 +8,7 @@ import 'package:metroswap/screens/admin/manage_posts_screen.dart';
 import 'package:metroswap/screens/admin/manage_profiles_screen.dart';
 import 'package:metroswap/utils/admin_utils.dart';
 
+/// Muestra el panel administrativo con métricas y accesos de gestión.
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
 
@@ -27,6 +28,7 @@ class _AdminScreenState extends State<AdminScreen> {
   int _suspendedUsers = 0; 
   
   Map<String, int> _careerCounts = {};
+  // Guarda la actividad semanal de lunes a domingo.
   List<double> _weeklyActivity = List.filled(7, 0.0);
   List<MapEntry<String, int>> _topDemandedBooks = [];
 
@@ -142,6 +144,7 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
+  // Calcula el valor máximo del gráfico.
   double _getMaxY() {
     double maxVal = 10.0; 
     for (var val in _weeklyActivity) {
@@ -484,8 +487,6 @@ class _AdminScreenState extends State<AdminScreen> {
       ),
     );
   }
-
-  // --- RESTO DE FUNCIONES ---
 
   Future<void> _openManagePosts() async {
     await Navigator.push(context, MaterialPageRoute(builder: (context) => const ManagePostsScreen()));

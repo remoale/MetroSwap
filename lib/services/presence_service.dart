@@ -6,6 +6,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:metroswap/firebase_options.dart';
 
+/// Sincroniza el estado en línea de cada usuario con Realtime Database.
 class PresenceService {
   PresenceService._();
 
