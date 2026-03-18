@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
+exports.capturePayPalOrder = exports.createPayPalOrder = exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
@@ -41,6 +41,7 @@ const logger = __importStar(require("firebase-functions/logger"));
 const app_1 = require("firebase-admin/app");
 const firestore_2 = require("firebase-admin/firestore");
 const auth_1 = require("firebase-admin/auth");
+const node_buffer_1 = require("node:buffer");
 // Configuración global para controlar costos y concurrencia.
 (0, firebase_functions_1.setGlobalOptions)({ maxInstances: 10 });
 (0, app_1.initializeApp)();
@@ -447,5 +448,153 @@ exports.onUserSuspensionStatusChangedSyncAuth = (0, firestore_1.onDocumentUpdate
         });
         throw error;
     }
+});
+const PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"; // Cambiar a live en producción
+async function getPayPalAccessToken() {
+    const paypalClientId = process.env.PAYPAL_CLIENT_ID || "";
+    const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET || "";
+    if (!paypalClientId || !paypalClientSecret) {
+        throw new https_1.HttpsError("failed-precondition", "Las credenciales de PayPal no estan configuradas.");
+    }
+    const auth = node_buffer_1.Buffer.from(`${paypalClientId}:${paypalClientSecret}`).toString("base64");
+    const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+        method: "POST",
+        headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "grant_type=client_credentials",
+    });
+    const data = await response.json();
+    return data.access_token;
+}
+exports.createPayPalOrder = (0, https_1.onCall)({
+    secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+}, async (request) => {
+    var _a, _b, _c;
+    const amount = pickNumber((_a = request.data) === null || _a === void 0 ? void 0 : _a.amount);
+    const returnUrl = pickString((_b = request.data) === null || _b === void 0 ? void 0 : _b.returnUrl);
+    const cancelUrl = pickString((_c = request.data) === null || _c === void 0 ? void 0 : _c.cancelUrl);
+    if (!amount || amount <= 0) {
+        throw new https_1.HttpsError("invalid-argument", "Monto inválido.");
+    }
+    if (!returnUrl || !cancelUrl) {
+        throw new https_1.HttpsError("invalid-argument", "returnUrl y cancelUrl son obligatorios.");
+    }
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            intent: "CAPTURE",
+            purchase_units: [
+                {
+                    amount: {
+                        currency_code: "USD",
+                        value: amount.toString(),
+                    },
+                },
+            ],
+            application_context: {
+                return_url: returnUrl,
+                cancel_url: cancelUrl,
+                user_action: "PAY_NOW",
+            },
+        }),
+    });
+    const data = await response.json();
+    logger.info("PayPal order created", data);
+    return data;
+});
+exports.capturePayPalOrder = (0, https_1.onCall)({
+    secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+}, async (request) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const auth = request.auth;
+    const uid = (auth === null || auth === void 0 ? void 0 : auth.uid) || "";
+    const orderId = pickString((_a = request.data) === null || _a === void 0 ? void 0 : _a.orderId);
+    const exchangeId = pickString((_b = request.data) === null || _b === void 0 ? void 0 : _b.exchangeId);
+    if (!orderId) {
+        throw new https_1.HttpsError("invalid-argument", "orderId es obligatorio.");
+    }
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+    });
+    const data = await response.json();
+    logger.info("PayPal order captured", data);
+    // Guardar en Firestore si quieres
+    if (data.status === "COMPLETED") {
+        const amountValue = ((_h = (_g = (_f = (_e = (_d = (_c = data.purchase_units) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.payments) === null || _e === void 0 ? void 0 : _e.captures) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.amount) === null || _h === void 0 ? void 0 : _h.value) || null;
+        await db.collection("paypalPayments").doc(orderId).set({
+            orderId,
+            status: "completed",
+            amount: amountValue,
+            currency: "USD",
+            createdAt: firestore_2.FieldValue.serverTimestamp(),
+        });
+        if (exchangeId) {
+            const exchangeSnapshot = await db.collection("exchanges").doc(exchangeId).get();
+            const exchangeData = exchangeSnapshot.data() || {};
+            const ownerUid = pickString(exchangeData["targetUid"]) ||
+                pickString(exchangeData["ownerUid"]) ||
+                pickString(exchangeData["sellerUid"]);
+            const requesterUid = pickString(exchangeData["requesterUid"]) ||
+                pickString(exchangeData["actorUid"]) ||
+                pickString(exchangeData["buyerUid"]);
+            const ownerName = pickString(exchangeData["ownerName"]) || "El usuario";
+            const requesterName = pickString(exchangeData["requesterName"]) || "Un usuario";
+            const postId = pickString(exchangeData["postId"]);
+            const postTitle = pickString(exchangeData["postTitle"]) || pickString(exchangeData["title"]);
+            await db.collection("exchanges").doc(exchangeId).set({
+                status: "completed",
+                paymentStatus: "completed",
+                paymentProvider: "paypal",
+                paypalOrderId: orderId,
+                paypalAmount: amountValue,
+                updatedBy: uid || null,
+                updatedAt: firestore_2.FieldValue.serverTimestamp(),
+                completedAt: firestore_2.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            const completionNotifications = [];
+            if (ownerUid) {
+                completionNotifications.push(createNotification({
+                    targetUid: ownerUid,
+                    type: "exchange_completed",
+                    title: "Intercambio completado",
+                    body: `Intercambio de "${postTitle || "material"}" completado con ${requesterName}`,
+                    actorUid: requesterUid || undefined,
+                    exchangeId,
+                    postId,
+                    postTitle,
+                    status: "completed",
+                    actorName: requesterName,
+                }));
+            }
+            if (requesterUid) {
+                completionNotifications.push(createNotification({
+                    targetUid: requesterUid,
+                    type: "exchange_completed",
+                    title: "Intercambio completado",
+                    body: `Intercambio de "${postTitle || "material"}" completado con ${ownerName}`,
+                    actorUid: ownerUid || undefined,
+                    exchangeId,
+                    postId,
+                    postTitle,
+                    status: "completed",
+                    actorName: ownerName,
+                }));
+            }
+            await Promise.all(completionNotifications);
+        }
+    }
+    return data;
 });
 //# sourceMappingURL=index.js.map

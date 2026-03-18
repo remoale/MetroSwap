@@ -8,6 +8,7 @@ import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {getAuth} from "firebase-admin/auth";
+import {Buffer} from "node:buffer";
 
 // Configuración global para controlar costos y concurrencia.
 setGlobalOptions({maxInstances: 10});
@@ -513,3 +514,178 @@ export const onUserSuspensionStatusChangedSyncAuth = onDocumentUpdated(
     }
   },
 );
+
+const PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"; // Cambiar a live en producción
+
+async function getPayPalAccessToken(): Promise<string> {
+  const paypalClientId = process.env.PAYPAL_CLIENT_ID || "";
+  const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET || "";
+
+  if (!paypalClientId || !paypalClientSecret) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Las credenciales de PayPal no estan configuradas.",
+    );
+  }
+
+  const auth = Buffer.from(`${paypalClientId}:${paypalClientSecret}`).toString("base64");
+
+  const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+export const createPayPalOrder = onCall({
+  secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+}, async (request) => {
+  const amount = pickNumber(request.data?.amount);
+  const returnUrl = pickString(request.data?.returnUrl);
+  const cancelUrl = pickString(request.data?.cancelUrl);
+
+  if (!amount || amount <= 0) {
+    throw new HttpsError("invalid-argument", "Monto inválido.");
+  }
+
+  if (!returnUrl || !cancelUrl) {
+    throw new HttpsError("invalid-argument", "returnUrl y cancelUrl son obligatorios.");
+  }
+
+  const accessToken = await getPayPalAccessToken();
+
+  const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          amount: {
+            currency_code: "USD",
+            value: amount.toString(),
+          },
+        },
+      ],
+      application_context: {
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+        user_action: "PAY_NOW",
+      },
+    }),
+  });
+
+  const data = await response.json();
+
+  logger.info("PayPal order created", data);
+
+  return data;
+});
+
+export const capturePayPalOrder = onCall({
+  secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+}, async (request) => {
+  const auth = request.auth;
+  const uid = auth?.uid || "";
+  const orderId = pickString(request.data?.orderId);
+  const exchangeId = pickString(request.data?.exchangeId);
+
+  if (!orderId) {
+    throw new HttpsError("invalid-argument", "orderId es obligatorio.");
+  }
+
+  const accessToken = await getPayPalAccessToken();
+
+  const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await response.json();
+
+  logger.info("PayPal order captured", data);
+
+  if (data.status === "COMPLETED") {
+    const amountValue = data.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value || null;
+    await db.collection("paypalPayments").doc(orderId).set({
+      orderId,
+      status: "completed",
+      amount: amountValue,
+      currency: "USD",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    if (exchangeId) {
+      const exchangeSnapshot = await db.collection("exchanges").doc(exchangeId).get();
+      const exchangeData = exchangeSnapshot.data() || {};
+      const ownerUid =
+        pickString(exchangeData["targetUid"]) ||
+        pickString(exchangeData["ownerUid"]) ||
+        pickString(exchangeData["sellerUid"]);
+      const requesterUid =
+        pickString(exchangeData["requesterUid"]) ||
+        pickString(exchangeData["actorUid"]) ||
+        pickString(exchangeData["buyerUid"]);
+      const ownerName = pickString(exchangeData["ownerName"]) || "El usuario";
+      const requesterName = pickString(exchangeData["requesterName"]) || "Un usuario";
+      const postId = pickString(exchangeData["postId"]);
+      const postTitle = pickString(exchangeData["postTitle"]) || pickString(exchangeData["title"]);
+
+      await db.collection("exchanges").doc(exchangeId).set({
+        status: "completed",
+        paymentStatus: "completed",
+        paymentProvider: "paypal",
+        paypalOrderId: orderId,
+        paypalAmount: amountValue,
+        updatedBy: uid || null,
+        updatedAt: FieldValue.serverTimestamp(),
+        completedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      const completionNotifications: Promise<string>[] = [];
+      if (ownerUid) {
+        completionNotifications.push(createNotification({
+          targetUid: ownerUid,
+          type: "exchange_completed",
+          title: "Intercambio completado",
+          body: `Intercambio de "${postTitle || "material"}" completado con ${requesterName}`,
+          actorUid: requesterUid || undefined,
+          exchangeId,
+          postId,
+          postTitle,
+          status: "completed",
+          actorName: requesterName,
+        }));
+      }
+      if (requesterUid) {
+        completionNotifications.push(createNotification({
+          targetUid: requesterUid,
+          type: "exchange_completed",
+          title: "Intercambio completado",
+          body: `Intercambio de "${postTitle || "material"}" completado con ${ownerName}`,
+          actorUid: ownerUid || undefined,
+          exchangeId,
+          postId,
+          postTitle,
+          status: "completed",
+          actorName: ownerName,
+        }));
+      }
+      await Promise.all(completionNotifications);
+    }
+  }
+
+  return data;
+});

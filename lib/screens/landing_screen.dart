@@ -277,7 +277,7 @@ class LandingScreen extends StatelessWidget {
             child: Icon(icon, size: 45, color: const Color(0xFFFF6B00)),
           ),
           const SizedBox(height: 25),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF2C2C2C))),
+          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2C2C2C))),
           const SizedBox(height: 15),
           Text(description, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black54)),
         ],

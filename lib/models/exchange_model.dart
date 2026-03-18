@@ -17,6 +17,8 @@ class ExchangeModel {
   final String requesterUid;
   final String requesterName;
   final String status;
+  final String paymentStatus;
+  final double? paypalAmount;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -31,6 +33,8 @@ class ExchangeModel {
     required this.requesterUid,
     required this.requesterName,
     required this.status,
+    required this.paymentStatus,
+    this.paypalAmount,
     this.createdAt,
     this.updatedAt,
   });
@@ -49,6 +53,12 @@ class ExchangeModel {
       return null;
     }
 
+    double? parseNumber(dynamic value) {
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
+
     final normalizedFallbackId = fallbackId.trim();
     final normalizedMapId = (map['id'] ?? '').toString().trim();
 
@@ -63,6 +73,8 @@ class ExchangeModel {
       requesterUid: (map['requesterUid'] ?? '').toString(),
       requesterName: (map['requesterName'] ?? '').toString(),
       status: (map['status'] ?? statusRequested).toString(),
+      paymentStatus: (map['paymentStatus'] ?? '').toString(),
+      paypalAmount: parseNumber(map['paypalAmount']),
       createdAt: parseDate(map['createdAt']),
       updatedAt: parseDate(map['updatedAt']),
     );
@@ -80,6 +92,8 @@ class ExchangeModel {
       'requesterUid': requesterUid,
       'requesterName': requesterName,
       'status': status,
+      'paymentStatus': paymentStatus,
+      if (paypalAmount != null) 'paypalAmount': paypalAmount,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };

@@ -439,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: Text(isCompact ? "Ver" : "Ver Reseñas"),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFFFF5C00), 
-                backgroundColor: const Color(0xFFFF5C00).withOpacity(0.1),
+                backgroundColor: const Color(0xFFFF5C00).withValues(alpha: 0.1),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
