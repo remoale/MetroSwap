@@ -15,41 +15,84 @@ class PaymentConfirmationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat('d \'de\' MMMM \'de\' y', 'es')
-        .format(DateTime.now());
+    final dateLabel = DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now());
+    final isMobile = MediaQuery.of(context).size.width < 700;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE9E7EA),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
-            child: Container(
-              margin: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2F3035),
-                borderRadius: BorderRadius.circular(18),
+        child: isMobile
+            ? _buildMobileLayout(dateLabel, context)
+            : _buildDesktopLayout(dateLabel, context),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(String dateLabel, BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2F3035),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(22),
+                child: _LeftSummary(
+                  amount: amount,
+                  dateLabel: dateLabel,
+                  exchangeId: exchangeId,
+                  isMobile: true,
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(22),
-                      child: _LeftSummary(
-                        amount: amount,
-                        dateLabel: dateLabel,
-                        exchangeId: exchangeId,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 6,
-                    child: _RightActions(exchangeId: exchangeId),
-                  ),
-                ],
+              _RightActions(
+                exchangeId: exchangeId,
+                isMobile: true,
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildDesktopLayout(String dateLabel, BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1100),
+        child: Container(
+          margin: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2F3035),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: _LeftSummary(
+                    amount: amount,
+                    dateLabel: dateLabel,
+                    exchangeId: exchangeId,
+                    isMobile: false,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 6,
+                child: _RightActions(
+                  exchangeId: exchangeId,
+                  isMobile: false,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -61,11 +104,13 @@ class _LeftSummary extends StatelessWidget {
   final double amount;
   final String dateLabel;
   final String? exchangeId;
+  final bool isMobile;
 
   const _LeftSummary({
     required this.amount,
     required this.dateLabel,
     required this.exchangeId,
+    required this.isMobile,
   });
 
   @override
@@ -124,7 +169,7 @@ class _LeftSummary extends StatelessWidget {
             style: const TextStyle(color: Colors.white38, fontSize: 12),
           ),
         ],
-        const Spacer(),
+        if (!isMobile) const Spacer(),
       ],
     );
   }
@@ -132,7 +177,12 @@ class _LeftSummary extends StatelessWidget {
 
 class _RightActions extends StatelessWidget {
   final String? exchangeId;
-  const _RightActions({required this.exchangeId});
+  final bool isMobile; 
+  
+  const _RightActions({
+    required this.exchangeId,
+    required this.isMobile,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -142,50 +192,50 @@ class _RightActions extends StatelessWidget {
       required String imageAsset,
       required VoidCallback onTap,
     }) {
-      return Expanded(
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              image: DecorationImage(
-                image: AssetImage(imageAsset),
-                fit: BoxFit.cover,
-                colorFilter: const ColorFilter.mode(
-                  Color(0x66000000),
-                  BlendMode.darken,
-                ),
+      final cardContent = InkWell(
+        onTap: onTap,
+        child: Container(
+          height: isMobile ? 200 : null, 
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            image: DecorationImage(
+              image: AssetImage(imageAsset),
+              fit: BoxFit.cover,
+              colorFilter: const ColorFilter.mode(
+                Color(0x66000000),
+                BlendMode.darken,
               ),
             ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    textAlign: TextAlign.center,
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           ),
         ),
       );
+      return isMobile ? cardContent : Expanded(child: cardContent);
     }
 
     return Padding(
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.fromLTRB(22, isMobile ? 0 : 22, 22, 22),
       child: Column(
         children: [
           card(

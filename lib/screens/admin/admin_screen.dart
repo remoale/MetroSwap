@@ -28,9 +28,11 @@ class _AdminScreenState extends State<AdminScreen> {
   int _suspendedUsers = 0; 
   
   Map<String, int> _careerCounts = {};
-
   // Guarda la actividad semanal de lunes a domingo.
   List<double> _weeklyActivity = List.filled(7, 0.0);
+  
+  // Guarda los libros con mayor demanda en los intercambios.
+  List<MapEntry<String, int>> _topDemandedBooks = [];
 
   final List<Color> _chartColors = [
     const Color(0xFFEF476F), 
@@ -98,7 +100,7 @@ class _AdminScreenState extends State<AdminScreen> {
             dt = DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now();
           }
           
-          int dayIndex = dt.weekday - 1; // 1 (Lun) a 7 (Dom) -> 0 a 6
+          int dayIndex = dt.weekday - 1; 
           if (dayIndex >= 0 && dayIndex < 7) {
             tempWeeklyActivity[dayIndex] += 1;
           }
@@ -108,6 +110,7 @@ class _AdminScreenState extends State<AdminScreen> {
       // Obtiene los intercambios y suma las contribuciones completadas.
       int exchangesCount = 0;
       double tempContributions = 0.0;
+      Map<String, int> tempBookDemand = {};
       
       try {
         final exchangesSnap = await FirebaseFirestore.instance.collection('exchanges').get();
@@ -116,20 +119,29 @@ class _AdminScreenState extends State<AdminScreen> {
         for (var doc in exchangesSnap.docs) {
           final data = doc.data();
           
-          // Usa el campo de estado disponible en cada documento.
-          String status = (data['status'] ?? data['estado'] ?? '').toString().toLowerCase();
-          
-          // Suma la contribución cuando el intercambio está completado.
-          if (status == 'completado' || status == 'completed') {
-            // Usa el monto registrado en `price` cuando existe.
-            if (data.containsKey('price') && data['price'] != null) {
-              tempContributions += (data['price'] as num).toDouble();
+          // Suma los montos registrados en intercambios completados.
+          String status = (data['status'] ?? '').toString().toLowerCase();
+          if (status == 'completed') {
+            var monto = data['paypalAmount'] ?? data['price'] ?? data['amount'] ?? data['contribution'];
+            if (monto != null) {
+              tempContributions += double.tryParse(monto.toString()) ?? 0.0;
             }
+          }
+
+          // Cuenta cuántas veces aparece cada libro en los intercambios.
+          String bookTitle = (data['postTitle'] ?? 'Desconocido').toString();
+          if (bookTitle.isNotEmpty && bookTitle != 'Desconocido') {
+            tempBookDemand[bookTitle] = (tempBookDemand[bookTitle] ?? 0) + 1;
           }
         }
       } catch (e) {
         debugPrint("Error al leer la colección exchanges: $e");
       }
+
+      // Ordena la demanda y conserva los cinco libros principales.
+      var sortedDemand = tempBookDemand.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value)); // Orden descendente
+      List<MapEntry<String, int>> top5Books = sortedDemand.take(5).toList();
 
       if (mounted) {
         setState(() {
@@ -140,6 +152,7 @@ class _AdminScreenState extends State<AdminScreen> {
           _weeklyActivity = tempWeeklyActivity;
           _totalExchanges = exchangesCount; 
           _totalContributions = tempContributions; 
+          _topDemandedBooks = top5Books;
           _isLoading = false;
         });
       }
@@ -160,6 +173,13 @@ class _AdminScreenState extends State<AdminScreen> {
     return maxVal + 2.0; 
   }
 
+  // Calcula el valor máximo de la gráfica de barras.
+  double _getMaxBarY() {
+    if (_topDemandedBooks.isEmpty) return 5.0;
+    double maxVal = _topDemandedBooks.first.value.toDouble();
+    return maxVal + 2.0;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,9 +187,7 @@ class _AdminScreenState extends State<AdminScreen> {
       body: Column(
         children: [
           const MetroSwapNavbar(developmentNav: false, heading: 'Dashboard'),
-          
           const SizedBox(height: 20),
-
           Expanded(
             child: _isAuthorizing
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
@@ -179,223 +197,52 @@ class _AdminScreenState extends State<AdminScreen> {
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
                 : SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 10.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
                       children: [
-                        Expanded(
-                          flex: 5,
-                          child: Column(
-                            children: [
-                              Row(
+                        // Agrupa las métricas principales y los gráficos base.
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: Column(
                                 children: [
-                                  Expanded(
-                                    child: _buildKpiCard(
-                                      'Total productos', 
-                                      _totalProducts.toString(), 
-                                      Icons.computer,
-                                      onTap: _openManagePosts,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(child: _buildKpiCard('Total productos', _totalProducts.toString(), Icons.computer, onTap: _openManagePosts)),
+                                      const SizedBox(width: 15),
+                                      Expanded(child: _buildKpiCard('Miembros', _totalMembers.toString(), Icons.person, onTap: _openManageProfiles)),
+                                      const SizedBox(width: 15),
+                                      Expanded(child: _buildKpiCard('Suspendidos', _suspendedUsers.toString(), Icons.person_off, onTap: () => _openManageProfiles(showOnlySuspended: true))),
+                                    ],
                                   ),
-                                  const SizedBox(width: 15),
-                                  Expanded(
-                                    child: _buildKpiCard(
-                                      'Miembros', 
-                                      _totalMembers.toString(), 
-                                      Icons.person,
-                                      onTap: _openManageProfiles,
-                                    ),
+                                  const SizedBox(height: 15),
+                                  Row(
+                                    children: [
+                                      Expanded(child: _buildKpiCard('Total contribuciones', '\$${_totalContributions.toStringAsFixed(2)}', Icons.attach_money, isLarge: true)),
+                                      const SizedBox(width: 15),
+                                      Expanded(child: _buildKpiCard('Total Intercambios', _totalExchanges.toString(), Icons.swap_horiz, isLarge: true)),
+                                    ],
                                   ),
-                                  const SizedBox(width: 15),
-                                  Expanded(
-                                    child: _buildKpiCard(
-                                      'Suspendidos', 
-                                      _suspendedUsers.toString(), 
-                                      Icons.person_off,
-                                      onTap: () => _openManageProfiles(showOnlySuspended: true),
-                                    ),
-                                  ),
+                                  const SizedBox(height: 15),
+                                  _buildLineChart(),
                                 ],
                               ),
-                              const SizedBox(height: 15),
-                              Row(
-                                children: [
-                                  Expanded(child: _buildKpiCard('Total contribuciones', '\$$_totalContributions', Icons.attach_money, isLarge: true)),
-                                  const SizedBox(width: 15),
-                                  Expanded(child: _buildKpiCard('Total Intercambios', _totalExchanges.toString(), Icons.swap_horiz, isLarge: true)),
-                                ],
-                              ),
-                              const SizedBox(height: 15),
-                              
-                              Container(
-                                width: double.infinity,
-                                height: 260, 
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(15),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Actividad Semanal',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Expanded(
-                                      child: LineChart(
-                                        LineChartData(
-                                          lineTouchData: LineTouchData(
-                                            touchTooltipData: LineTouchTooltipData(
-                                              getTooltipColor: (touchedSpot) => Colors.black87, 
-                                              getTooltipItems: (touchedSpots) {
-                                                return touchedSpots.map((LineBarSpot touchedSpot) {
-                                                  return LineTooltipItem(
-                                                    touchedSpot.y.toInt().toString(),
-                                                    const TextStyle(
-                                                      color: Colors.white, 
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 16,
-                                                    ),
-                                                  );
-                                                }).toList();
-                                              },
-                                            ),
-                                          ),
-                                          gridData: FlGridData(
-                                            show: true,
-                                            drawVerticalLine: false,
-                                            horizontalInterval: 2,
-                                            getDrawingHorizontalLine: (value) {
-                                              return FlLine(color: Colors.grey.withValues(alpha: 0.2), strokeWidth: 1);
-                                            },
-                                          ),
-                                          titlesData: FlTitlesData(
-                                            show: true,
-                                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                            bottomTitles: AxisTitles(
-                                              sideTitles: SideTitles(
-                                                showTitles: true,
-                                                reservedSize: 30,
-                                                interval: 1,
-                                                getTitlesWidget: (value, meta) {
-                                                  const style = TextStyle(color: Colors.grey, fontSize: 12);
-                                                  Widget text;
-                                                  switch (value.toInt()) {
-                                                    case 0: text = const Text('Lun', style: style); break;
-                                                    case 1: text = const Text('Mar', style: style); break;
-                                                    case 2: text = const Text('Mié', style: style); break;
-                                                    case 3: text = const Text('Jue', style: style); break;
-                                                    case 4: text = const Text('Vie', style: style); break;
-                                                    case 5: text = const Text('Sáb', style: style); break;
-                                                    case 6: text = const Text('Dom', style: style); break;
-                                                    default: text = const Text('', style: style); break;
-                                                  }
-                                                  return SideTitleWidget(meta: meta, child: text);
-                                                },
-                                              ),
-                                            ),
-                                            leftTitles: AxisTitles(
-                                              sideTitles: SideTitles(
-                                                showTitles: true,
-                                                interval: 2,
-                                                reservedSize: 30,
-                                                getTitlesWidget: (value, meta) {
-                                                  return Text(value.toInt().toString(), style: const TextStyle(color: Colors.grey, fontSize: 12));
-                                                },
-                                              ),
-                                            ),
-                                          ),
-                                          borderData: FlBorderData(show: false),
-                                          minX: 0, maxX: 6, minY: 0, maxY: _getMaxY(), 
-                                          lineBarsData: [
-                                            LineChartBarData(
-                                              spots: [
-                                                FlSpot(0, _weeklyActivity[0]), 
-                                                FlSpot(1, _weeklyActivity[1]), 
-                                                FlSpot(2, _weeklyActivity[2]), 
-                                                FlSpot(3, _weeklyActivity[3]), 
-                                                FlSpot(4, _weeklyActivity[4]), 
-                                                FlSpot(5, _weeklyActivity[5]), 
-                                                FlSpot(6, _weeklyActivity[6]), 
-                                              ],
-                                              isCurved: true,
-                                              color: const Color(0xFFC93C20), 
-                                              barWidth: 4,
-                                              isStrokeCapRound: true,
-                                              dotData: const FlDotData(show: true),
-                                              belowBarData: BarAreaData(
-                                                show: true,
-                                                color: const Color(0xFFC93C20).withValues(alpha: 0.1), 
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 30),
+                            Expanded(
+                              flex: 4,
+                              child: _buildPieChartCard(),
+                            ),
+                          ],
                         ),
                         
-                        const SizedBox(width: 30),
-
-                        Expanded(
-                          flex: 4,
-                          child: Container(
-                            height: 480,
-                            padding: const EdgeInsets.all(25),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(15),
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .05), blurRadius: 10)],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Estadísticas', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 20),
-                                Expanded(
-                                  child: _careerCounts.isEmpty 
-                                    ? const Center(child: Text('No hay datos de carreras aún'))
-                                    : Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          PieChart(
-                                            PieChartData(
-                                              sectionsSpace: 2,
-                                              centerSpaceRadius: 80,
-                                              sections: _getChartSections(),
-                                            ),
-                                          ),
-                                          const Text(
-                                            'Carreras\nsolicitantes',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                          ),
-                                        ],
-                                      ),
-                                ),
-                                const SizedBox(height: 20),
-                                _buildLegend(), 
-                              ],
-                            ),
-                          ),
-                        ),
+                        const SizedBox(height: 30),
+                        
+                        // Muestra los libros con mayor demanda.
+                        _buildTopBooksBarChart(),
+                        
+                        const SizedBox(height: 30),
                       ],
                     ),
                   ),
@@ -406,24 +253,228 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  Future<void> _openManagePosts() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ManagePostsScreen()),
+  Widget _buildLineChart() {
+    return Container(
+      width: double.infinity,
+      height: 260, 
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Actividad Semanal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+          const SizedBox(height: 20),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (touchedSpot) => Colors.black87, 
+                    getTooltipItems: (touchedSpots) => touchedSpots.map((spot) => LineTooltipItem(spot.y.toInt().toString(), const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))).toList(),
+                  ),
+                ),
+                gridData: FlGridData(
+                  show: true, drawVerticalLine: false, horizontalInterval: 2,
+                  getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.withValues(alpha: 0.2), strokeWidth: 1),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true, reservedSize: 30, interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        const style = TextStyle(color: Colors.grey, fontSize: 12);
+                        Widget text;
+                        switch (value.toInt()) {
+                          case 0: text = const Text('Lun', style: style); break;
+                          case 1: text = const Text('Mar', style: style); break;
+                          case 2: text = const Text('Mié', style: style); break;
+                          case 3: text = const Text('Jue', style: style); break;
+                          case 4: text = const Text('Vie', style: style); break;
+                          case 5: text = const Text('Sáb', style: style); break;
+                          case 6: text = const Text('Dom', style: style); break;
+                          default: text = const Text('', style: style); break;
+                        }
+                        return SideTitleWidget(meta: meta, child: text);
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true, interval: 2, reservedSize: 30,
+                      getTitlesWidget: (value, meta) => Text(value.toInt().toString(), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0, maxX: 6, minY: 0, maxY: _getMaxY(), 
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: List.generate(7, (index) => FlSpot(index.toDouble(), _weeklyActivity[index])),
+                    isCurved: true, color: const Color(0xFFC93C20), barWidth: 4, isStrokeCapRound: true,
+                    dotData: const FlDotData(show: true),
+                    belowBarData: BarAreaData(show: true, color: const Color(0xFFC93C20).withValues(alpha: 0.1)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildPieChartCard() {
+    return Container(
+      height: 480,
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .05), blurRadius: 10)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Estadísticas', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 20),
+          Expanded(
+            child: _careerCounts.isEmpty 
+              ? const Center(child: Text('No hay datos de carreras aún'))
+              : Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PieChart(
+                      PieChartData(sectionsSpace: 2, centerSpaceRadius: 80, sections: _getChartSections()),
+                    ),
+                    const Text('Carreras\nsolicitantes', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+          ),
+          const SizedBox(height: 20),
+          _buildLegend(), 
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopBooksBarChart() {
+    return Container(
+      width: double.infinity,
+      height: 350,
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Libros con mayor demanda (Top 5)', 
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)
+          ),
+          const SizedBox(height: 30),
+          Expanded(
+            child: _topDemandedBooks.isEmpty
+                ? const Center(child: Text('No hay solicitudes suficientes para mostrar métricas', style: TextStyle(color: Colors.grey)))
+                : BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: _getMaxBarY(),
+                      barTouchData: BarTouchData(
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipColor: (_) => Colors.black87,
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            String title = _topDemandedBooks[group.x.toInt()].key;
+                            return BarTooltipItem(
+                              '$title\n${rod.toY.toInt()} solicitudes',
+                              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            );
+                          },
+                        ),
+                      ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 40,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              if (value.toInt() >= _topDemandedBooks.length) return const SizedBox.shrink();
+                              String fullTitle = _topDemandedBooks[value.toInt()].key;
+                              // Acorta el título cuando no cabe completo.
+                              String shortTitle = fullTitle.length > 15 ? '${fullTitle.substring(0, 12)}...' : fullTitle;
+                              
+                              return SideTitleWidget(
+                                meta: meta,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(shortTitle, style: const TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: 1,
+                            reservedSize: 30,
+                            getTitlesWidget: (value, meta) {
+                              if (value % 1 != 0) return const SizedBox.shrink();
+                              return Text(value.toInt().toString(), style: const TextStyle(color: Colors.grey, fontSize: 12));
+                            },
+                          ),
+                        ),
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      ),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 1,
+                        getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.withValues(alpha: 0.2), strokeWidth: 1),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      barGroups: List.generate(
+                        _topDemandedBooks.length,
+                        (i) => BarChartGroupData(
+                          x: i,
+                          barRods: [
+                            BarChartRodData(
+                              toY: _topDemandedBooks[i].value.toDouble(),
+                              color: _chartColors[i % _chartColors.length],
+                              width: 35,
+                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(6), topRight: Radius.circular(6)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openManagePosts() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => const ManagePostsScreen()));
     if (!mounted || !_isAuthorized) return;
     setState(() => _isLoading = true);
     await _fetchDashboardData();
   }
 
   Future<void> _openManageProfiles({bool showOnlySuspended = false}) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            ManageProfilesScreen(showOnlySuspended: showOnlySuspended),
-      ),
-    );
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => ManageProfilesScreen(showOnlySuspended: showOnlySuspended)));
     if (!mounted || !_isAuthorized) return;
     setState(() => _isLoading = true);
     await _fetchDashboardData();
@@ -436,17 +487,9 @@ class _AdminScreenState extends State<AdminScreen> {
         children: [
           const Icon(Icons.lock_outline, size: 52, color: Colors.grey),
           const SizedBox(height: 12),
-          const Text(
-            'No tienes permisos de administrador para acceder a este panel.',
-            style: TextStyle(fontSize: 16, color: Colors.black87),
-            textAlign: TextAlign.center,
-          ),
+          const Text('No tienes permisos de administrador para acceder a este panel.', style: TextStyle(fontSize: 16, color: Colors.black87), textAlign: TextAlign.center),
           const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back),
-            label: const Text('Volver'),
-          ),
+          ElevatedButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back), label: const Text('Volver')),
         ],
       ),
     );
@@ -455,7 +498,6 @@ class _AdminScreenState extends State<AdminScreen> {
   List<PieChartSectionData> _getChartSections() {
     List<PieChartSectionData> sections = [];
     int colorIndex = 0;
-
     _careerCounts.forEach((career, careerCount) {
       final percentage = (careerCount / _totalMembers) * 100;
       sections.add(
@@ -469,16 +511,13 @@ class _AdminScreenState extends State<AdminScreen> {
       );
       colorIndex++;
     });
-
     return sections;
   }
 
   Widget _buildLegend() {
     int colorIndex = 0;
     return Wrap(
-      spacing: 15,
-      runSpacing: 10,
-      alignment: WrapAlignment.center,
+      spacing: 15, runSpacing: 10, alignment: WrapAlignment.center,
       children: _careerCounts.keys.map((career) {
         final color = _chartColors[colorIndex % _chartColors.length];
         colorIndex++;
@@ -497,16 +536,13 @@ class _AdminScreenState extends State<AdminScreen> {
   Widget _buildKpiCard(String title, String value, IconData icon, {bool isLarge = false, VoidCallback? onTap}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        color: Colors.white, borderRadius: BorderRadius.circular(15),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Material(
         color: Colors.transparent, 
         child: InkWell(
-          onTap: onTap, 
-          borderRadius: BorderRadius.circular(15),
-          hoverColor: Colors.orange.withValues(alpha: 0.05), 
+          onTap: onTap, borderRadius: BorderRadius.circular(15), hoverColor: Colors.orange.withValues(alpha: 0.05), 
           child: Padding(
             padding: EdgeInsets.all(isLarge ? 25.0 : 15.0),
             child: Column(
@@ -515,15 +551,12 @@ class _AdminScreenState extends State<AdminScreen> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.orange.withValues(alpha: 0.2)),
+                      padding: const EdgeInsets.all(8), decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.orange.withValues(alpha: 0.2)),
                       child: Icon(icon, color: const Color(0xFFFF5C00), size: isLarge ? 28 : 20),
                     ),
                     const SizedBox(width: 10),
                     Expanded(child: Text(title, style: TextStyle(color: Colors.grey[700], fontSize: isLarge ? 16 : 12), maxLines: 2)),
-                    
-                    if (onTap != null)
-                      Icon(Icons.chevron_right, color: Colors.grey.withValues(alpha: 0.5), size: 20),
+                    if (onTap != null) Icon(Icons.chevron_right, color: Colors.grey.withValues(alpha: 0.5), size: 20),
                   ],
                 ),
                 const SizedBox(height: 15),
