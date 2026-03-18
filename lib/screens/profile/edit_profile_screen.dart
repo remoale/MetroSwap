@@ -5,8 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../controllers/profile_controller.dart'; 
 import '../../models/user_model.dart'; 
 import '../../widgets/profile_avatar.dart'; 
-import '../../widgets/metroswap_navbar.dart';
-import '../../widgets/metroswap_footer.dart';
+import '../../widgets/metroswap_layout.dart'; 
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -18,6 +17,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   static const List<String> _unimetCareers = [
+    'Profesor',
     'Ciencias Administrativas',
     'Comunicación Social y Empresarial',
     'Contaduría Pública',
@@ -99,6 +99,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> save() async {
+    final nombre = nameCtrl.text.trim();
+    final formatoNombre = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+(\s+[a-zA-ZáéíóúÁÉÍÓÚñÑ]+)+$');
+    
+    if (!formatoNombre.hasMatch(nombre)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Debe ingresar al menos nombre y apellido, sin dígitos numéricos."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return; 
+    }
+
+    final telefono = phoneCtrl.text.trim();
+    final formatoTelefono = RegExp(r'^[0-9]{10,12}$'); 
+    
+    if (!formatoTelefono.hasMatch(telefono)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Ingrese un número de teléfono válido (solo 10 o 12 dígitos numéricos, sin puntos ni guiones)."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    final carnet = studentIdCtrl.text.trim();
+    final formatoCarnet = RegExp(r'^[0-9]{6,15}$');
+    
+    if (carnet.isEmpty || !formatoCarnet.hasMatch(carnet)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Ingrese un carnet válido (entre 6 y 15 dígitos numéricos)."),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     if (_isSaving) return;
     setState(() => _isSaving = true);
 
@@ -111,7 +153,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     editableUser.studentId = _normalizeOptional(studentIdCtrl.text);
     
-    // Convertir libros separados por coma a lista 
+    // Convertir materiales separados por coma a lista 
     editableUser.books = booksCtrl.text 
     .split(",") 
     .map((e) => e.trim()) 
@@ -142,132 +184,152 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFEFECEF),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const MetroSwapNavbar(developmentNav: true, heading: 'Editar Perfil'),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isCompact = constraints.maxWidth < 760;
-                  return SingleChildScrollView(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1100),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 20,
+    return MetroSwapLayout(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= 700;
+          final isCompact = constraints.maxWidth < 760;
+
+          return SingleChildScrollView(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 0 : 24,
+                    vertical: 20,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          ProfileAvatar(
+                            imageUrl: editableUser.photoUrl,
+                            localImageBytes: newImageBytes,
+                            size: 38,
+                            onTap: pickImage,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  ProfileAvatar(
-                                    imageUrl: editableUser.photoUrl,
-                                    localImageBytes: newImageBytes,
-                                    size: 38,
-                                    onTap: pickImage,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextField(
+                                  controller: nameCtrl,
+                                  style: const TextStyle(
+                                    color: Color(0xFF54515A),
+                                    fontSize: 22,
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: nameCtrl,
-                                      style: const TextStyle(
-                                        color: Color(0xFF54515A),
-                                        fontSize: 22,
-                                      ),
-                                      decoration: _fieldDecoration("Nombre de usuario"),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 18),
-                              Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: const Color(0xFF5A5860),
-                                    width: 3,
-                                  ),
+                                  decoration: _fieldDecoration("Nombre de usuario"),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 28,
-                                  vertical: 20,
-                                ),
-                                child: Column(
+                                const SizedBox(height: 4),
+                                Row(
                                   children: [
-                                    const Text(
-                                      "Información del usuario",
-                                      style: TextStyle(
-                                        color: Color(0xFF6A6770),
-                                        fontSize: 26,
+                                    Text(
+                                      '${editableUser.reputation}', 
+                                      style: const TextStyle(
+                                        fontSize: 22, 
+                                        fontWeight: FontWeight.bold, 
+                                        color: Color(0xFFFF9800)
                                       ),
                                     ),
-                                    const SizedBox(height: 18),
-                                    isCompact
-                                        ? Column(
-                                            children: [
-                                              _buildLeftFields(),
-                                              const SizedBox(height: 18),
-                                              _buildRightFields(),
-                                            ],
-                                          )
-                                        : Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(child: _buildLeftFields()),
-                                              const SizedBox(width: 30),
-                                              Expanded(child: _buildRightFields()),
-                                            ],
-                                          ),
-                                    const SizedBox(height: 24),
-                                    SizedBox(
-                                      width: 190,
-                                      child: ElevatedButton(
-                                        onPressed: _isSaving ? null : save,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              const Color(0xFFFF5C00),
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                        child: _isSaving
-                                            ? const SizedBox(
-                                                width: 18,
-                                                height: 18,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.white,
-                                                ),
-                                              )
-                                            : const Text("Guardar cambios"),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.star, 
+                                      color: Color.fromARGB(242, 241, 255, 52), 
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '(${editableUser.tradesCount})', 
+                                      style: const TextStyle(
+                                        fontSize: 18, 
+                                        fontWeight: FontWeight.w500, 
+                                        color: Colors.black
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF5A5860),
+                            width: 3,
                           ),
                         ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isCompact ? 16 : 28, 
+                          vertical: 20,
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Información del usuario",
+                              style: TextStyle(
+                                color: Color(0xFF6A6770),
+                                fontSize: 26,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            isCompact
+                                ? Column(
+                                    children: [
+                                      _buildLeftFields(),
+                                      const SizedBox(height: 18),
+                                      _buildRightFields(),
+                                    ],
+                                  )
+                                : Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: _buildLeftFields()),
+                                      const SizedBox(width: 30),
+                                      Expanded(child: _buildRightFields()),
+                                    ],
+                                  ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: 190,
+                              child: ElevatedButton(
+                                onPressed: _isSaving ? null : save,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFF5C00),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                child: _isSaving
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text("Guardar cambios"),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                ),
               ),
             ),
-            const MetroSwapFooter(),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -308,7 +370,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           keyboardType: TextInputType.phone,
         ),
         const SizedBox(height: 16),
-        _buildFieldLabel("Libros:"),
+        _buildFieldLabel("Materiales:"),
         _buildEditableField(
           controller: booksCtrl,
           hintText: "Separados por coma",
@@ -446,4 +508,3 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return normalizedCareer;
   }
 }
-

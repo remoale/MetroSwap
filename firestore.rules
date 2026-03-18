@@ -1,8 +1,89 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() == "administrador.metroswap@correo.unimet.edu.ve";
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function matchesExistingOrMissing(field) {
+      return !(field in resource.data) || request.resource.data[field] == resource.data[field];
+    }
+
+    function isExchangeParticipant(exchangeData) {
+      return isSignedIn()
+        && exchangeData != null
+        && request.auth.uid in [
+          exchangeData.ownerUid,
+          exchangeData.targetUid,
+          exchangeData.requesterUid,
+        ];
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && (
+          isAdmin()
+          || (
+            isOwner(userId)
+            && request.resource.data.uid == userId
+            && request.auth.token.email != null
+            && request.resource.data.email is string
+            && request.resource.data.email.lower() == request.auth.token.email.lower()
+            && request.resource.data.role != 'admin'
+          )
+        );
+      allow update: if isSignedIn()
+        && (
+          isAdmin()
+          || (
+            isOwner(userId)
+            && matchesExistingOrMissing('uid')
+            && matchesExistingOrMissing('email')
+            && matchesExistingOrMissing('role')
+            && matchesExistingOrMissing('status')
+          )
+        );
+      allow delete: if false;
+
+      match /notifications/{notificationId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, delete: if false;
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read', 'readAt'])
+          && request.resource.data.read == true;
+      }
+    }
+
+    match /user_ratings/{userId}/entries/{entryId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.fromUid
+        && request.resource.data.toUid == userId
+        && request.resource.data.tradeId == entryId
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update: if isSignedIn()
+        && resource.data.fromUid == request.auth.uid
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid == userId
+        && request.resource.data.tradeId == entryId
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow delete: if false;
     }
 
     match /posts/{postId} {
@@ -10,7 +91,30 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if request.auth != null
-        && resource.data.ownerUid == request.auth.uid;
+        && (resource.data.ownerUid == request.auth.uid || isAdmin());
+    }
+
+    match /exchanges/{exchangeId} {
+      allow read: if isExchangeParticipant(resource.data) || isAdmin();
+      allow create: if isSignedIn()
+        && request.resource.data.requesterUid == request.auth.uid;
+      allow update: if isExchangeParticipant(resource.data)
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'status',
+          'updatedAt',
+        ]);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isExchangeParticipant(
+          get(/databases/$(database)/documents/exchanges/$(exchangeId)).data
+        );
+        allow create: if isExchangeParticipant(
+            get(/databases/$(database)/documents/exchanges/$(exchangeId)).data
+          )
+          && request.resource.data.senderUid == request.auth.uid;
+        allow update, delete: if false;
+      }
     }
   }
 }

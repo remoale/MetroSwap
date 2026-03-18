@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/models/post_model.dart';
+import 'package:metroswap/screens/exchange/material_detail_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+import 'package:metroswap/widgets/metroswap_layout.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -68,20 +70,25 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFE4E1E6),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
+    return MetroSwapLayout(
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const MetroSwapNavbar(developmentNav: true, heading: 'Inicio'),
+            if (!isMobile)
+              const MetroSwapNavbar(developmentNav: true, heading: 'Inicio'),
+            
             SizedBox(
-              height: 330,
+              height: isMobile ? 280 : 330, 
               child: Stack(
                 alignment: Alignment.topCenter,
                 children: [
                   Container(
-                    height: 300,
+                    height: isMobile ? 250 : 300,
                     width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
                       image: DecorationImage(
                         image: const AssetImage(
@@ -89,25 +96,29 @@ class HomeScreen extends StatelessWidget {
                         ),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
-                          Colors.black.withValues(alpha: 0.5),
+                          Colors.orange.withValues(alpha: -8),
                           BlendMode.darken,
                         ),
                       ),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
+                    child: Text(
                       'Todo lo que necesitas para tu trimestre',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 42,
+                        fontSize: isMobile ? 32 : 42, 
                         fontWeight: FontWeight.w300,
+                        shadows: const [
+                          Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54),
+                        ],
                       ),
                     ),
                   ),
                   Positioned(
                     bottom: 0,
                     child: Container(
-                      width: 600,
+                      width: isMobile ? screenWidth - 40 : 600, 
                       height: 60,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -121,17 +132,16 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                       child: SearchAnchor(
+                        isFullScreen: false, 
                         builder: (context, controller) {
                           return SearchBar(
                             controller: controller,
-                            hintText: 'Buscar por titulo, material o materia..',
+                            hintText: 'Buscar por título, material o materia...',
                             hintStyle: const WidgetStatePropertyAll(
                               TextStyle(color: Colors.grey, fontSize: 16),
                             ),
-                            backgroundColor:
-                                const WidgetStatePropertyAll(
-                                  Colors.transparent,
-                                ),
+                            backgroundColor: 
+                            const WidgetStatePropertyAll(Colors.transparent),
                             elevation: const WidgetStatePropertyAll(0),
                             onTap: controller.openView,
                             onChanged: (_) => controller.openView(),
@@ -156,9 +166,7 @@ class HomeScreen extends StatelessWidget {
                           }
 
                           try {
-                            final results = await _searchPosts(
-                              controller.text,
-                            );
+                            final results = await _searchPosts(controller.text);
                             if (results.isEmpty) {
                               return const [
                                 ListTile(
@@ -172,19 +180,59 @@ class HomeScreen extends StatelessWidget {
                             }
 
                             return results.map((data) {
-                              final title =
-                                  data['title']?.toString() ?? 'Sin titulo';
+                              final title = data['title']?.toString() ?? 'Sin titulo';
+                              final imageUrl = data['imageUrl']?.toString();
+                              final post = PostModel.fromMap(data);
+
                               return ListTile(
-                                leading: const Icon(Icons.book),
-                                title: Text(title),
-                                subtitle: Text(_buildSuggestionSubtitle(data)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                leading: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: SizedBox(
+                                    width: 60,
+                                    height: 60,
+                                    child: imageUrl != null && imageUrl.isNotEmpty
+                                        ? Image.network(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            webHtmlElementStrategy: kIsWeb
+                                                ? WebHtmlElementStrategy.prefer
+                                                : WebHtmlElementStrategy.never,
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              color: Colors.grey[300],
+                                              child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                            ),
+                                          )
+                                        : Container(
+                                            color: Colors.grey[300],
+                                            child: const Icon(Icons.book, color: Colors.grey),
+                                          ),
+                                  ),
+                                ),
+                                title: Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    _buildSuggestionSubtitle(data),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                                  ),
+                                ),
                                 onTap: () {
                                   controller.closeView(title);
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          ResultDetailScreen(data: data),
+                                      builder: (context) => MaterialDetailScreen(
+                                        post: post,
+                                      ),
                                     ),
                                   );
                                 },
@@ -194,12 +242,8 @@ class HomeScreen extends StatelessWidget {
                             return [
                               ListTile(
                                 leading: const Icon(Icons.lock_outline),
-                                title: const Text(
-                                  'No se pudo consultar publicaciones.',
-                                ),
-                                subtitle: Text(
-                                  e.message ?? 'Intenta nuevamente.',
-                                ),
+                                title: const Text('No se pudo consultar publicaciones.'),
+                                subtitle: Text(e.message ?? 'Intenta nuevamente.'),
                               ),
                             ];
                           }
@@ -210,22 +254,29 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 80),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            
+            SizedBox(height: isMobile ? 40 : 80),
+            Wrap(
+              spacing: 80, 
+              runSpacing: 40, 
+              alignment: WrapAlignment.center,
               children: [
                 _buildCategoryCard(
                   title: 'Libros',
                   imagePath: 'assets/images/libros.png',
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
                 ),
-                const SizedBox(width: 80),
                 _buildCategoryCard(
                   title: 'Materiales',
                   imagePath: 'assets/images/materiales.png',
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
                 ),
               ],
             ),
-            const SizedBox(height: 100),
+            
+            SizedBox(height: isMobile ? 60 : 100),
             const MetroSwapFooter(),
           ],
         ),
@@ -236,6 +287,8 @@ class HomeScreen extends StatelessWidget {
   Widget _buildCategoryCard({
     required String title,
     required String imagePath,
+    required bool isMobile,
+    required double screenWidth,
   }) {
     return Column(
       children: [
@@ -243,17 +296,17 @@ class HomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
             imagePath,
-            width: 300,
-            height: 200,
+            width: isMobile ? screenWidth - 60 : 300, 
+            height: isMobile ? 180 : 200,
             fit: BoxFit.cover,
           ),
         ),
         const SizedBox(height: 15),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.black87,
-            fontSize: 32,
+            fontSize: isMobile ? 28 : 32, 
             fontWeight: FontWeight.w300,
           ),
         ),

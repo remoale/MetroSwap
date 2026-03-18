@@ -5,11 +5,12 @@ Plataforma que permite a los estudiantes y docentes publicar, buscar y gestionar
 ---
 
 <a href="https://metroswap-73a05.web.app/">
-  <img width="1705" height="1170" alt="image" src="https://github.com/user-attachments/assets/b8e887a1-6c70-402b-aa58-153b47057a6a" />
+  <img width="1704" height="1165" alt="image" src="https://github.com/user-attachments/assets/27393aa3-ba56-4269-ac91-c9972113fb5c" />
 </a>
 
 ---
 
 ## Tech Stack
 - Flutter
-- Firebase (Authentication, FireStore, Storage, Hosting)
+- Firebase (Authentication, FireStore, Storage, Hosting, Functions)
+- TypeScript

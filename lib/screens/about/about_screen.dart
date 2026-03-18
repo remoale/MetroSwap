@@ -1,90 +1,173 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
+import 'package:firebase_auth/firebase_auth.dart'; 
 import 'package:metroswap/widgets/metroswap_navbar.dart';
-import 'package:metroswap/widgets/metroswap_footer.dart'; // 1. Agregamos esta línea
+import 'package:metroswap/widgets/metroswap_footer.dart';
+import 'package:metroswap/widgets/metroswap_layout.dart'; 
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final bool isDesktop = MediaQuery.of(context).size.width > 850;
+    final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
+
+    Widget pageContent = Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 850) {
+            return _buildDesktopLayout();
+          } else {
+            return _buildMobileLayout();
+          }
+        },
+      ),
+    );
+
+    if (isLoggedIn) {
+      return MetroSwapLayout(
+        body: Column(
+          children: [
+            if (isDesktop)
+              const MetroSwapNavbar(
+                developmentNav: false, 
+                heading: 'Conócenos',
+              ),
+            pageContent,
+            const MetroSwapFooter(),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF333333), 
       body: Column(
         children: [
-          // 1. Navbar
-          const MetroSwapNavbar(developmentNav: true, heading: 'Conócenos'),
-
-          // 2. Cuerpo principal
-          Expanded(
-            child: Row(
-              children: [
-                // --- COLUMNA IZQUIERDA (Fondo mármol e integrantes) ---
-                Expanded(
-                  flex: 6, 
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/fondo_marmol.png'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    child: Center(
-                      // Usamos SingleChildScrollView por si la pantalla es muy pequeña
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // FILA 1: Forzamos 3 elementos
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildTeamMember(name: 'Diego Guzmán', age: '18', ig: '@diego_guzguz', imagePath: 'assets/images/diego.png'),
-                                _buildTeamMember(name: 'Derek Carvajal', age: '22', ig: '@dcarvajal_13', imagePath: 'assets/images/derek.png'),
-                                _buildTeamMember(name: 'Daniela Pacheco', age: '18', ig: '@dpacc_7', imagePath: 'assets/images/daniela.png'),
-                              ],
-                            ),
-                            const SizedBox(height: 50), // Espacio grande entre la fila 1 y 2
-                            // FILA 2: Forzamos 3 elementos
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildTeamMember(name: 'Simón Ananian', age: '20', ig: '@simon_ananian_hurtado', imagePath: 'assets/images/simon.png'),
-                                _buildTeamMember(name: 'Andrés Mujica', age: '20', ig: '@mujica550', imagePath: 'assets/images/andres.png'),
-                                _buildTeamMember(name: 'Remo Agostinelli', age: '21', ig: '@remoax', imagePath: 'assets/images/remo.png'),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // --- COLUMNA DERECHA (Foto trabajando) ---
-                Expanded(
-                  flex: 4, 
-                  child: Image.asset(
-                    'assets/images/equipo_trabajando.png', 
-                    fit: BoxFit.cover,
-                    height: double.infinity,
-                  ),
-                ),
-              ],
-            ),
+          MetroSwapNavbar(
+            developmentNav: true, 
+            heading: isDesktop ? 'Conócenos' : '', 
           ),
-
-          // 3. Footer
-          const MetroSwapFooter(), // 2. ¡Reemplazamos el Container por nuestro widget mágico!
+          pageContent,
+          const MetroSwapFooter(), 
         ],
       ),
     );
   }
 
-  // Widget auxiliar rediseñado con ClipRRect e Image.asset directo para máxima calidad web
+  // Diseño en computadora 
+  Widget _buildDesktopLayout() {
+    return Row(
+      children: [
+        // COLUMNA IZQUIERDA 
+        Expanded(
+          flex: 6, 
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/fondo_marmol.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // FILA 1: Forzamos 3 elementos
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTeamMember(name: 'Diego Guzmán', age: '18', ig: '@diego_guzguz', imagePath: 'assets/images/diego.png'),
+                        _buildTeamMember(name: 'Derek Carvajal', age: '22', ig: '@dcarvajal_13', imagePath: 'assets/images/derek.png'),
+                        _buildTeamMember(name: 'Daniela Pacheco', age: '18', ig: '@dpacc_7', imagePath: 'assets/images/daniela.png'),
+                      ],
+                    ),
+                    const SizedBox(height: 50),
+                    // FILA 2: Forzamos 3 elementos
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTeamMember(name: 'Simón Ananian', age: '20', ig: '@simon_ananian_hurtado', imagePath: 'assets/images/simon.png'),
+                        _buildTeamMember(name: 'Andrés Mujica', age: '20', ig: '@mujica550', imagePath: 'assets/images/andres.png'),
+                        _buildTeamMember(name: 'Remo Agostinelli', age: '21', ig: '@remoax', imagePath: 'assets/images/remo.png'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // COLUMNA DERECHA 
+        Expanded(
+          flex: 4, 
+          child: Image.asset(
+            'assets/images/equipo_trabajando.png', 
+            fit: BoxFit.cover,
+            height: double.infinity,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Diseño en móvil
+  Widget _buildMobileLayout() {
+    return Container(
+      width: double.infinity, 
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/fondo_marmol.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 30.0, bottom: 10.0),
+              child: Text(
+                'Conócenos',
+                style: TextStyle(
+                  fontSize: 28, 
+                  fontWeight: FontWeight.bold, 
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 30.0, left: 10.0, right: 10.0),
+              child: Wrap(
+                spacing: 20, 
+                runSpacing: 40, 
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildTeamMember(name: 'Diego Guzmán', age: '18', ig: '@diego_guzguz', imagePath: 'assets/images/diego.png'),
+                  _buildTeamMember(name: 'Derek Carvajal', age: '22', ig: '@dcarvajal_13', imagePath: 'assets/images/derek.png'),
+                  _buildTeamMember(name: 'Daniela Pacheco', age: '18', ig: '@dpacc_7', imagePath: 'assets/images/daniela.png'),
+                  _buildTeamMember(name: 'Simón Ananian', age: '20', ig: '@simon_ananian_hurtado', imagePath: 'assets/images/simon.png'),
+                  _buildTeamMember(name: 'Andrés Mujica', age: '20', ig: '@mujica550', imagePath: 'assets/images/andres.png'),
+                  _buildTeamMember(name: 'Remo Agostinelli', age: '21', ig: '@remoax', imagePath: 'assets/images/remo.png'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget auxiliar
   Widget _buildTeamMember({
     required String name,
     required String age,
@@ -97,7 +180,6 @@ class AboutScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start, 
         children: [
-          // Usamos ClipRRect en lugar de Container con DecorationImage para que no se pixele
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: Image.asset(
@@ -105,8 +187,8 @@ class AboutScreen extends StatelessWidget {
               width: 150,
               height: 190,
               fit: BoxFit.cover,
-              filterQuality: FilterQuality.high, // Fuerza el mejor escalado
-              isAntiAlias: true, // Suaviza los bordes 
+              filterQuality: FilterQuality.high, 
+              isAntiAlias: true, 
             ),
           ),
           const SizedBox(height: 12),

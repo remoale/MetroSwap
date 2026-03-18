@@ -3,16 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/user_model.dart';
 import 'storage_service.dart';
+import '../utils/admin_utils.dart';
 
 class FirestoreService {
-  static const String _adminEmail = 'administrador.metroswap@correo.unimet.edu.ve';
-
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final StorageService _storage = StorageService();
 
   String _resolveRoleFromEmail(String? email) {
     final normalized = email?.trim().toLowerCase() ?? '';
-    if (normalized == _adminEmail) {
+    if (isAdminEmail(normalized)) {
       return 'admin';
     }
     if (normalized.endsWith('@unimet.edu.ve')) {
@@ -28,16 +27,22 @@ class FirestoreService {
   }
 
   Future<void> upsertUserProfile(User user) async {
+    final userRef = _firestore.collection('users').doc(user.uid);
+    final existingSnapshot = await userRef.get();
     final role = _resolveRoleFromEmail(user.email);
     final roleCareer = _resolveCareerForRole(role);
     final data = <String, dynamic>{
       'uid': user.uid,
       'email': user.email,
-      'role': role,
       'lastLoginAt': FieldValue.serverTimestamp(),
-      'createdAt': FieldValue.serverTimestamp(),
     };
-    if (roleCareer != null) {
+
+    if (!existingSnapshot.exists) {
+      data['role'] = role;
+      data['createdAt'] = FieldValue.serverTimestamp();
+    }
+
+    if (!existingSnapshot.exists && roleCareer != null) {
       data['career'] = roleCareer;
     }
 
@@ -57,7 +62,7 @@ class FirestoreService {
       }
     }
 
-    await _firestore.collection('users').doc(user.uid).set(data, SetOptions(merge: true));
+    await userRef.set(data, SetOptions(merge: true));
   }
 
   Future<UserModel?> getUser(String uid) async {

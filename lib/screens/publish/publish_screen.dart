@@ -8,6 +8,7 @@ import 'package:metroswap/models/post_model.dart';
 import 'package:metroswap/screens/publish/success_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+import 'package:metroswap/widgets/metroswap_layout.dart'; 
 
 class PublishScreen extends StatefulWidget {
   const PublishScreen({super.key});
@@ -71,23 +72,58 @@ class _PublishScreenState extends State<PublishScreen> {
     PostModel.methodDonation,
   ];
 
+  static const List<String> _unimetCareers = [
+    'Ciencias Administrativas',
+    'Comunicación Social y Empresarial',
+    'Contaduría Pública',
+    'Derecho',
+    'Economía Empresarial',
+    'Educación',
+    'Estudios Internacionales',
+    'Estudios Liberales',
+    'Estudios simultáneos',
+    'Idiomas Modernos',
+    'Ingeniería Civil',
+    'Ingeniería de Sistemas',
+    'Ingeniería Eléctrica',
+    'Ingeniería Mecánica',
+    'Ingeniería Producción',
+    'Ingeniería Química',
+    'Matemáticas Industriales',
+    'Psicología',
+    'TSU en Desarrollo de Sistemas Inteligentes',
+    'Turismo Sostenible',
+    'Otro', 
+  ];
+
   String? _selectedMaterialType;
   String? _selectedKnowledgeArea;
   String? _selectedCondition;
   String? _selectedMethod;
   String? _selectedCareer;
   bool _isPublishing = false;
-  int _quantity = 1; 
+  int _quantity = 1;
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final TextEditingController _careerController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
 
   XFile? _image;
   Uint8List? _imageBytes;
   final ImagePicker _picker = ImagePicker();
 
+  String _safeImageExtension(XFile file) {
+    final fileName = file.name.trim().toLowerCase();
+    if (fileName.contains('.')) {
+      final ext = fileName.split('.').last;
+      if (RegExp(r'^[a-z0-9]{2,5}$').hasMatch(ext)) {
+        return ext;
+      }
+    }
+    return 'jpg';
+  }
 
   Future<void> _pickImage() async {
     final XFile? pickedFile =
@@ -133,7 +169,17 @@ class _PublishScreenState extends State<PublishScreen> {
     }
 
     if (_selectedMethod == null) {
-      _showMessage('Selecciona el metodo de publicación.');
+      _showMessage('Selecciona el método de publicación.');
+      return;
+    }
+
+    if (_selectedCareer == null) {
+      _showMessage('Selecciona una carrera.');
+      return;
+    }
+
+    if (_selectedCareer == 'Otro' && _careerController.text.trim().isEmpty) {
+      _showMessage('Por favor, especifica tu carrera.');
       return;
     }
 
@@ -156,9 +202,9 @@ class _PublishScreenState extends State<PublishScreen> {
 
     try {
       final postRef = FirebaseFirestore.instance.collection('posts').doc();
-      final imagePath = _image!.path;
-      final extension =
-          imagePath.contains('.') ? imagePath.split('.').last.toLowerCase() : 'jpg';
+      final extension = _safeImageExtension(_image!);
+      final contentType = _resolveContentType(extension);
+      final imageSizeBytes = _imageBytes!.lengthInBytes;
 
       final storageRef = FirebaseStorage.instance
           .ref()
@@ -166,11 +212,23 @@ class _PublishScreenState extends State<PublishScreen> {
           .child(currentUser.uid)
           .child('${postRef.id}.$extension');
 
-      final metadata = SettableMetadata(
-        contentType: _resolveContentType(extension),
-      );
-      await storageRef.putData(_imageBytes!, metadata);
-      final imageUrl = await storageRef.getDownloadURL();
+      String imageUrl;
+      try {
+        final metadata = SettableMetadata(contentType: contentType);
+        await storageRef.putData(_imageBytes!, metadata);
+        imageUrl = await storageRef.getDownloadURL();
+      } on FirebaseException catch (e) {
+        _showMessage(
+          'Fallo al subir imagen (${e.code}). '
+          'bucket=${FirebaseStorage.instance.bucket}, '
+          'path=${storageRef.fullPath}, '
+          'uid=${currentUser.uid}, '
+          'size=$imageSizeBytes, '
+          'type=$contentType. '
+          '${e.message ?? 'Verifica reglas de Storage/App Check.'}',
+        );
+        return;
+      }
 
       final userSnapshot = await FirebaseFirestore.instance
           .collection('users')
@@ -181,13 +239,17 @@ class _PublishScreenState extends State<PublishScreen> {
       final ownerName =
           userName.isNotEmpty ? userName : (currentUser.displayName ?? 'Usuario');
 
+      final finalCareer = _selectedCareer == 'Otro' 
+          ? _careerController.text.trim() 
+          : _selectedCareer!;
+
       final post = PostModel(
         id: postRef.id,
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         materialType: _selectedMaterialType!,
         knowledgeArea: _selectedKnowledgeArea!,
-        career: _selectedCareer!,
+        career: finalCareer,
         subject: _subjectController.text.trim(),
         condition: _selectedCondition!,
         method: _selectedMethod!,
@@ -199,11 +261,24 @@ class _PublishScreenState extends State<PublishScreen> {
         ownerEmail: currentUser.email,
       );
 
-      await postRef.set(post.toCreateMap());
+      try {
+        await postRef.set(post.toCreateMap());
+      } on FirebaseException catch (e) {
+        _showMessage(
+          'Fallo al crear publicación (${e.code}). ${e.message ?? 'Verifica reglas de Firestore.'}',
+        );
+        return;
+      }
 
-      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set({
-        'books': FieldValue.arrayUnion([_titleController.text.trim()]),
-      }, SetOptions(merge: true));
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set({
+          'books': FieldValue.arrayUnion([_titleController.text.trim()]),
+        }, SetOptions(merge: true));
+      } on FirebaseException catch (e) {
+        _showMessage(
+          'Publicación creada, pero falló actualizar perfil (${e.code}). ${e.message ?? ''}',
+        );
+      }
 
       if (!mounted) return;
       Navigator.push(
@@ -211,7 +286,9 @@ class _PublishScreenState extends State<PublishScreen> {
         MaterialPageRoute(builder: (_) => const SuccessScreen()),
       );
     } on FirebaseException catch (e) {
-      _showMessage('No se pudo publicar. ${e.message ?? 'Intenta nuevamente.'}');
+      _showMessage(
+        'No se pudo publicar (${e.code}). ${e.message ?? 'Intenta nuevamente.'}',
+      );
     } catch (_) {
       _showMessage('Ocurrió un error inesperado al publicar.');
     } finally {
@@ -246,6 +323,7 @@ class _PublishScreenState extends State<PublishScreen> {
     _titleController.dispose();
     _priceController.dispose();
     _descController.dispose();
+    _careerController.dispose();
     _subjectController.dispose();
     super.dispose();
   }
@@ -253,55 +331,61 @@ class _PublishScreenState extends State<PublishScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 750;
-    return Scaffold(
-      backgroundColor: const Color(0xFFE4E1E6),
-      body: Column(
-        children: [
-          const MetroSwapNavbar(developmentNav: true, heading: 'Publicar'),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(40.0),
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: isMobile
-                      ? Column(
-                          children: [
-                            _buildImagePlaceholder(),
-                            const SizedBox(height: 30),
-                            _buildFormFields(),
-                          ],
-                        )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(flex: 1, child: _buildImagePlaceholder()),
-                            const SizedBox(width: 50),
-                            Expanded(flex: 1, child: _buildFormFields()),
-                          ],
-                        ),
+    
+    return MetroSwapLayout(
+      body: Container(
+        color: const Color(0xFFE4E1E6),
+        child: Column(
+          children: [
+            if (!isMobile)
+              const MetroSwapNavbar(developmentNav: true, heading: 'Publicar'),
+              
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(isMobile ? 20.0 : 40.0),
+                child: Center(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 1000),
+                    child: isMobile
+                        ? Column(
+                            children: [
+                              _buildImagePlaceholder(isMobile),
+                              const SizedBox(height: 30),
+                              _buildFormFields(isMobile),
+                            ],
+                          )
+                        : Row( 
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(flex: 1, child: _buildImagePlaceholder(isMobile)),
+                              const SizedBox(width: 50),
+                              Expanded(flex: 1, child: _buildFormFields(isMobile)),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ),
-          ),
-          const MetroSwapFooter(),
-        ],
+            const MetroSwapFooter(),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildImagePlaceholder() {
+  Widget _buildImagePlaceholder(bool isMobile) {
     return GestureDetector(
       onTap: _pickImage,
       child: Container(
-        height: 400,
+        height: isMobile ? 250 : 400,
+        width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.black12),
         ),
         child: _imageBytes == null
-            ? const Icon(Icons.image_outlined, size: 100, color: Colors.black26)
+            ? const Icon(Icons.image_outlined, size: 80, color: Colors.black26)
             : ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.memory(
@@ -315,14 +399,14 @@ class _PublishScreenState extends State<PublishScreen> {
     );
   }
 
-  Widget _buildFormFields() {
+  Widget _buildFormFields(bool isMobile) {
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Anadir foto',
+            'Añadir foto',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
@@ -353,7 +437,7 @@ class _PublishScreenState extends State<PublishScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 15),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,50 +454,97 @@ class _PublishScreenState extends State<PublishScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('Estado de conservación'),
-                    _buildDropdown(
-                      value: _selectedCondition,
-                      items: _conditions,
-                      onChanged: (val) => setState(() => _selectedCondition = val),
-                    ),
-                  ],
+          
+          if (isMobile) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel('Estado de conservación'),
+                      _buildDropdown(
+                        value: _selectedCondition,
+                        items: _conditions,
+                        onChanged: (val) => setState(() => _selectedCondition = val),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('Método'),
-                    _buildDropdown(
-                      value: _selectedMethod,
-                      items: _methods,
-                      onChanged: (val) => setState(() => _selectedMethod = val),
-                    ),
-                  ],
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel('Método'),
+                      _buildDropdown(
+                        value: _selectedMethod,
+                        items: _methods,
+                        onChanged: (val) => setState(() => _selectedMethod = val),
+                      ),
+                    ],
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 150, 
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Cantidad'),
+                  _buildQuantitySelector(),
+                ],
               ),
-              const SizedBox(width: 15),
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('Cantidad'),
-                    _buildQuantitySelector(),
-                  ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel('Estado de conservación'),
+                      _buildDropdown(
+                        value: _selectedCondition,
+                        items: _conditions,
+                        onChanged: (val) => setState(() => _selectedCondition = val),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 15),
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel('Método'),
+                      _buildDropdown(
+                        value: _selectedMethod,
+                        items: _methods,
+                        onChanged: (val) => setState(() => _selectedMethod = val),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel('Cantidad'),
+                      _buildQuantitySelector(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+          
           if (_selectedMethod == PostModel.methodSale) ...[
             const SizedBox(height: 20),
             _buildLabel('Precio (USD)'),
@@ -432,12 +563,35 @@ class _PublishScreenState extends State<PublishScreen> {
             ),
           ],
           const SizedBox(height: 20),
+          
           _buildLabel('Carrera'),
           _buildDropdown(
             value: _selectedCareer,
-            items: _careersList,
-            onChanged: (val) => setState(() => _selectedCareer = val),
+            items: _unimetCareers,
+            onChanged: (val) {
+              setState(() {
+                _selectedCareer = val;
+                if (val != 'Otro') {
+                  _careerController.clear();
+                }
+              });
+            },
           ),
+          
+          if (_selectedCareer == 'Otro') ...[
+            const SizedBox(height: 10),
+            _buildTextField(
+              'Escribe tu carrera',
+              controller: _careerController,
+              validator: (value) {
+                if (_selectedCareer == 'Otro' && (value == null || value.trim().isEmpty)) {
+                  return 'Especifica tu carrera';
+                }
+                return null;
+              },
+            ),
+          ],
+
           const SizedBox(height: 20),
           _buildLabel('Materia'),
           _buildTextField(
@@ -469,8 +623,6 @@ class _PublishScreenState extends State<PublishScreen> {
       ),
     );
   }
-
-  // Creación de widgets 
 
   Widget _buildLabel(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
@@ -548,6 +700,8 @@ class _PublishScreenState extends State<PublishScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             icon: const Icon(Icons.remove, size: 18),
             onPressed: () {
               if (_quantity > 1) {
@@ -562,6 +716,8 @@ class _PublishScreenState extends State<PublishScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             icon: const Icon(Icons.add, size: 18),
             onPressed: () {
               setState(() {

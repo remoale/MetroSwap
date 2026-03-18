@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/screens/auth/login_screen.dart';
-// ¡AQUÍ IMPORTAMOS TU NUEVA PANTALLA!
 import 'package:metroswap/screens/about/about_screen.dart'; 
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
@@ -9,54 +8,75 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700; 
+
     return Scaffold(
       backgroundColor: Colors.white, 
+      endDrawer: isMobile ? _buildMobileDrawer(context) : null,
       appBar: AppBar(
-        toolbarHeight: 85, 
+        toolbarHeight: isMobile ? 70 : 85, 
         automaticallyImplyLeading: false,
-        titleSpacing: 24,
+        titleSpacing: isMobile ? 16 : 24,
         backgroundColor: const Color(0xFF2C2C2C),
         title: const MetroSwapBrand(),
-        actions: [
-          OutlinedButton(
-            // ¡AQUÍ AGREGAMOS LA NAVEGACIÓN AL BOTÓN!
-            onPressed: () {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => const AboutScreen()),
-              );
-            }, 
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              side: const BorderSide(color: Colors.white),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Conócenos', style: TextStyle(fontSize: 16)),
-          ),
-          const SizedBox(width: 15),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder : (context) => const LoginScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              backgroundColor: const Color(0xFFFF6B00),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Acceder', style: TextStyle(fontSize: 16)),
-          ),
-          const SizedBox(width: 30),
-        ],
+        actions: isMobile 
+          ? [
+              Builder(
+                builder: (context) {
+                  return IconButton(
+                    padding: const EdgeInsets.only(right: 20), 
+                    icon: const Icon(
+                      Icons.menu, 
+                      color: Color(0xFFFF6B00), 
+                      size: 40, 
+                    ),
+                    onPressed: () {
+                      Scaffold.of(context).openEndDrawer();
+                    },
+                  );
+                }
+              )
+            ] 
+          : [
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const AboutScreen()),
+                  );
+                }, 
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  side: const BorderSide(color: Colors.white),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Conócenos', style: TextStyle(fontSize: 16)),
+              ),
+              const SizedBox(width: 15),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  backgroundColor: const Color(0xFFFF6B00),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Acceder', style: TextStyle(fontSize: 16)),
+              ),
+              const SizedBox(width: 30),
+            ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             // 1. Banner principal
             Container(
-              height: 350,
+              height: isMobile ? 250 : 350, 
               width: double.infinity,
               decoration: const BoxDecoration(
                 image: DecorationImage(
@@ -66,16 +86,17 @@ class LandingScreen extends StatelessWidget {
                 ),
               ),
               child: Container(
-                color: Colors.black.withValues(alpha: 0.2), 
-                child: const Center(
+                color: Colors.orange.withValues(alpha: 0.1), 
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Center(
                   child: Text(
                     'Bienvenido a MetroSwap',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 55,
+                      fontSize: isMobile ? 32 : 55, 
                       fontWeight: FontWeight.bold,
-                      shadows: [
+                      shadows: const [
                         Shadow(offset: Offset(2.0, 2.0), blurRadius: 5.0, color: Colors.black87),
                       ],
                     ),
@@ -86,15 +107,33 @@ class LandingScreen extends StatelessWidget {
 
             // 2. Sección de Misión, Visión y Objetivo
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
+              padding: EdgeInsets.symmetric(
+                vertical: isMobile ? 50 : 80, 
+                horizontal: 20,
+              ),
               child: Wrap(
                 spacing: 60, 
                 runSpacing: 50, 
                 alignment: WrapAlignment.center,
                 children: [
-                  _buildInfoColumn(title: 'Misión', text: 'Desarrollar una plataforma web y móvil centralizada para que estudiantes y docentes publiquen, busquen y gestionen el intercambio o venta de libros y guías de forma eficiente.'),
-                  _buildInfoColumn(title: 'Visión', text: 'Crear un ecosistema colaborativo en la Universidad Metropolitana que facilite el acceso a materiales educativos, asegurando que cada recurso sea rastreable.'),
-                  _buildInfoColumn(title: 'Objetivo', text: 'Desarrollar e implementar un sistema completo de gestión para la Universidad Metropolitana que permita comprar, vender e intercambiar material académico.'),
+                  _buildInfoColumn(
+                    title: 'Misión', 
+                    text: 'Desarrollar una plataforma web y móvil centralizada para que estudiantes y docentes publiquen, busquen y gestionen el intercambio o venta de libros y guías de forma eficiente.',
+                    isMobile: isMobile,
+                    screenWidth: screenWidth,
+                  ),
+                  _buildInfoColumn(
+                    title: 'Visión', 
+                    text: 'Crear un ecosistema colaborativo en la Universidad Metropolitana que facilite el acceso a materiales educativos, asegurando que cada recurso sea rastreable.',
+                    isMobile: isMobile,
+                    screenWidth: screenWidth,
+                  ),
+                  _buildInfoColumn(
+                    title: 'Objetivo', 
+                    text: 'Desarrollar e implementar un sistema completo de gestión para la Universidad Metropolitana que permita comprar, vender e intercambiar material académico.',
+                    isMobile: isMobile,
+                    screenWidth: screenWidth,
+                  ),
                 ],
               ),
             ),
@@ -102,15 +141,22 @@ class LandingScreen extends StatelessWidget {
             // 3. Sección: ¿Cómo funciona?
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
+              padding: EdgeInsets.symmetric(
+                vertical: isMobile ? 50 : 80, 
+                horizontal: 20,
+              ),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     '¿Cómo funciona MetroSwap?',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Color(0xFF2C2C2C)),
+                    style: TextStyle(
+                      fontSize: isMobile ? 28 : 35, 
+                      fontWeight: FontWeight.bold, 
+                      color: const Color(0xFF2C2C2C),
+                    ),
                   ),
-                  const SizedBox(height: 60),
+                  SizedBox(height: isMobile ? 40 : 60),
                   Wrap(
                     spacing: 50,
                     runSpacing: 40,
@@ -119,17 +165,23 @@ class LandingScreen extends StatelessWidget {
                       _buildStepCard(
                         icon: Icons.person_add_alt_1, 
                         title: '1. Regístrate', 
-                        description: 'Crea tu cuenta gratis usando tu correo de la universidad.'
+                        description: 'Crea tu cuenta gratis usando tu correo de la universidad.',
+                        isMobile: isMobile,
+                        screenWidth: screenWidth,
                       ),
                       _buildStepCard(
                         icon: Icons.menu_book_rounded, 
                         title: '2. Busca o Publica', 
-                        description: 'Encuentra los libros que necesitas o sube el material que ya no usas.'
+                        description: 'Encuentra los libros que necesitas o sube el material que ya no usas.',
+                        isMobile: isMobile,
+                        screenWidth: screenWidth,
                       ),
                       _buildStepCard(
                         icon: Icons.handshake_outlined, 
                         title: '3. Intercambia', 
-                        description: 'Contacta a otros estudiantes y coordinen la entrega en el campus.'
+                        description: 'Contacta a otros estudiantes y coordinen la entrega en el campus.',
+                        isMobile: isMobile,
+                        screenWidth: screenWidth,
                       ),
                     ],
                   ),
@@ -141,7 +193,7 @@ class LandingScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               color: const Color(0xFF2C2C2C),
-              padding: const EdgeInsets.all(30),
+              padding: EdgeInsets.all(isMobile ? 20 : 30),
               child: const Text(
                 '© 2026 MetroSwap - Universidad Metropolitana.',
                 textAlign: TextAlign.center,
@@ -154,9 +206,49 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoColumn({required String title, required String text}) {
+  // --- WIDGET DEL MENÚ LATERAL ---
+  Widget _buildMobileDrawer(BuildContext context) {
+    return Drawer(
+      backgroundColor: const Color(0xFF2C2C2C),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+        children: [
+          const MetroSwapBrand(), 
+          const SizedBox(height: 40),
+          OutlinedButton(
+            onPressed: () {
+              Navigator.pop(context); 
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
+            }, 
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              side: const BorderSide(color: Colors.white),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Conócenos', style: TextStyle(fontSize: 16)),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); 
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+            },
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              backgroundColor: const Color(0xFFFF6B00),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Acceder', style: TextStyle(fontSize: 16)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- WIDGETS AUXILIARES ---
+  Widget _buildInfoColumn({required String title, required String text, required bool isMobile, required double screenWidth}) {
     return SizedBox(
-      width: 320, 
+      width: isMobile ? screenWidth - 40 : 320, 
       child: Column(
         children: [
           Container(
@@ -174,9 +266,9 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStepCard({required IconData icon, required String title, required String description}) {
+  Widget _buildStepCard({required IconData icon, required String title, required String description, required bool isMobile, required double screenWidth}) {
     return SizedBox(
-      width: 280,
+      width: isMobile ? screenWidth - 40 : 280,
       child: Column(
         children: [
           CircleAvatar(

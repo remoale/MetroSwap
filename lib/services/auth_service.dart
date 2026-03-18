@@ -133,6 +133,8 @@ class AuthService {
         return 'Correo o contrasena incorrectos.';
       case 'wrong-password':
         return 'Correo o contrasena incorrectos.';
+      case 'user-disabled':
+        return 'Tu cuenta ha sido suspendida por un administrador.';
       case 'operation-not-allowed':
         return 'Metodo de autenticacion no habilitado en Firebase.';
       case 'network-request-failed':

@@ -63,7 +63,6 @@ class PostModel {
       ownerName,
     ].join(' '));
   }
-
   const PostModel({
     required this.id,
     required this.title,
