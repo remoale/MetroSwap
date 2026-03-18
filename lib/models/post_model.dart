@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Representa una publicación de material dentro de MetroSwap.
 class PostModel {
   static const String methodExchange = 'Intercambio';
   static const String methodSale = 'Venta';
@@ -34,11 +35,26 @@ class PostModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  static const Map<String, String> _accentReplacements = {
+    'a': 'áàäâãå',
+    'e': 'éèëê',
+    'i': 'íìïî',
+    'o': 'óòöôõ',
+    'u': 'úùüû',
+    'n': 'ñ',
+    'c': 'ç',
+  };
+
   static String normalizeSearchText(String value) {
-    return value
-        .toLowerCase()
-        .trim()
-        .replaceAll(RegExp(r'\s+'), ' ');
+    var normalized = value.toLowerCase();
+
+    _accentReplacements.forEach((replacement, accentedChars) {
+      for (final accentedChar in accentedChars.split('')) {
+        normalized = normalized.replaceAll(accentedChar, replacement);
+      }
+    });
+
+    return normalized.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
   static String buildSearchableText({

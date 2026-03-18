@@ -7,6 +7,7 @@ import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_layout.dart';
 
+/// Muestra la pantalla principal con buscador y acceso al material publicado.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 

@@ -56,11 +56,11 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Diseño en computadora 
+  // Layout para escritorio.
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // COLUMNA IZQUIERDA 
+        // Columna izquierda.
         Expanded(
           flex: 6, 
           child: Container(
@@ -78,7 +78,7 @@ class AboutScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // FILA 1: Forzamos 3 elementos
+                    // Primera fila del equipo.
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +89,7 @@ class AboutScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 50),
-                    // FILA 2: Forzamos 3 elementos
+                    // Segunda fila del equipo.
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +106,7 @@ class AboutScreen extends StatelessWidget {
           ),
         ),
 
-        // COLUMNA DERECHA 
+        // Columna derecha.
         Expanded(
           flex: 4, 
           child: Image.asset(
@@ -119,7 +119,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Diseño en móvil
+  // Layout para móvil.
   Widget _buildMobileLayout() {
     return Container(
       width: double.infinity, 
@@ -167,7 +167,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Widget auxiliar
+  // Tarjeta de cada integrante.
   Widget _buildTeamMember({
     required String name,
     required String age,

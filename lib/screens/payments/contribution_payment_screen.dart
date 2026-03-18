@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'payment_cancel_screen.dart';
 import 'payment_confirmation_screen.dart';
 
+/// Gestiona el flujo de pago de una contribución asociada a un intercambio.
 class ContributionPaymentScreen extends StatefulWidget {
   final String tradeId;
   final String title;

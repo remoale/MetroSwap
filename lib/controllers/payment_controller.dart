@@ -7,7 +7,7 @@ class PaymentController {
 
   final FirebaseFunctions _functions;
 
-  /// 1. Crear orden en PayPal (via Cloud Function)
+  /// Crea una orden en PayPal mediante una Cloud Function.
   Future<String?> createPayment({
     required double amount,
     required String returnUrl,
@@ -24,7 +24,7 @@ class PaymentController {
 
       final data = result.data;
 
-      // Buscar el approval_url dentro de los links de PayPal
+      // Busca el enlace de aprobación dentro de la respuesta de PayPal.
       final links = data["links"] as List<dynamic>;
       final approveLink = links.firstWhere(
         (l) => l["rel"] == "approve",
@@ -33,14 +33,14 @@ class PaymentController {
 
       if (approveLink == null) return null;
 
-      return approveLink["href"]; // URL para abrir PayPal
+      return approveLink["href"]; // URL de aprobación de PayPal.
     } catch (e) {
       debugPrint("Error en PaymentController.createPayment: $e");
       return null;
     }
   }
 
-  /// 2. Capturar el pago después del returnUrl
+  /// Captura el pago después del retorno desde PayPal.
   Future<Map<String, dynamic>?> capturePayment({
     required String orderId,
     String? exchangeId,

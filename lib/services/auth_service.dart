@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:metroswap/services/firestore_service.dart';
 
+/// Encapsula el registro, inicio y cierre de sesión con Firebase Auth.
 class AuthService {
   AuthService({FirestoreService? firestoreService})
       : _firestoreService = firestoreService ?? FirestoreService();

@@ -8,6 +8,7 @@ import 'package:metroswap/screens/admin/manage_posts_screen.dart';
 import 'package:metroswap/screens/admin/manage_profiles_screen.dart';
 import 'package:metroswap/utils/admin_utils.dart';
 
+/// Muestra el panel administrativo con métricas y accesos de gestión.
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
 
@@ -28,7 +29,7 @@ class _AdminScreenState extends State<AdminScreen> {
   
   Map<String, int> _careerCounts = {};
 
-  // ARREGLO PARA LA ACTIVIDAD SEMANAL (De Lun a Dom)
+  // Guarda la actividad semanal de lunes a domingo.
   List<double> _weeklyActivity = List.filled(7, 0.0);
 
   final List<Color> _chartColors = [
@@ -63,7 +64,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _fetchDashboardData() async {
     try {
-      // 1. OBTENER USUARIOS
+      // Obtiene los usuarios.
       final usersSnap = await FirebaseFirestore.instance.collection('users').get();
       
       int memberCount = usersSnap.docs.length;
@@ -82,7 +83,7 @@ class _AdminScreenState extends State<AdminScreen> {
         }
       }
 
-      // 2. OBTENER PUBLICACIONES Y CALCULAR ACTIVIDAD SEMANAL
+      // Obtiene las publicaciones y calcula la actividad semanal.
       final postsSnap = await FirebaseFirestore.instance.collection('posts').get();
       int productsCount = postsSnap.docs.length;
       List<double> tempWeeklyActivity = List.filled(7, 0.0);
@@ -104,7 +105,7 @@ class _AdminScreenState extends State<AdminScreen> {
         }
       }
 
-      // 3. OBTENER TOTAL DE INTERCAMBIOS (TODOS) Y SUMAR CONTRIBUCIONES (SOLO COMPLETADOS)
+      // Obtiene los intercambios y suma las contribuciones completadas.
       int exchangesCount = 0;
       double tempContributions = 0.0;
       
@@ -115,12 +116,12 @@ class _AdminScreenState extends State<AdminScreen> {
         for (var doc in exchangesSnap.docs) {
           final data = doc.data();
           
-          // Buscamos el campo de estado ('status' o 'estado')
+          // Usa el campo de estado disponible en cada documento.
           String status = (data['status'] ?? data['estado'] ?? '').toString().toLowerCase();
           
-          // Si el estado es "completado" o "completed", sumamos su contribución
+          // Suma la contribución cuando el intercambio está completado.
           if (status == 'completado' || status == 'completed') {
-            // Solo si está completado, sumamos el dinero (si es que tiene el campo 'price')
+            // Usa el monto registrado en `price` cuando existe.
             if (data.containsKey('price') && data['price'] != null) {
               tempContributions += (data['price'] as num).toDouble();
             }
@@ -150,7 +151,7 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  // FUNCIÓN PARA CALCULAR EL TECHO DEL GRÁFICO DINÁMICAMENTE
+  // Calcula el valor máximo del gráfico.
   double _getMaxY() {
     double maxVal = 10.0; 
     for (var val in _weeklyActivity) {

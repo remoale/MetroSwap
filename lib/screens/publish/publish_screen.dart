@@ -10,6 +10,7 @@ import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_layout.dart'; 
 
+/// Muestra el formulario para crear una nueva publicación de material.
 class PublishScreen extends StatefulWidget {
   const PublishScreen({super.key});
 

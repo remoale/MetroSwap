@@ -58,7 +58,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    editableUser = widget.user.clone(); //Aquí se usa el PROTOTYPE
+    editableUser = widget.user.clone(); // Trabaja sobre una copia del usuario.
 
     nameCtrl = TextEditingController(text: editableUser.name); 
     phoneCtrl = TextEditingController(text: editableUser.phone ?? ""); 
@@ -153,7 +153,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     editableUser.studentId = _normalizeOptional(studentIdCtrl.text);
     
-    // Convertir materiales separados por coma a lista 
+    // Convierte los materiales separados por coma en una lista.
     editableUser.books = booksCtrl.text 
     .split(",") 
     .map((e) => e.trim()) 
