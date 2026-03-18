@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/controllers/payment_controller.dart';
 import 'package:metroswap/screens/home_screen.dart';
-import 'package:metroswap/screens/payments/payment_cancel_screen.dart';
 import 'package:metroswap/screens/payments/payment_confirmation_screen.dart';
+import 'package:metroswap/screens/exchange/exchange.dart';
 
 class PayPalReturnScreen extends StatefulWidget {
   final bool success;
@@ -30,16 +30,20 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
   }
 
   Future<void> _handle() async {
-    if (!widget.success) {
-      setState(() => _loading = false);
-      return;
-    }
-
     final uri = Uri.base;
-    final orderId = uri.queryParameters["token"]; // PayPal uses token as orderId
     final exchangeId = uri.queryParameters["tradeId"]?.trim();
     _exchangeId = (exchangeId != null && exchangeId.isNotEmpty) ? exchangeId : null;
+    
+    //Caso que se cancele el pago o haya un error en PayPal, se redirige a la pantalla de chat del intercambio sin mostrar error, ya que el usuario podría simplemente haber cancelado el pago.
+    if (!widget.success) {
+      if (_exchangeId != null) {
+        return;
+      }
 
+    }
+
+    //Caso de éxito, se intenta capturar el pago. Si no se encuentra el token (orderId) o falla la captura, se muestra un error. Si todo va bien, se muestra la pantalla de confirmación con el monto capturado.
+    final orderId = uri.queryParameters["token"]; // PayPal usa token como orderId
     if (orderId == null || orderId.isEmpty) {
       setState(() {
         _loading = false;
@@ -79,10 +83,22 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-
     if (!widget.success) {
-      return const PaymentCancelScreen();
-    }
+      if (_exchangeId != null) {
+        // Redirige al intercambio y muestra un mensaje de que el pago fue cancelado. No se muestra un error porque el usuario podría haber simplemente cancelado el pago.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Pago cancelado"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        });
+        return TradeChatScreen(tradeId: _exchangeId!);
+      } else {
+        return const HomeScreen();
+      }
+      }
 
     if (_error != null) {
       return Scaffold(
