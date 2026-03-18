@@ -88,7 +88,6 @@ class HomeScreen extends StatelessWidget {
                         isFullScreen: false, 
                         viewOnSubmitted: (value) {
                           final query = value.trim();
-                          if (query.isEmpty) return;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -119,17 +118,6 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                         suggestionsBuilder: (context, controller) async {
-                          if (controller.text.trim().isEmpty) {
-                            return const [
-                              Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(16.0),
-                                  child: Text('Escribe para buscar...'),
-                                ),
-                              ),
-                            ];
-                          }
-
                           try {
                             final results = await _searchPosts(controller.text);
                             if (results.isEmpty) {
@@ -209,7 +197,9 @@ class HomeScreen extends StatelessWidget {
                               ListTile(
                                 leading: const Icon(Icons.manage_search),
                                 title: Text(
-                                  'Ver todos los resultados para "${controller.text.trim()}"',
+                                  controller.text.trim().isEmpty
+                                      ? 'Ver todos los materiales'
+                                      : 'Ver todos los resultados para "${controller.text.trim()}"',
                                 ),
                                 onTap: () {
                                   final query = controller.text.trim();

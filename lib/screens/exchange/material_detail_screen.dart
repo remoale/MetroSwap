@@ -44,9 +44,9 @@ class MaterialDetailScreen extends StatelessWidget {
           final contentWidth = constraints.maxWidth > 1100
               ? 1100.0
               : constraints.maxWidth;
-          final imageSize = isMobile
-              ? (contentWidth - 48).clamp(220.0, 420.0).toDouble()
-              : 400.0;
+          final imageMaxWidth = isMobile
+              ? (contentWidth - 48).clamp(220.0, 360.0).toDouble()
+              : 380.0;
 
           return SingleChildScrollView(
             child: ConstrainedBox(
@@ -71,12 +71,14 @@ class MaterialDetailScreen extends StatelessWidget {
                                 children: [
                                   _buildImageCard(
                                     imageUrl: imageUrl,
-                                    imageSize: imageSize,
+                                    imageMaxWidth: imageMaxWidth,
+                                    compact: true,
                                   ),
                                   const SizedBox(height: 24),
                                   _buildDetailsContent(
                                     context,
                                     title: title,
+                                    materialId: currentPost?.id ?? '',
                                     ownerName: ownerName,
                                     ownerUid: ownerUid,
                                     knowledgeArea: knowledgeArea,
@@ -99,13 +101,14 @@ class MaterialDetailScreen extends StatelessWidget {
                                 children: [
                                   _buildImageCard(
                                     imageUrl: imageUrl,
-                                    imageSize: imageSize,
+                                    imageMaxWidth: imageMaxWidth,
                                   ),
                                   const SizedBox(width: 50),
                                   Expanded(
                                     child: _buildDetailsContent(
                                       context,
                                       title: title,
+                                      materialId: currentPost?.id ?? '',
                                       ownerName: ownerName,
                                       ownerUid: ownerUid,
                                       knowledgeArea: knowledgeArea,
@@ -140,41 +143,50 @@ class MaterialDetailScreen extends StatelessWidget {
 
   Widget _buildImageCard({
     required String imageUrl,
-    required double imageSize,
+    required double imageMaxWidth,
+    bool compact = false,
   }) {
-    return Container(
-      width: imageSize,
-      height: imageSize,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: imageMaxWidth,
+        maxHeight: compact ? 520 : 620,
       ),
-      clipBehavior: Clip.antiAlias,
-      child: imageUrl.isNotEmpty
-          ? Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              webHtmlElementStrategy: kIsWeb
-                  ? WebHtmlElementStrategy.prefer
-                  : WebHtmlElementStrategy.never,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildImageFallback();
-              },
-            )
-          : _buildImageFallback(),
+      child: Container(
+        width: imageMaxWidth,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: imageUrl.isNotEmpty
+            ? Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                alignment: Alignment.topCenter,
+                webHtmlElementStrategy: kIsWeb
+                    ? WebHtmlElementStrategy.prefer
+                    : WebHtmlElementStrategy.never,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildImageFallback();
+                },
+              )
+            : _buildImageFallback(),
+      ),
     );
   }
 
   Widget _buildDetailsContent(
     BuildContext context, {
     required String title,
+    required String materialId,
     required String ownerName,
     required String ownerUid,
     required String knowledgeArea,
@@ -201,6 +213,16 @@ class MaterialDetailScreen extends StatelessWidget {
             color: const Color(0xFF333333),
           ),
         ),
+        if (materialId.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            'ID: $materialId',
+            style: TextStyle(
+              fontSize: compact ? 11 : 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
         SizedBox(height: compact ? 12 : 15),
         GestureDetector(
           onTap: ownerUid.isEmpty

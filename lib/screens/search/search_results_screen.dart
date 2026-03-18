@@ -545,31 +545,46 @@ class _ResultImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = isMobile ? double.infinity : 180.0;
-    final height = isMobile ? 220.0 : 180.0;
+    final width = isMobile ? double.infinity : 160.0;
+    final height = isMobile ? 280.0 : 220.0;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: width,
-        height: height,
-        color: const Color(0xFFF3F1F4),
-        child: imageUrl.trim().isEmpty
-            ? const Icon(Icons.menu_book, size: 54, color: Color(0xFFB7B1BC))
-            : Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                webHtmlElementStrategy: kIsWeb
-                    ? WebHtmlElementStrategy.prefer
-                    : WebHtmlElementStrategy.never,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.image_not_supported_outlined,
-                    size: 54,
-                    color: Color(0xFFB7B1BC),
-                  );
-                },
-              ),
+    return Container(
+      width: width,
+      height: height,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          color: const Color(0xFFF3F1F4),
+          child: imageUrl.trim().isEmpty
+              ? const Icon(Icons.menu_book, size: 54, color: Color(0xFFB7B1BC))
+              : Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.topCenter,
+                  webHtmlElementStrategy: kIsWeb
+                      ? WebHtmlElementStrategy.prefer
+                      : WebHtmlElementStrategy.never,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 54,
+                      color: Color(0xFFB7B1BC),
+                    );
+                  },
+                ),
+        ),
       ),
     );
   }
