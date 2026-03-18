@@ -12,12 +12,12 @@ class StorageService {
 
   Future<String?> uploadProfileImage(String uid, XFile file) async {
     try {
-      // Ruta por usuario para aplicar reglas de seguridad por UID
+      // Usa una ruta por usuario para respetar las reglas por UID.
       final ref = _profileRef(uid);
       final metadata = SettableMetadata(contentType: _detectImageMimeType(file.path));
       final bytes = await file.readAsBytes();
 
-      // Subir el archivo y devolver la URL
+      // Sube la imagen y devuelve su URL pública.
       final uploadTask = ref.putData(bytes, metadata);
       TaskSnapshot snapshot = await uploadTask;
 

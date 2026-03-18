@@ -83,7 +83,7 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
     final isActive = normalizeUserStatus(currentStatus) == 'Activo';
     final newStatus = isActive ? 'Suspendido' : 'Activo';
     
-    // El estado correspondiente para los posts en la base de datos
+    // Actualiza también el estado de las publicaciones del usuario.
     final newPostStatus = isActive ? 'suspended' : 'active';
     
     final actionText = isActive ? 'suspender' : 'reactivar';
@@ -113,28 +113,28 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
 
     if (confirm == true) {
       try {
-        // 1. Iniciamos un "Batch" de Firestore
+        // Agrupa las actualizaciones en un batch de Firestore.
         final batch = FirebaseFirestore.instance.batch();
 
-        // 2. Preparamos la actualización del Usuario
+        // Prepara la actualización del usuario.
         final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
         batch.set(userRef, {'status': newStatus}, SetOptions(merge: true));
 
-        // 3. Buscamos todas las publicaciones de este usuario usando ownerUid
+        // Busca las publicaciones del usuario por `ownerUid`.
         final postsSnapshot = await FirebaseFirestore.instance
             .collection('posts')
             .where('ownerUid', isEqualTo: userId)
             .get();
 
-        // 4. Preparamos la actualización para CADA post encontrado
+        // Prepara la actualización de cada publicación encontrada.
         for (var doc in postsSnapshot.docs) {
           batch.update(doc.reference, {'status': newPostStatus});
         }
 
-        // 5. Ejecutamos el batch completo
+        // Ejecuta todas las actualizaciones pendientes.
         await batch.commit();
 
-        // 6. Actualizamos el estado de la UI
+        // Refleja el nuevo estado en la interfaz.
         setState(() {
           final index = _users.indexWhere((u) => u['id'] == userId);
           if (index != -1) {

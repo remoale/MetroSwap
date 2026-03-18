@@ -18,6 +18,7 @@ class MaterialDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final viewportWidth = MediaQuery.of(context).size.width;
     final currentPost = post;
     final title = currentPost?.title ?? 'Publicacion no disponible';
     final ownerName = currentPost?.ownerName ?? 'Usuario';
@@ -36,11 +37,19 @@ class MaterialDetailScreen extends StatelessWidget {
         quantity <= 0 ||
         currentPost.status == PostModel.statusInactive ||
         currentPost.lifecycleStatus == PostModel.lifecycleOutOfStock;
+    final isMobile = viewportWidth < 760;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE4E1E6),
       body: LayoutBuilder(
         builder: (context, constraints) {
+          final contentWidth = constraints.maxWidth > 1100
+              ? 1100.0
+              : constraints.maxWidth;
+          final imageSize = isMobile
+              ? (contentWidth - 48).clamp(220.0, 420.0).toDouble()
+              : 400.0;
+
           return SingleChildScrollView(
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
@@ -51,251 +60,71 @@ class MaterialDetailScreen extends StatelessWidget {
                       developmentNav: true,
                       heading: 'Material',
                     ),
-                    const SizedBox(height: 60),
+                    SizedBox(height: isMobile ? 24 : 60),
                     SizedBox(
-                      width: 1100,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 400,
-                            height: 400,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: imageUrl.isNotEmpty
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    webHtmlElementStrategy: kIsWeb
-                                        ? WebHtmlElementStrategy.prefer
-                                        : WebHtmlElementStrategy.never,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return _buildImageFallback();
-                                    },
-                                  )
-                                : _buildImageFallback(),
-                          ),
-                          const SizedBox(width: 50),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF333333),
+                      width: contentWidth,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 24 : 0,
+                        ),
+                        child: isMobile
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildImageCard(
+                                    imageUrl: imageUrl,
+                                    imageSize: imageSize,
                                   ),
-                                ),
-                                const SizedBox(height: 15),
-                                GestureDetector(
-                                  onTap: ownerUid.isEmpty
-                                      ? null
-                                      : () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ProfileScreen(uid: ownerUid),
-                                            ),
-                                          );
-                                        },
-                                  child: MouseRegion(
-                                    cursor: ownerUid.isEmpty
-                                        ? SystemMouseCursors.basic
-                                        : SystemMouseCursors.click,
-                                    child: Row(
-                                      children: [
-                                        _OwnerAvatar(ownerUid: ownerUid),
-                                        const SizedBox(width: 10),
-                                        Flexible(
-                                          child: Text(
-                                            ownerName,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.blue[700],
-                                              decoration:
-                                                  TextDecoration.underline,
-                                              decorationColor: Colors.blue[700],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 25),
-                                Row(
-                                  children: [
-                                    _buildInfoBadge('Categoria', knowledgeArea),
-                                    const SizedBox(width: 30),
-                                    _buildInfoBadge('Metodo', method),
-                                    if (subject.isNotEmpty) ...[
-                                      const SizedBox(width: 30),
-                                      _buildInfoBadge('Materia', subject),
-                                    ],
-                                  ],
-                                ),
-                                if (career.isNotEmpty ||
-                                    condition.isNotEmpty ||
-                                    priceUsd != null) ...[
-                                  const SizedBox(height: 20),
-                                  Wrap(
-                                    spacing: 16,
-                                    runSpacing: 12,
-                                    children: [
-                                      if (career.isNotEmpty)
-                                        _buildMetaChip('Carrera', career),
-                                      if (condition.isNotEmpty)
-                                        _buildMetaChip('Estado', condition),
-                                      _buildMetaChip(
-                                          'Cantidad', quantity.toString()),
-                                      if (isOutOfStock)
-                                        _buildMetaChip(
-                                          'Disponibilidad',
-                                          PostModel.lifecycleOutOfStock,
-                                          backgroundColor: const Color(0xFFFCE8E6),
-                                          textColor: const Color(0xFFB3261E),
-                                          borderColor: const Color(0xFFF1B5AF),
-                                        ),
-                                      if (priceUsd != null)
-                                        _buildMetaChip(
-                                          'Precio',
-                                          '\$${priceUsd.toStringAsFixed(2)}',
-                                        ),
-                                    ],
+                                  const SizedBox(height: 24),
+                                  _buildDetailsContent(
+                                    context,
+                                    title: title,
+                                    ownerName: ownerName,
+                                    ownerUid: ownerUid,
+                                    knowledgeArea: knowledgeArea,
+                                    method: method,
+                                    subject: subject,
+                                    career: career,
+                                    condition: condition,
+                                    quantity: quantity,
+                                    priceUsd: priceUsd,
+                                    description: description,
+                                    isOutOfStock: isOutOfStock,
+                                    hasPrice: hasPrice,
+                                    currentPost: currentPost,
+                                    compact: true,
                                   ),
                                 ],
-                                const SizedBox(height: 30),
-                                const Text(
-                                  'Descripcion',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                              )
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildImageCard(
+                                    imageUrl: imageUrl,
+                                    imageSize: imageSize,
                                   ),
-                                ),
-                                const SizedBox(height: 10),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    description,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                      height: 1.5,
+                                  const SizedBox(width: 50),
+                                  Expanded(
+                                    child: _buildDetailsContent(
+                                      context,
+                                      title: title,
+                                      ownerName: ownerName,
+                                      ownerUid: ownerUid,
+                                      knowledgeArea: knowledgeArea,
+                                      method: method,
+                                      subject: subject,
+                                      career: career,
+                                      condition: condition,
+                                      quantity: quantity,
+                                      priceUsd: priceUsd,
+                                      description: description,
+                                      isOutOfStock: isOutOfStock,
+                                      hasPrice: hasPrice,
+                                      currentPost: currentPost,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 40),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 60,
-                                  child: (FirebaseAuth.instance.currentUser?.uid ==
-                                          ownerUid)
-                                      ? OutlinedButton.icon(
-                                          // --- BOTÓN PARA EL DUEÑO DE LA PUBLICACIÓN ---
-                                          icon: const Icon(Icons.edit, size: 28),
-                                          label: const Text(
-                                            'Editar publicación',
-                                            style: TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor:
-                                                const Color(0xFFFF6B00),
-                                            side: const BorderSide(
-                                              color: Color(0xFFFF6B00),
-                                              width: 2,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => PublishScreen(
-                                                  postToEdit: currentPost, // Le pasamos el objeto post completo
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        )
-                                      : ElevatedButton(
-                                          // --- BOTÓN ORIGINAL PARA COMPRAR/INTERCAMBIAR ---
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: isOutOfStock
-                                                ? const Color(0xFF9A969F)
-                                                : const Color(0xFFFF6B00),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            elevation: 2,
-                                          ),
-                                          onPressed: isOutOfStock
-                                              ? null
-                                              : () {
-                                                  _handleActionPressed(
-                                                    context,
-                                                    currentPost,
-                                                    quantity,
-                                                    hasPrice,
-                                                  );
-                                                },
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              const Icon(
-                                                Icons.handshake_outlined,
-                                                color: Colors.white,
-                                                size: 28,
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Text(
-                                                isOutOfStock
-                                                    ? PostModel
-                                                        .lifecycleOutOfStock
-                                                    : hasPrice
-                                                        ? 'Comprar'
-                                                        : 'Intercambiar',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                                ],
+                              ),
                       ),
                     ),
                     const Spacer(),
@@ -308,6 +137,229 @@ class MaterialDetailScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildImageCard({
+    required String imageUrl,
+    required double imageSize,
+  }) {
+    return Container(
+      width: imageSize,
+      height: imageSize,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: imageUrl.isNotEmpty
+          ? Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              webHtmlElementStrategy: kIsWeb
+                  ? WebHtmlElementStrategy.prefer
+                  : WebHtmlElementStrategy.never,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildImageFallback();
+              },
+            )
+          : _buildImageFallback(),
+    );
+  }
+
+  Widget _buildDetailsContent(
+    BuildContext context, {
+    required String title,
+    required String ownerName,
+    required String ownerUid,
+    required String knowledgeArea,
+    required String method,
+    required String subject,
+    required String career,
+    required String condition,
+    required int quantity,
+    required double? priceUsd,
+    required String description,
+    required bool isOutOfStock,
+    required bool hasPrice,
+    required PostModel? currentPost,
+    bool compact = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: compact ? 26 : 32,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF333333),
+          ),
+        ),
+        SizedBox(height: compact ? 12 : 15),
+        GestureDetector(
+          onTap: ownerUid.isEmpty
+              ? null
+              : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProfileScreen(uid: ownerUid),
+                    ),
+                  );
+                },
+          child: MouseRegion(
+            cursor: ownerUid.isEmpty
+                ? SystemMouseCursors.basic
+                : SystemMouseCursors.click,
+            child: Row(
+              children: [
+                _OwnerAvatar(ownerUid: ownerUid),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    ownerName,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact ? 15 : 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue[700],
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.blue[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: compact ? 20 : 25),
+        Wrap(
+          spacing: compact ? 12 : 30,
+          runSpacing: 14,
+          children: [
+            _buildInfoBadge('Categoria', knowledgeArea, compact: compact),
+            _buildInfoBadge('Metodo', method, compact: compact),
+            if (subject.isNotEmpty)
+              _buildInfoBadge('Materia', subject, compact: compact),
+          ],
+        ),
+        if (career.isNotEmpty || condition.isNotEmpty || priceUsd != null) ...[
+          SizedBox(height: compact ? 18 : 20),
+          Wrap(
+            spacing: compact ? 10 : 16,
+            runSpacing: 12,
+            children: [
+              if (career.isNotEmpty)
+                _buildMetaChip('Carrera', career, compact: compact),
+              if (condition.isNotEmpty)
+                _buildMetaChip('Estado', condition, compact: compact),
+              _buildMetaChip('Cantidad', quantity.toString(), compact: compact),
+              if (isOutOfStock)
+                _buildMetaChip(
+                  'Disponibilidad',
+                  PostModel.lifecycleOutOfStock,
+                  backgroundColor: const Color(0xFFFCE8E6),
+                  textColor: const Color(0xFFB3261E),
+                  borderColor: const Color(0xFFF1B5AF),
+                  compact: compact,
+                ),
+              if (priceUsd != null)
+                _buildMetaChip(
+                  'Precio',
+                  '\$${priceUsd.toStringAsFixed(2)}',
+                  compact: compact,
+                ),
+            ],
+          ),
+        ],
+        SizedBox(height: compact ? 24 : 30),
+        Text(
+          'Descripcion',
+          style: TextStyle(
+            fontSize: compact ? 17 : 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(compact ? 16 : 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            description,
+            style: TextStyle(
+              fontSize: compact ? 15 : 16,
+              color: Colors.black87,
+              height: 1.5,
+            ),
+          ),
+        ),
+        SizedBox(height: compact ? 28 : 40),
+        SizedBox(
+          width: double.infinity,
+          height: compact ? 54 : 60,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isOutOfStock
+                  ? const Color(0xFF9A969F)
+                  : const Color(0xFFFF6B00),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 2,
+            ),
+            onPressed: isOutOfStock
+                ? null
+                : () {
+                    _handleActionPressed(
+                      context,
+                      currentPost,
+                      quantity,
+                      hasPrice,
+                    );
+                  },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.handshake_outlined,
+                  color: Colors.white,
+                  size: compact ? 24 : 28,
+                ),
+                SizedBox(width: compact ? 8 : 10),
+                Flexible(
+                  child: Text(
+                    isOutOfStock
+                        ? PostModel.lifecycleOutOfStock
+                        : hasPrice
+                            ? 'Comprar'
+                            : 'Intercambiar',
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: compact ? 18 : 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -538,17 +590,20 @@ class MaterialDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoBadge(String label, String value) {
+  Widget _buildInfoBadge(String label, String value, {bool compact = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: compact ? 13 : 14, color: Colors.grey[600]),
         ),
         const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 14 : 16,
+            vertical: compact ? 7 : 8,
+          ),
           decoration: BoxDecoration(
             color: const Color(0xFF333333),
             borderRadius: BorderRadius.circular(20),
@@ -572,9 +627,13 @@ class MaterialDetailScreen extends StatelessWidget {
     Color backgroundColor = Colors.white,
     Color textColor = const Color(0xFF333333),
     Color borderColor = const Color(0xFFD4CFD8),
+    bool compact = false,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 8 : 10,
+      ),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
@@ -584,7 +643,7 @@ class MaterialDetailScreen extends StatelessWidget {
         text: TextSpan(
           style: TextStyle(
             color: textColor,
-            fontSize: 14,
+            fontSize: compact ? 13 : 14,
           ),
           children: [
             TextSpan(

@@ -371,10 +371,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         const SizedBox(height: 16),
         _buildFieldLabel("Materiales:"),
-        _buildEditableField(
-          controller: booksCtrl,
-          hintText: "Separados por coma",
-        ),
+        _buildReadOnlyField(booksCtrl.text.isEmpty ? "Ninguno" : booksCtrl.text),
       ],
     );
   }
