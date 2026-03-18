@@ -310,8 +310,15 @@ class _SearchResultsHeader extends StatelessWidget {
           isMobile
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _SearchInput(controller: controller, onSubmitted: (_) => onSearch()),
+                children: [
+                    _SearchInput(
+                      controller: controller,
+                      onSubmitted: (_) => onSearch(),
+                      onClear: () {
+                        controller.clear();
+                        onSearch();
+                      },
+                    ),
                     const SizedBox(height: 12),
                     _SearchButton(onPressed: onSearch),
                   ],
@@ -322,6 +329,10 @@ class _SearchResultsHeader extends StatelessWidget {
                       child: _SearchInput(
                         controller: controller,
                         onSubmitted: (_) => onSearch(),
+                        onClear: () {
+                          controller.clear();
+                          onSearch();
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -337,10 +348,12 @@ class _SearchResultsHeader extends StatelessWidget {
 class _SearchInput extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onSubmitted;
+  final VoidCallback onClear;
 
   const _SearchInput({
     required this.controller,
     required this.onSubmitted,
+    required this.onClear,
   });
 
   @override
@@ -351,6 +364,13 @@ class _SearchInput extends StatelessWidget {
       decoration: InputDecoration(
         hintText: 'Buscar por titulo, material o materia...',
         prefixIcon: const Icon(Icons.search),
+        suffixIcon: controller.text.trim().isEmpty
+            ? null
+            : IconButton(
+                onPressed: onClear,
+                icon: const Icon(Icons.close),
+                tooltip: 'Limpiar busqueda',
+              ),
         filled: true,
         fillColor: const Color(0xFFF7F5F8),
         border: OutlineInputBorder(

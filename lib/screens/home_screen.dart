@@ -49,22 +49,28 @@ class HomeScreen extends StatelessWidget {
                         ),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
-                          Colors.orange.withValues(alpha: -8),
+                          Colors.black.withValues(alpha: 0.4),
                           BlendMode.darken,
                         ),
                       ),
                     ),
                     alignment: Alignment.center,
-                    child: Text(
-                      'Todo lo que necesitas para tu trimestre',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: isMobile ? 32 : 42, 
-                        fontWeight: FontWeight.w300,
-                        shadows: const [
-                          Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54),
-                        ],
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: isMobile ? screenWidth - 56 : 860,
+                      ),
+                      child: Text(
+                        'Todo lo que necesitas\npara tu trimestre',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isMobile ? 32 : 42,
+                          fontWeight: FontWeight.w600,
+                          height: 1.18,
+                          shadows: const [
+                            Shadow(offset: Offset(0, 3), blurRadius: 16, color: Colors.black87),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -78,11 +84,14 @@ class HomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
                           ),
                         ],
+                        border: Border.all(
+                          color: const Color(0xFFE7E2EA),
+                        ),
                       ),
                       child: SearchAnchor(
                         isFullScreen: false, 
@@ -102,7 +111,11 @@ class HomeScreen extends StatelessWidget {
                             controller: controller,
                             hintText: 'Buscar por título, material o materia...',
                             hintStyle: const WidgetStatePropertyAll(
-                              TextStyle(color: Colors.grey, fontSize: 16),
+                              TextStyle(
+                                color: Color(0xFF8A8790),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             backgroundColor: 
                             const WidgetStatePropertyAll(Colors.transparent),
@@ -112,8 +125,26 @@ class HomeScreen extends StatelessWidget {
                             padding: const WidgetStatePropertyAll(
                               EdgeInsets.symmetric(horizontal: 25),
                             ),
-                            trailing: const [
-                              Icon(Icons.search, color: Colors.black54),
+                            trailing: [
+                              IconButton(
+                                onPressed: () {
+                                  final query = controller.text.trim();
+                                  controller.closeView(query);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SearchResultsScreen(
+                                        initialQuery: query,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.search,
+                                  color: Colors.black54,
+                                ),
+                                tooltip: 'Ver resultados',
+                              ),
                             ],
                           );
                         },

@@ -4,6 +4,7 @@ import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/landing_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:metroswap/services/presence_service.dart';
 import 'firebase_options.dart';
 import 'package:metroswap/screens/payments/paypal_return_screen.dart';
@@ -45,7 +46,9 @@ class MyApp extends StatelessWidget {
         scrollbars: false,
       ),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B00)), 
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B00)),
+        textTheme: GoogleFonts.interTextTheme(),
+        primaryTextTheme: GoogleFonts.interTextTheme(),
         useMaterial3: true,
       ),
       onGenerateRoute: (settings) {
