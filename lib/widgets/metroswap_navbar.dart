@@ -364,7 +364,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   icon: const Icon(Icons.exit_to_app, size: 18),
-                  // Ocultamos la palabra en móviles para que quepa el icono de salir
+                  // Oculta la etiqueta en móvil para ahorrar espacio.
                   label: isMobile ? const SizedBox.shrink() : const Text('Cerrar sesion'),
                 ),
                 ],
