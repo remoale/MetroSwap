@@ -565,13 +565,13 @@ class _ResultImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = isMobile ? double.infinity : 160.0;
-    final height = isMobile ? 280.0 : 220.0;
+    final width = isMobile ? double.infinity : 180.0;
+    final height = isMobile ? 280.0 : 240.0;
 
     return Container(
       width: width,
       height: height,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -583,16 +583,17 @@ class _ResultImage extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+          alignment: Alignment.center,
           color: const Color(0xFFF3F1F4),
           child: imageUrl.trim().isEmpty
               ? const Icon(Icons.menu_book, size: 54, color: Color(0xFFB7B1BC))
               : Image.network(
                   imageUrl,
                   fit: BoxFit.contain,
-                  alignment: Alignment.topCenter,
+                  alignment: Alignment.center,
                   webHtmlElementStrategy: kIsWeb
                       ? WebHtmlElementStrategy.prefer
                       : WebHtmlElementStrategy.never,
@@ -671,6 +672,8 @@ class _ResultContent extends StatelessWidget {
           children: [
             _ResultBadge(label: 'Categoria', value: post.knowledgeArea),
             _ResultBadge(label: 'Metodo', value: post.method),
+            if (post.materialType.trim().isNotEmpty)
+              _ResultBadge(label: 'Tipo', value: post.materialType),
             if (post.subject.trim().isNotEmpty)
               _ResultBadge(label: 'Materia', value: post.subject),
           ],
