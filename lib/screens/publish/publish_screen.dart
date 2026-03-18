@@ -42,6 +42,29 @@ class _PublishScreenState extends State<PublishScreen> {
     'Deteriorado',
   ];
 
+  static const List<String> _careersList =[
+    'Ciencias Administrativas',
+    'Comunicación Social y Empresarial',
+    'Contaduría Pública',
+    'Derecho',
+    'Economía Empresarial',
+    'Educación',
+    'Estudios Internacionales',
+    'Estudios Liberales',
+    'Estudios simultáneos',
+    'Idiomas Modernos',
+    'Ingeniería Civil',
+    'Ingeniería de Sistemas',
+    'Ingeniería Eléctrica',
+    'Ingeniería Mecánica',
+    'Ingeniería Producción',
+    'Ingeniería Química',
+    'Matemáticas Industriales',
+    'Psicología',
+    'TSU en Desarrollo de Sistemas Inteligentes',
+    'Turismo Sostenible',  
+  ];
+
   static const List<String> _methods = [
     PostModel.methodExchange,
     PostModel.methodSale,
@@ -52,18 +75,19 @@ class _PublishScreenState extends State<PublishScreen> {
   String? _selectedKnowledgeArea;
   String? _selectedCondition;
   String? _selectedMethod;
+  String? _selectedCareer;
   bool _isPublishing = false;
   int _quantity = 1; 
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
-  final TextEditingController _careerController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
 
   XFile? _image;
   Uint8List? _imageBytes;
   final ImagePicker _picker = ImagePicker();
+
 
   Future<void> _pickImage() async {
     final XFile? pickedFile =
@@ -95,6 +119,11 @@ class _PublishScreenState extends State<PublishScreen> {
 
     if (_selectedKnowledgeArea == null) {
       _showMessage('Selecciona el área de conocimiento.');
+      return;
+    }
+
+    if (_selectedCareer==null){
+      _showMessage('seleccciona tu carrera.');
       return;
     }
 
@@ -158,7 +187,7 @@ class _PublishScreenState extends State<PublishScreen> {
         description: _descController.text.trim(),
         materialType: _selectedMaterialType!,
         knowledgeArea: _selectedKnowledgeArea!,
-        career: _careerController.text.trim(),
+        career: _selectedCareer!,
         subject: _subjectController.text.trim(),
         condition: _selectedCondition!,
         method: _selectedMethod!,
@@ -217,7 +246,6 @@ class _PublishScreenState extends State<PublishScreen> {
     _titleController.dispose();
     _priceController.dispose();
     _descController.dispose();
-    _careerController.dispose();
     _subjectController.dispose();
     super.dispose();
   }
@@ -405,15 +433,10 @@ class _PublishScreenState extends State<PublishScreen> {
           ],
           const SizedBox(height: 20),
           _buildLabel('Carrera'),
-          _buildTextField(
-            'Ej. Ingenieria de Sistemas',
-            controller: _careerController,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'La carrera es obligatoria';
-              }
-              return null;
-            },
+          _buildDropdown(
+            value: _selectedCareer,
+            items: _careersList,
+            onChanged: (val) => setState(() => _selectedCareer = val),
           ),
           const SizedBox(height: 20),
           _buildLabel('Materia'),
@@ -498,8 +521,16 @@ class _PublishScreenState extends State<PublishScreen> {
             value: value,
             hint: const Text('Seleccionar'),
             isExpanded: true,
+            menuMaxHeight: 400,
             items: items
-                .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                .map((item) => DropdownMenuItem(
+                  value: item, 
+                  child: Text(
+                    item,
+                    overflow: TextOverflow.ellipsis,
+                    style : const TextStyle(fontSize: 14),
+                  ),
+                ))
                 .toList(),
             onChanged: onChanged,
           ),

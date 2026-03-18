@@ -34,10 +34,14 @@ class PostModel {
   final DateTime? updatedAt;
 
   static String normalizeSearchText(String value) {
-    return value
-        .toLowerCase()
-        .trim()
-        .replaceAll(RegExp(r'\s+'), ' ');
+
+    var withDia = 'áéíóúÁÉÍÓÚüÜ';
+    var withoutDia = 'aeiouAEIOUuU';
+    String str = value;
+    for (int i = 0; i < withDia.length; i++) {
+      str = str.replaceAll(withDia[i], withoutDia[i]);
+    }
+    return str.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
   static String buildSearchableText({
@@ -70,7 +74,6 @@ class PostModel {
     required this.subject,
     required this.condition,
     required this.method,
-    required this.priceUsd,
     required this.quantity, 
     required this.imageUrl,
     required this.ownerUid,
@@ -80,6 +83,7 @@ class PostModel {
     this.lifecycleStatus = lifecyclePublished,
     this.createdAt,
     this.updatedAt,
+    this.priceUsd,
   });
 
   Map<String, dynamic> toCreateMap() {
