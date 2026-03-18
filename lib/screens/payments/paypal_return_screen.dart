@@ -37,7 +37,7 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
     }
 
     final uri = Uri.base;
-    final orderId = uri.queryParameters["token"]; // PayPal uses token as orderId
+    final orderId = uri.queryParameters["token"]; // PayPal usa `token` como identificador de la orden.
     final exchangeId = uri.queryParameters["tradeId"]?.trim();
     _exchangeId = (exchangeId != null && exchangeId.isNotEmpty) ? exchangeId : null;
 
