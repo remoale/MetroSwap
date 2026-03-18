@@ -7,8 +7,6 @@ import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
-// Agrega esta importación en la parte superior
-import 'package:metroswap/screens/publish/publish_screen.dart';
 
 /// Muestra el detalle completo de una publicación disponible.
 class MaterialDetailScreen extends StatelessWidget {
@@ -385,7 +383,6 @@ class MaterialDetailScreen extends StatelessWidget {
     );
   }
 
-  // Valida la operación antes de iniciar el intercambio.
   void _handleActionPressed(
     BuildContext context,
     PostModel? currentPost,
@@ -419,7 +416,6 @@ class MaterialDetailScreen extends StatelessWidget {
       return;
     }
 
-    // Doble verificación de seguridad (aunque ya no se debería ver el botón).
     if (currentUser.uid == currentPost.ownerUid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -429,18 +425,15 @@ class MaterialDetailScreen extends StatelessWidget {
       return;
     }
 
-    // Muestra un diálogo cuando hay más de un artículo disponible.
     if (maxQuantity > 1) {
       _showQuantityDialog(context, maxQuantity, (selectedQty) {
         _executeTrade(context, currentPost, currentUser, hasPrice, selectedQty);
       });
     } else {
-      // Continúa directamente cuando solo hay una unidad disponible.
       _executeTrade(context, currentPost, currentUser, hasPrice, 1);
     }
   }
 
-  // Muestra el diálogo para seleccionar la cantidad.
   void _showQuantityDialog(
     BuildContext context,
     int maxQuantity,
@@ -517,8 +510,8 @@ class MaterialDetailScreen extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.pop(dialogContext); // Cierra el diálogo.
-                    onConfirm(selectedQuantity); // Confirma la cantidad elegida.
+                    Navigator.pop(dialogContext);
+                    onConfirm(selectedQuantity);
                   },
                   child: const Text(
                     'Confirmar',
@@ -533,7 +526,6 @@ class MaterialDetailScreen extends StatelessWidget {
     );
   }
 
-  // Registra el intercambio en Firestore y abre el chat asociado.
   Future<void> _executeTrade(
     BuildContext context,
     PostModel currentPost,
@@ -573,7 +565,7 @@ class MaterialDetailScreen extends StatelessWidget {
         'targetUid': currentPost.ownerUid,
         'requesterUid': currentUser.uid,
         'requesterName': requesterName.isEmpty ? 'Usuario' : requesterName,
-        'requestedQuantity': selectedQuantity, // Guarda la cantidad solicitada.
+        'requestedQuantity': selectedQuantity,
         'status': 'requested',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
