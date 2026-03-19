@@ -363,7 +363,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildCareerField() {
     if (_isStudentRole(editableUser.role)) {
       return DropdownButtonFormField<String>(
-        value: selectedCareer,
+        initialValue: selectedCareer,
         isExpanded: true,
         decoration: _fieldDecoration("Selecciona tu carrera"),
         items: _unimetCareers

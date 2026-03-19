@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:metroswap/models/post_model.dart';
+import 'package:metroswap/services/post_deletion_service.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_layout.dart'; 
@@ -20,6 +21,7 @@ class EditPostScreen extends StatefulWidget {
 
 class _EditPostScreenState extends State<EditPostScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final PostDeletionService _postDeletionService = PostDeletionService();
 
   static const List<String> _materialTypes = [
     'Libro',
@@ -166,37 +168,15 @@ Future<void> _deleteItem() async {
     if (confirm == true) {
       setState(() => _isSaving = true);
       try {
-        final String postId = widget.post.id;
-        final String ownerUid = widget.post.ownerUid;
-
-        // Creamos un Batch para ejecutar varias operaciones como una sola
-        WriteBatch batch = FirebaseFirestore.instance.batch();
-
-        // 1. Referencia para eliminar el post de la colección 'posts'
-        DocumentReference postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
-        batch.delete(postRef);
-
-        // 2. Referencia para quitar el ID del post de la lista 'books' en el documento del usuario
-        DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(ownerUid);
-        batch.update(userRef, {
-          'books': FieldValue.arrayRemove([postId])
-        });
-
-        // Ejecutamos el batch en Firebase
-        await batch.commit();
-        
-        // 3. Borrar la imagen de Firebase Storage (opcional pero recomendado para ahorrar espacio)
-        if (widget.post.imageUrl.isNotEmpty && widget.post.imageUrl.contains('firebase')) {
-          try {
-            await FirebaseStorage.instance.refFromURL(widget.post.imageUrl).delete();
-          } catch (e) {
-            debugPrint('Aviso: No se pudo borrar la imagen física de Storage: $e');
-          }
-        }
+        final result = await _postDeletionService.deletePost(
+          postId: widget.post.id,
+          ownerUid: widget.post.ownerUid,
+          title: widget.post.title,
+          imageUrl: widget.post.imageUrl,
+        );
 
         if (mounted) {
-          _showMessage('Publicación eliminada correctamente.');
-          // Volver al inicio o a la pantalla anterior
+          _showMessage(result.message);
           Navigator.of(context).popUntil((route) => route.isFirst); 
         }
       } catch (e) {

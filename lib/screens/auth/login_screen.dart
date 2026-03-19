@@ -176,7 +176,13 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 15),
         TextField(
           controller: _passwordController,
-          obscureText: _obscurePassword, 
+          obscureText: _obscurePassword,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) {
+            if (!_isLoading) {
+              _handleEmailLogin();
+            }
+          },
           decoration: InputDecoration(
             hintText: 'Contraseña',
             filled: true,
