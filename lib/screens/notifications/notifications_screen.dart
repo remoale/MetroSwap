@@ -388,7 +388,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (status == 'cancelled') {
       return notification.body;
     }
-    return 'Intercambio de "$safeMaterial" completad para $safeActor';
+    return 'Intercambio de "$safeMaterial" completado para $safeActor';
   }
 
   Future<void> _markAsRead(NotificationModel notification) async {
