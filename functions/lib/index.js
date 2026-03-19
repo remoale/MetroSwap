@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.capturePayPalOrder = exports.createPayPalOrderHttp = exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onUserPresenceChangedSyncFirestore = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
+exports.capturePayPalOrderHttp = exports.capturePayPalOrder = exports.createPayPalOrderHttp = exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onUserPresenceChangedSyncFirestore = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const database_1 = require("firebase-functions/v2/database");
@@ -662,8 +662,9 @@ exports.capturePayPalOrder = (0, https_1.onCall)({
         });
     }
     logger.info("PayPal order captured", data);
+    const capturedAmount = pickString((_h = (_g = (_f = (_e = (_d = (_c = data === null || data === void 0 ? void 0 : data.purchase_units) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.payments) === null || _e === void 0 ? void 0 : _e.captures) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.amount) === null || _h === void 0 ? void 0 : _h.value);
     if (data.status === "COMPLETED") {
-        const amountValue = ((_h = (_g = (_f = (_e = (_d = (_c = data.purchase_units) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.payments) === null || _e === void 0 ? void 0 : _e.captures) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.amount) === null || _h === void 0 ? void 0 : _h.value) || null;
+        const amountValue = capturedAmount || null;
         await db.collection("paypalPayments").doc(orderId).set({
             orderId,
             status: "completed",
@@ -726,6 +727,131 @@ exports.capturePayPalOrder = (0, https_1.onCall)({
             await Promise.all(completionNotifications);
         }
     }
-    return data;
+    return {
+        orderId,
+        status: pickString(data === null || data === void 0 ? void 0 : data.status),
+        capturedAmount,
+    };
+});
+exports.capturePayPalOrderHttp = (0, https_1.onRequest)({
+    secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+}, async (req, res) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    if (req.method === "OPTIONS") {
+        res.status(204).send("");
+        return;
+    }
+    if (req.method !== "POST") {
+        res.status(405).json({ error: "Metodo no permitido." });
+        return;
+    }
+    try {
+        const orderId = pickString((_a = req.body) === null || _a === void 0 ? void 0 : _a.orderId);
+        const exchangeId = pickString((_b = req.body) === null || _b === void 0 ? void 0 : _b.exchangeId);
+        if (!orderId) {
+            res.status(400).json({ error: "orderId es obligatorio." });
+            return;
+        }
+        const accessToken = await getPayPalAccessToken();
+        const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            logger.error("PayPal capture failed over HTTP", {
+                status: response.status,
+                orderId,
+                exchangeId,
+                data,
+            });
+            res.status(500).json({
+                error: `PayPal rechazo la captura de la orden. ${summarizePayPalError(data)}`.trim(),
+            });
+            return;
+        }
+        logger.info("PayPal order captured over HTTP", data);
+        const capturedAmount = pickString((_h = (_g = (_f = (_e = (_d = (_c = data === null || data === void 0 ? void 0 : data.purchase_units) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.payments) === null || _e === void 0 ? void 0 : _e.captures) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.amount) === null || _h === void 0 ? void 0 : _h.value);
+        if (data.status === "COMPLETED") {
+            await db.collection("paypalPayments").doc(orderId).set({
+                orderId,
+                status: "completed",
+                amount: capturedAmount || null,
+                currency: "USD",
+                createdAt: firestore_2.FieldValue.serverTimestamp(),
+            });
+            if (exchangeId) {
+                const exchangeSnapshot = await db.collection("exchanges").doc(exchangeId).get();
+                const exchangeData = exchangeSnapshot.data() || {};
+                const ownerUid = pickString(exchangeData["targetUid"]) ||
+                    pickString(exchangeData["ownerUid"]) ||
+                    pickString(exchangeData["sellerUid"]);
+                const requesterUid = pickString(exchangeData["requesterUid"]) ||
+                    pickString(exchangeData["actorUid"]) ||
+                    pickString(exchangeData["buyerUid"]);
+                const ownerName = pickString(exchangeData["ownerName"]) || "El usuario";
+                const requesterName = pickString(exchangeData["requesterName"]) || "Un usuario";
+                const postId = pickString(exchangeData["postId"]);
+                const postTitle = pickString(exchangeData["postTitle"]) || pickString(exchangeData["title"]);
+                await db.collection("exchanges").doc(exchangeId).set({
+                    status: "completed",
+                    paymentStatus: "completed",
+                    paymentProvider: "paypal",
+                    paypalOrderId: orderId,
+                    paypalAmount: capturedAmount || null,
+                    updatedBy: null,
+                    updatedAt: firestore_2.FieldValue.serverTimestamp(),
+                    completedAt: firestore_2.FieldValue.serverTimestamp(),
+                }, { merge: true });
+                const completionNotifications = [];
+                if (ownerUid) {
+                    completionNotifications.push(createNotification({
+                        targetUid: ownerUid,
+                        type: "exchange_completed",
+                        title: "Intercambio completado",
+                        body: `Intercambio de "${postTitle || "material"}" completado con ${requesterName}`,
+                        actorUid: requesterUid || undefined,
+                        exchangeId,
+                        postId,
+                        postTitle,
+                        status: "completed",
+                        actorName: requesterName,
+                    }));
+                }
+                if (requesterUid) {
+                    completionNotifications.push(createNotification({
+                        targetUid: requesterUid,
+                        type: "exchange_completed",
+                        title: "Intercambio completado",
+                        body: `Tu intercambio de "${postTitle || "material"}" con ${ownerName} fue completado`,
+                        actorUid: ownerUid || undefined,
+                        exchangeId,
+                        postId,
+                        postTitle,
+                        status: "completed",
+                        actorName: ownerName,
+                    }));
+                }
+                await Promise.all(completionNotifications);
+            }
+        }
+        res.status(200).json({
+            orderId,
+            status: pickString(data === null || data === void 0 ? void 0 : data.status),
+            capturedAmount,
+        });
+    }
+    catch (error) {
+        logger.error("Unexpected capturePayPalOrderHttp error", error);
+        res.status(500).json({
+            error: "No se pudo capturar el pago.",
+        });
+    }
 });
 //# sourceMappingURL=index.js.map

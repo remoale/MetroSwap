@@ -780,8 +780,12 @@ export const capturePayPalOrder = onCall({
 
   logger.info("PayPal order captured", data);
 
+  const capturedAmount = pickString(
+    data?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value,
+  );
+
   if (data.status === "COMPLETED") {
-    const amountValue = data.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value || null;
+    const amountValue = capturedAmount || null;
     await db.collection("paypalPayments").doc(orderId).set({
       orderId,
       status: "completed",
@@ -850,5 +854,147 @@ export const capturePayPalOrder = onCall({
     }
   }
 
-  return data;
+  return {
+    orderId,
+    status: pickString(data?.status),
+    capturedAmount,
+  };
+});
+
+export const capturePayPalOrderHttp = onRequest({
+  secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+}, async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).json({error: "Metodo no permitido."});
+    return;
+  }
+
+  try {
+    const orderId = pickString(req.body?.orderId);
+    const exchangeId = pickString(req.body?.exchangeId);
+
+    if (!orderId) {
+      res.status(400).json({error: "orderId es obligatorio."});
+      return;
+    }
+
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      logger.error("PayPal capture failed over HTTP", {
+        status: response.status,
+        orderId,
+        exchangeId,
+        data,
+      });
+      res.status(500).json({
+        error: `PayPal rechazo la captura de la orden. ${summarizePayPalError(data)}`.trim(),
+      });
+      return;
+    }
+
+    logger.info("PayPal order captured over HTTP", data);
+
+    const capturedAmount = pickString(
+      data?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value,
+    );
+
+    if (data.status === "COMPLETED") {
+      await db.collection("paypalPayments").doc(orderId).set({
+        orderId,
+        status: "completed",
+        amount: capturedAmount || null,
+        currency: "USD",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+      if (exchangeId) {
+        const exchangeSnapshot = await db.collection("exchanges").doc(exchangeId).get();
+        const exchangeData = exchangeSnapshot.data() || {};
+        const ownerUid =
+          pickString(exchangeData["targetUid"]) ||
+          pickString(exchangeData["ownerUid"]) ||
+          pickString(exchangeData["sellerUid"]);
+        const requesterUid =
+          pickString(exchangeData["requesterUid"]) ||
+          pickString(exchangeData["actorUid"]) ||
+          pickString(exchangeData["buyerUid"]);
+        const ownerName = pickString(exchangeData["ownerName"]) || "El usuario";
+        const requesterName = pickString(exchangeData["requesterName"]) || "Un usuario";
+        const postId = pickString(exchangeData["postId"]);
+        const postTitle = pickString(exchangeData["postTitle"]) || pickString(exchangeData["title"]);
+
+        await db.collection("exchanges").doc(exchangeId).set({
+          status: "completed",
+          paymentStatus: "completed",
+          paymentProvider: "paypal",
+          paypalOrderId: orderId,
+          paypalAmount: capturedAmount || null,
+          updatedBy: null,
+          updatedAt: FieldValue.serverTimestamp(),
+          completedAt: FieldValue.serverTimestamp(),
+        }, {merge: true});
+
+        const completionNotifications: Promise<string>[] = [];
+        if (ownerUid) {
+          completionNotifications.push(createNotification({
+            targetUid: ownerUid,
+            type: "exchange_completed",
+            title: "Intercambio completado",
+            body: `Intercambio de "${postTitle || "material"}" completado con ${requesterName}`,
+            actorUid: requesterUid || undefined,
+            exchangeId,
+            postId,
+            postTitle,
+            status: "completed",
+            actorName: requesterName,
+          }));
+        }
+        if (requesterUid) {
+          completionNotifications.push(createNotification({
+            targetUid: requesterUid,
+            type: "exchange_completed",
+            title: "Intercambio completado",
+            body: `Tu intercambio de "${postTitle || "material"}" con ${ownerName} fue completado`,
+            actorUid: ownerUid || undefined,
+            exchangeId,
+            postId,
+            postTitle,
+            status: "completed",
+            actorName: ownerName,
+          }));
+        }
+        await Promise.all(completionNotifications);
+      }
+    }
+
+    res.status(200).json({
+      orderId,
+      status: pickString(data?.status),
+      capturedAmount,
+    });
+  } catch (error) {
+    logger.error("Unexpected capturePayPalOrderHttp error", error);
+    res.status(500).json({
+      error: "No se pudo capturar el pago.",
+    });
+  }
 });

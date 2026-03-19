@@ -27,42 +27,11 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
   String? _exchangeId;
 
   double? _extractCapturedAmount(Map<String, dynamic> result) {
-    final purchaseUnits = result["purchase_units"];
-    if (purchaseUnits is! List || purchaseUnits.isEmpty) {
-      return null;
+    final directAmount = result["capturedAmount"];
+    if (directAmount != null) {
+      return double.tryParse(directAmount.toString());
     }
-
-    final firstUnit = purchaseUnits.first;
-    if (firstUnit is! Map) {
-      return null;
-    }
-
-    final payments = firstUnit["payments"];
-    if (payments is! Map) {
-      return null;
-    }
-
-    final captures = payments["captures"];
-    if (captures is! List || captures.isEmpty) {
-      return null;
-    }
-
-    final firstCapture = captures.first;
-    if (firstCapture is! Map) {
-      return null;
-    }
-
-    final amount = firstCapture["amount"];
-    if (amount is! Map) {
-      return null;
-    }
-
-    final value = amount["value"];
-    if (value == null) {
-      return null;
-    }
-
-    return double.tryParse(value.toString());
+    return null;
   }
 
   @override
@@ -108,7 +77,16 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
 
     if (!mounted) return;
 
+    final status = result["status"]?.toString().trim().toUpperCase() ?? "";
     final parsedAmount = _extractCapturedAmount(result);
+    if (status != "COMPLETED") {
+      setState(() {
+        _loading = false;
+        _error = "PayPal no confirmo el pago como completado.";
+      });
+      return;
+    }
+
     if (parsedAmount == null || parsedAmount <= 0) {
       setState(() {
         _loading = false;
@@ -169,29 +147,34 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(title: const Text("Pago")),
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 72, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 72, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const HomeScreen()),
+                        (_) => false,
+                      );
+                    },
+                    child: const Text("Volver al inicio"),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    (_) => false,
-                  );
-                },
-                child: const Text("Volver al inicio"),
-              ),
-            ],
+            ),
           ),
         ),
       );

@@ -1,18 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:http/http.dart' as http;
 
 /// Encapsula la creación y captura de pagos de PayPal.
 class PaymentController {
-  PaymentController()
-    : _functions = FirebaseFunctions.instanceFor(region: "us-central1");
+  PaymentController();
 
   static const String _paypalHttpEndpoint =
       "https://us-central1-metroswap-73a05.cloudfunctions.net/createPayPalOrderHttp";
-
-  final FirebaseFunctions _functions;
+  static const String _paypalCaptureHttpEndpoint =
+      "https://us-central1-metroswap-73a05.cloudfunctions.net/capturePayPalOrderHttp";
 
   Map<String, dynamic> _normalizeMapData(dynamic data, String action) {
     try {
@@ -42,21 +40,6 @@ class PaymentController {
       // Ignora errores de serialización inestables en web.
     }
     return "No se pudo $action. Intenta nuevamente.";
-  }
-
-  String _formatCallableError(FirebaseFunctionsException error) {
-    final code = error.code.trim();
-    final message = (error.message ?? "").trim();
-    if (code.isNotEmpty && message.isNotEmpty) {
-      return "$code: $message";
-    }
-    if (message.isNotEmpty) {
-      return message;
-    }
-    if (code.isNotEmpty) {
-      return "Cloud Functions error: $code";
-    }
-    return "Error desconocido en Cloud Functions.";
   }
 
   /// Crea una orden en PayPal mediante una Cloud Function.
@@ -112,20 +95,33 @@ class PaymentController {
     String? exchangeId,
   }) async {
     try {
-      final result = await _functions
-          .httpsCallable("capturePayPalOrder")
-          .call({
-            "orderId": orderId,
-            if (exchangeId != null && exchangeId.trim().isNotEmpty)
-              "exchangeId": exchangeId.trim(),
-          });
+      final response = await http.post(
+        Uri.parse(_paypalCaptureHttpEndpoint),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "orderId": orderId,
+          if (exchangeId != null && exchangeId.trim().isNotEmpty)
+            "exchangeId": exchangeId.trim(),
+        }),
+      );
 
-      return _normalizeMapData(result.data, "capturePayment");
-    } on FirebaseFunctionsException catch (e, stackTrace) {
-      final message = _formatCallableError(e);
-      debugPrint("Error en PaymentController.capturePayment: $message");
-      debugPrintStack(stackTrace: stackTrace);
-      throw Exception(message);
+      final data = _normalizeMapData(
+        jsonDecode(response.body),
+        "capturePayment",
+      );
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final errorMessage = data["error"]?.toString().trim();
+        throw Exception(
+          errorMessage?.isNotEmpty == true
+              ? errorMessage!
+              : "No se pudo capturar el pago.",
+        );
+      }
+
+      return data;
     } catch (e, stackTrace) {
       final message = _fallbackErrorMessage(e, "capturar el pago");
       debugPrint("Error en PaymentController.capturePayment");
