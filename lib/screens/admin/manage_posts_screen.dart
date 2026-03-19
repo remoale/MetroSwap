@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metroswap/services/post_deletion_service.dart';
 import 'package:metroswap/utils/admin_utils.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
@@ -13,6 +14,7 @@ class ManagePostsScreen extends StatefulWidget {
 }
 
 class _ManagePostsScreenState extends State<ManagePostsScreen> {
+  final PostDeletionService _postDeletionService = PostDeletionService();
   bool _isAuthorizing = true;
   bool _isAuthorized = false;
   bool _isLoading = true;
@@ -62,12 +64,16 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
         String rawStatus = data['status'] ?? 'Activo';
         if (rawStatus.toLowerCase() == 'active') {
           rawStatus = 'Activo';
+        } else if (rawStatus.toLowerCase() == 'inactive') {
+          rawStatus = 'Inactivo';
         }
 
         loadedPosts.add({
           'id': doc.id,
           'title': data['title'] ?? data['productName'] ?? 'Publicación sin título',
           'author': data['authorEmail'] ?? data['email'] ?? 'Autor desconocido',
+          'ownerUid': data['ownerUid'] ?? '',
+          'imageUrl': data['imageUrl'] ?? '',
           'date': dateStr,
           'status': rawStatus,
         });
@@ -88,7 +94,9 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
   }
 
   // Elimina una publicación después de confirmar la acción.
-  Future<void> _deletePost(String postId, String title) async {
+  Future<void> _deletePost(Map<String, dynamic> post) async {
+    final postId = (post['id'] ?? '').toString();
+    final title = (post['title'] ?? 'Publicación sin título').toString();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -114,16 +122,34 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
-        
-        setState(() {
-          _posts.removeWhere((p) => p['id'] == postId);
-        });
+        final result = await _postDeletionService.deletePost(
+          postId: postId,
+          ownerUid: (post['ownerUid'] ?? '').toString(),
+          title: title,
+          imageUrl: (post['imageUrl'] ?? '').toString(),
+        );
+
+        if (!mounted) return;
+        if (result.hardDeleted) {
+          setState(() {
+            _posts.removeWhere((p) => p['id'] == postId);
+          });
+        } else {
+          setState(() {
+            final index = _posts.indexWhere((p) => p['id'] == postId);
+            if (index != -1) {
+              _posts[index] = {
+                ..._posts[index],
+                'status': 'Inactivo',
+              };
+            }
+          });
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Publicación eliminada exitosamente.'),
+            SnackBar(
+              content: Text(result.message),
               backgroundColor: Colors.green,
             ),
           );
@@ -261,7 +287,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                               IconButton(
                                                 icon: const Icon(Icons.delete_outline, color: Colors.red),
                                                 tooltip: 'Eliminar publicación',
-                                                onPressed: () => _deletePost(post['id'], post['title']),
+                                                onPressed: () => _deletePost(post),
                                               ),
                                             ),
                                           ],
@@ -314,7 +340,7 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
             children: [
               _buildStatusChip(status),
               OutlinedButton.icon(
-                onPressed: () => _deletePost(post['id'], title),
+                onPressed: () => _deletePost(post),
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
                 label: const Text('Eliminar'),
                 style: OutlinedButton.styleFrom(
@@ -346,19 +372,26 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
 
   Widget _buildStatusChip(String status) {
     final isActive = status == 'Activo';
+    final isInactive = status == 'Inactivo';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: isActive
             ? Colors.green.withValues(alpha: 0.1)
-            : Colors.orange.withValues(alpha: 0.1),
+            : isInactive
+                ? Colors.grey.withValues(alpha: 0.14)
+                : Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         status,
         style: TextStyle(
-          color: isActive ? Colors.green[700] : Colors.orange[700],
+          color: isActive
+              ? Colors.green[700]
+              : isInactive
+                  ? Colors.grey[700]
+                  : Colors.orange[700],
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
