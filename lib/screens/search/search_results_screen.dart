@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -34,6 +35,17 @@ class SearchResultsScreen extends StatefulWidget {
           return searchableText.contains(searchTerm);
         })
         .toList();
+
+    if (searchTerm.isEmpty) {
+      final available = matches.where((data) => !_isOutOfStockMap(data)).toList();
+      final outOfStock = matches.where((data) => _isOutOfStockMap(data)).toList();
+      final random = Random();
+
+      available.shuffle(random);
+      outOfStock.shuffle(random);
+
+      return [...available, ...outOfStock];
+    }
 
     matches.sort((a, b) {
       final aOutOfStock = _isOutOfStockMap(a);

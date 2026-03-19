@@ -173,7 +173,7 @@ class _PublishScreenState extends State<PublishScreen> {
         
         if (mounted) {
           _showMessage('Publicación eliminada correctamente.');
-          Navigator.of(context).pop(); // Regresa a la pantalla anterior
+          Navigator.of(context).pop();
         }
       } catch (e) {
         _showMessage('Error al eliminar: $e');
@@ -664,7 +664,7 @@ class _PublishScreenState extends State<PublishScreen> {
             },
           ),
           const SizedBox(height: 30),
-          _buildActionButtons(), // <-- AQUÍ LLAMAMOS A LOS BOTONES NUEVOS
+          _buildActionButtons(),
         ],
       ),
     );
@@ -760,7 +760,6 @@ class _PublishScreenState extends State<PublishScreen> {
     );
   }
 
-  // --- NUEVA LÓGICA DE BOTONES (GUARDAR Y ELIMINAR) ---
   Widget _buildActionButtons() {
     return Column(
       children: [
@@ -789,7 +788,7 @@ class _PublishScreenState extends State<PublishScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: Colors.red), // Borde rojo
+                  side: const BorderSide(color: Colors.red),
                 ),
               ),
               onPressed: _isPublishing ? null : _deleteItem,
