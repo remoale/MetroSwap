@@ -608,7 +608,9 @@ class _ResultImage extends StatelessWidget {
                   imageUrl,
                   fit: BoxFit.contain,
                   alignment: Alignment.center,
-                  webHtmlElementStrategy: WebHtmlElementStrategy.never,
+                  webHtmlElementStrategy: kIsWeb
+                      ? WebHtmlElementStrategy.prefer
+                      : WebHtmlElementStrategy.never,
                   errorBuilder: (context, error, stackTrace) {
                     return const Icon(
                       Icons.image_not_supported_outlined,
