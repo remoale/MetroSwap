@@ -185,7 +185,7 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
     final isMobile = screenWidth < 600;
     final isCompactDesktop = !isMobile && screenWidth < 1100;
     final isTightAdminDesktop = _isAdmin && isHome && !isMobile && screenWidth < 1250;
-    final showAdminBadge = _isAdmin;
+    final showAdminBadge = _isAdmin && isHome;
     final showMobileHeading = !isHome && !isMobile;
 
     return Container(
