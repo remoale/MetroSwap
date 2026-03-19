@@ -787,7 +787,7 @@ class _HistoryCard extends StatelessWidget {
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: compact ? 12 : 10),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -827,15 +827,17 @@ class _HistoryCard extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: compact ? 6 : 3),
-                      Text(
-                        message,
-                        maxLines: compact ? 4 : 3,
-                        style: TextStyle(
-                          fontSize: compact ? 14 : 16,
-                          height: 1.2,
-                          color: const Color(0xFF4C4A50),
+                      Expanded(
+                        child: Text(
+                          message,
+                          maxLines: compact ? 4 : 3,
+                          style: TextStyle(
+                            fontSize: compact ? 14 : 16,
+                            height: 1.2,
+                            color: const Color(0xFF4C4A50),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
