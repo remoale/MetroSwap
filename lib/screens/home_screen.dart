@@ -169,14 +169,17 @@ class HomeScreen extends StatelessWidget {
                               final post = PostModel.fromMap(data);
 
                               return ListTile(
+                                key: ValueKey('suggestion:${post.id}:${post.imageUrl}'),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 leading: ClipRRect(
+                                  key: ValueKey('suggestion-image:${post.id}:${post.imageUrl}'),
                                   borderRadius: BorderRadius.circular(8),
                                   child: SizedBox(
                                     width: 60,
                                     height: 60,
                                     child: imageUrl != null && imageUrl.isNotEmpty
                                         ? Image.network(
+                                            key: ValueKey('suggestion-network:${post.id}:${post.imageUrl}'),
                                             imageUrl,
                                             fit: BoxFit.cover,
                                             webHtmlElementStrategy: kIsWeb
