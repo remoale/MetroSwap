@@ -240,14 +240,25 @@ class _MetroSwapNavbarState extends State<MetroSwapNavbar> {
                 color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(
-                'Bienvenido admin',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: isMobile ? 14 : (isTightAdminDesktop ? 15 : (isCompactDesktop ? 16 : 20)),
-                  letterSpacing: isTightAdminDesktop ? 0 : (isCompactDesktop ? 0.2 : 0.5),
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.admin_panel_settings,
+                    color: Colors.white,
+                    size: isMobile ? 16 : (isTightAdminDesktop ? 18 : 20),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Bienvenido admin',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: isMobile ? 14 : (isTightAdminDesktop ? 15 : (isCompactDesktop ? 16 : 20)),
+                      letterSpacing: isTightAdminDesktop ? 0 : (isCompactDesktop ? 0.2 : 0.5),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
