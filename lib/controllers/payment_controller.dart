@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:http/http.dart' as http;
 
+/// Encapsula la creación y captura de pagos de PayPal.
 class PaymentController {
   PaymentController()
     : _functions = FirebaseFunctions.instanceFor(region: "us-central1");

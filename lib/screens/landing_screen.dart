@@ -3,6 +3,7 @@ import 'package:metroswap/screens/auth/login_screen.dart';
 import 'package:metroswap/screens/about/about_screen.dart'; 
 import 'package:metroswap/widgets/metroswap_brand.dart';
 
+/// Presenta la página pública de bienvenida y acceso a la plataforma.
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
 
