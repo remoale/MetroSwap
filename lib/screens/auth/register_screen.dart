@@ -125,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final studentIdPattern = RegExp(r'^\d{6,15}$');
     if (!studentIdPattern.hasMatch(studentId)) {
-      _showError("El Student ID debe tener entre 6 y 15 dígitos numéricos.");
+      _showError("El carnet debe tener entre 6 y 15 dígitos numéricos.");
       return;
     }
 
@@ -199,7 +199,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final columnaDerecha = [
       _buildInputField("Correo Unimet:", _correoController, false),
       _buildPasswordField("Contraseña:", _passwordController),
-      _buildInputField("Student ID:", _studentIdController, false, esNumero: true),
+      _buildInputField("Carnet:", _studentIdController, false, esNumero: true),
     ];
 
     return Scaffold(

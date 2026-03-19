@@ -5,20 +5,20 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:metroswap/models/post_model.dart';
-import 'package:metroswap/screens/publish/success_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_layout.dart'; 
 
-/// Muestra el formulario para crear una nueva publicación de material.
-class PublishScreen extends StatefulWidget {
-  const PublishScreen({super.key});
+/// Muestra el formulario exclusivamente para editar una publicación existente.
+class EditPostScreen extends StatefulWidget {
+  final PostModel post; 
+  const EditPostScreen({super.key, required this.post});
 
   @override
-  State<PublishScreen> createState() => _PublishScreenState();
+  State<EditPostScreen> createState() => _EditPostScreenState();
 }
 
-class _PublishScreenState extends State<PublishScreen> {
+class _EditPostScreenState extends State<EditPostScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   static const List<String> _materialTypes = [
@@ -79,7 +79,7 @@ class _PublishScreenState extends State<PublishScreen> {
   String? _selectedCondition;
   String? _selectedMethod;
   String? _selectedCareer; 
-  bool _isPublishing = false;
+  bool _isSaving = false;
   int _quantity = 1;
 
   final TextEditingController _titleController = TextEditingController();
@@ -91,6 +91,35 @@ class _PublishScreenState extends State<PublishScreen> {
   XFile? _image;
   Uint8List? _imageBytes;
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPostData();
+  }
+
+  void _loadPostData() {
+    final post = widget.post;
+    _titleController.text = post.title;
+    _descController.text = post.description;
+    _subjectController.text = post.subject;
+    if (post.priceUsd != null) {
+      _priceController.text = post.priceUsd.toString();
+    }
+
+    _selectedMaterialType = post.materialType;
+    _selectedKnowledgeArea = post.knowledgeArea;
+    _selectedCondition = post.condition;
+    _selectedMethod = post.method;
+    _quantity = post.quantity;
+
+    if (_unimetCareers.contains(post.career)) {
+      _selectedCareer = post.career;
+    } else {
+      _selectedCareer = 'Otro';
+      _careerController.text = post.career;
+    }
+  }
 
   String _safeImageExtension(XFile file) {
     final fileName = file.name.trim().toLowerCase();
@@ -114,16 +143,74 @@ class _PublishScreenState extends State<PublishScreen> {
     }
   }
 
-  Future<void> _publishItem() async {
-    if (_isPublishing) return;
+Future<void> _deleteItem() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar publicación'),
+        content: const Text('¿Estás seguro de que deseas eliminar este material? Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false), 
+            child: const Text('Cancelar')
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar')
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isSaving = true);
+      try {
+        final String postId = widget.post.id;
+        final String ownerUid = widget.post.ownerUid;
+
+        // Creamos un Batch para ejecutar varias operaciones como una sola
+        WriteBatch batch = FirebaseFirestore.instance.batch();
+
+        // 1. Referencia para eliminar el post de la colección 'posts'
+        DocumentReference postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
+        batch.delete(postRef);
+
+        // 2. Referencia para quitar el ID del post de la lista 'books' en el documento del usuario
+        DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(ownerUid);
+        batch.update(userRef, {
+          'books': FieldValue.arrayRemove([postId])
+        });
+
+        // Ejecutamos el batch en Firebase
+        await batch.commit();
+        
+        // 3. Borrar la imagen de Firebase Storage (opcional pero recomendado para ahorrar espacio)
+        if (widget.post.imageUrl.isNotEmpty && widget.post.imageUrl.contains('firebase')) {
+          try {
+            await FirebaseStorage.instance.refFromURL(widget.post.imageUrl).delete();
+          } catch (e) {
+            debugPrint('Aviso: No se pudo borrar la imagen física de Storage: $e');
+          }
+        }
+
+        if (mounted) {
+          _showMessage('Publicación eliminada correctamente.');
+          // Volver al inicio o a la pantalla anterior
+          Navigator.of(context).popUntil((route) => route.isFirst); 
+        }
+      } catch (e) {
+        _showMessage('Error al eliminar: $e');
+        if (mounted) setState(() => _isSaving = false);
+      } 
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    if (_isSaving) return;
 
     final isValidForm = _formKey.currentState?.validate() ?? false;
     if (!isValidForm) return;
-
-    if (_image == null || _imageBytes == null) {
-      _showMessage('Debes agregar una imagen para publicar.');
-      return;
-    }
 
     if (_selectedMaterialType == null) {
       _showMessage('Selecciona el tipo de material.');
@@ -166,33 +253,42 @@ class _PublishScreenState extends State<PublishScreen> {
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      _showMessage('Debes iniciar sesión para publicar.');
+      _showMessage('Debes iniciar sesión para editar.');
       return;
     }
 
-    setState(() => _isPublishing = true);
+    setState(() => _isSaving = true);
 
     try {
-      final postRef = FirebaseFirestore.instance.collection('posts').doc();
-      String imageUrl = '';
+      final postRef = FirebaseFirestore.instance.collection('posts').doc(widget.post.id);
+      
+      String imageUrl = widget.post.imageUrl; 
 
       if (_imageBytes != null && _image != null) {
+        if (imageUrl.isNotEmpty && imageUrl.contains('firebase')) {
+          try {
+            await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+          } catch (e) {
+            debugPrint('No se pudo borrar la imagen anterior: $e');
+          }
+        }
+
         final extension = _safeImageExtension(_image!);
         final contentType = _resolveContentType(extension);
-        
+        final uniqueId = DateTime.now().millisecondsSinceEpoch;
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('posts')
             .child(currentUser.uid)
-            .child('${postRef.id}.$extension');
+            .child('${postRef.id}_$uniqueId.$extension');
 
         try {
           final metadata = SettableMetadata(contentType: contentType);
           await storageRef.putData(_imageBytes!, metadata);
           imageUrl = await storageRef.getDownloadURL();
         } on FirebaseException catch (e) {
-          _showMessage('Fallo al subir imagen (${e.code}).');
-          setState(() => _isPublishing = false);
+          _showMessage('Fallo al subir nueva imagen (${e.code}).');
+          setState(() => _isSaving = false);
           return;
         }
       }
@@ -201,52 +297,35 @@ class _PublishScreenState extends State<PublishScreen> {
           ? _careerController.text.trim() 
           : _selectedCareer!;
 
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-      final userData = userSnapshot.data();
-      final userName = userData?['name']?.toString().trim() ?? '';
-      final ownerName = userName.isNotEmpty ? userName : (currentUser.displayName ?? 'Usuario');
+      final Map<String, dynamic> postData = {
+        'title': _titleController.text.trim(),
+        'description': _descController.text.trim(),
+        'materialType': _selectedMaterialType!,
+        'knowledgeArea': _selectedKnowledgeArea!,
+        'career': finalCareer, 
+        'subject': _subjectController.text.trim(),
+        'condition': _selectedCondition!,
+        'method': _selectedMethod!,
+        'priceUsd': priceUsd,
+        'quantity': _quantity,
+        'imageUrl': imageUrl, 
+        'updatedAt': FieldValue.serverTimestamp(), 
+      };
 
-      final post = PostModel(
-        id: postRef.id,
-        title: _titleController.text.trim(),
-        description: _descController.text.trim(),
-        materialType: _selectedMaterialType!,
-        knowledgeArea: _selectedKnowledgeArea!,
-        career: finalCareer, 
-        subject: _subjectController.text.trim(),
-        condition: _selectedCondition!,
-        method: _selectedMethod!,
-        priceUsd: priceUsd,
-        quantity: _quantity,
-        imageUrl: imageUrl,
-        ownerUid: currentUser.uid,
-        ownerName: ownerName,
-        ownerEmail: currentUser.email,
-      );
-
-      await postRef.set(post.toCreateMap());
-
-      try {
-        await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set({
-          'books': FieldValue.arrayUnion([_titleController.text.trim()]),
-        }, SetOptions(merge: true));
-      } on FirebaseException catch (e) {
-        _showMessage('Publicación creada, pero falló actualizar perfil (${e.code}).');
-      }
-
+      await postRef.update(postData);
+      
+      _showMessage('Publicación actualizada correctamente.');
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const SuccessScreen()));
-
+      
+      Navigator.pop(context, true); 
+      
     } on FirebaseException catch (e) {
       _showMessage('Error con la base de datos (${e.code}).');
     } catch (_) {
       _showMessage('Ocurrió un error inesperado.');
     } finally {
       if (mounted) {
-        setState(() => _isPublishing = false);
+        setState(() => _isSaving = false);
       }
     }
   }
@@ -285,7 +364,7 @@ class _PublishScreenState extends State<PublishScreen> {
         child: Column(
           children: [
             if (!isMobile)
-               const MetroSwapNavbar(developmentNav: true, heading: 'Publicar'),
+               const MetroSwapNavbar(developmentNav: true, heading: 'Editar Material'),
               
             Expanded(
               child: SingleChildScrollView(
@@ -341,7 +420,23 @@ class _PublishScreenState extends State<PublishScreen> {
                   height: double.infinity,
                 ),
               )
-            : const Icon(Icons.image_outlined, size: 80, color: Colors.black26),
+            : widget.post.imageUrl.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      widget.post.imageUrl,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: double.infinity,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                      errorBuilder: (context, error, stackTrace) => 
+                        const Icon(Icons.broken_image, size: 80, color: Colors.black26),
+                    ),
+                  )
+                : const Icon(Icons.image_outlined, size: 80, color: Colors.black26),
       ),
     );
   }
@@ -353,7 +448,7 @@ class _PublishScreenState extends State<PublishScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Añadir foto',
+            'Editar detalles',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
@@ -532,7 +627,7 @@ class _PublishScreenState extends State<PublishScreen> {
           const SizedBox(height: 20),
           _buildLabel('Materia'),
           _buildTextField(
-            'Ej. Matematica I',
+            'Ej. Matemática I',
             controller: _subjectController,
             validator: (value) {
               if (value == null || value.trim().isEmpty) return 'La materia es obligatoria';
@@ -557,10 +652,7 @@ class _PublishScreenState extends State<PublishScreen> {
     );
   }
 
-  Widget _buildFieldGroup({
-    required String label,
-    required Widget child,
-  }) {
+  Widget _buildFieldGroup({required String label, required Widget child}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -661,20 +753,40 @@ class _PublishScreenState extends State<PublishScreen> {
   }
 
   Widget _buildActionButtons() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2E2E2E),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E2E2E),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: _isSaving ? null : _saveChanges,
+            child: _isSaving
+                ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Guardar Cambios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
         ),
-        onPressed: _isPublishing ? null : _publishItem,
-        child: _isPublishing
-            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : const Text('Publicar'),
-      ),
+        const SizedBox(height: 15),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Colors.red),
+              ),
+            ),
+            onPressed: _isSaving ? null : _deleteItem,
+            child: const Text('Eliminar Publicación', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
     );
   }
 }

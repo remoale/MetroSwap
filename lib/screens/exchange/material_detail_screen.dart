@@ -7,23 +7,77 @@ import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
+import 'package:metroswap/screens/publish/edit_post_screen.dart';
 
 /// Muestra el detalle completo de una publicación disponible.
-class MaterialDetailScreen extends StatelessWidget {
+class MaterialDetailScreen extends StatefulWidget {
   final PostModel? post;
 
   const MaterialDetailScreen({super.key, this.post});
 
   @override
+  State<MaterialDetailScreen> createState() => _MaterialDetailScreenState();
+}
+
+class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
+  // Estado local para mantener y actualizar la publicación
+  PostModel? _currentPost;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPost = widget.post; // Inicializamos con la data que llega
+  }
+
+  // Función clave: vuelve a pedir el post a Firebase y actualiza la vista
+  Future<void> _cargarDatosActualizadosDeFirebase() async {
+    if (_currentPost?.id == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // NOTA: Asegúrate de que tu colección se llame 'posts' o cambia el nombre aquí
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('posts') 
+          .doc(_currentPost!.id)
+          .get();
+
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        setState(() {
+          // NOTA: Adapta esto al método que uses en tu PostModel (fromMap, fromJson, fromFirestore, etc.)
+          _currentPost = PostModel.fromMap(docSnapshot.data()!); 
+          // Si tu modelo requiere el ID aparte: PostModel.fromMap(docSnapshot.data()!, docSnapshot.id);
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error actualizando el post: $e');
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final viewportWidth = MediaQuery.of(context).size.width;
-    final currentPost = post;
-    final title = currentPost?.title ?? 'Publicacion no disponible';
+    final currentPost = _currentPost; // Usamos el estado local
+
+    // Obtenemos el usuario actual y verificamos si es el dueño
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+    final isOwner = currentUserUid != null && currentPost?.ownerUid == currentUserUid;
+
+    final title = currentPost?.title ?? 'Publicación no disponible';
     final ownerName = currentPost?.ownerName ?? 'Usuario';
     final ownerUid = currentPost?.ownerUid ?? '';
-    final knowledgeArea = currentPost?.knowledgeArea ?? 'Sin categoria';
-    final method = currentPost?.method ?? 'Sin metodo';
-    final description = currentPost?.description ?? 'Sin descripcion disponible.';
+    final knowledgeArea = currentPost?.knowledgeArea ?? 'Sin categoría';
+    final method = currentPost?.method ?? 'Sin método';
+    final description = currentPost?.description ?? 'Sin descripción disponible.';
     final imageUrl = currentPost?.imageUrl ?? '';
     final subject = currentPost?.subject ?? '';
     final condition = currentPost?.condition ?? '';
@@ -31,6 +85,7 @@ class MaterialDetailScreen extends StatelessWidget {
     final quantity = currentPost?.quantity ?? 1;
     final priceUsd = currentPost?.priceUsd;
     final hasPrice = priceUsd != null;
+
     final isOutOfStock = currentPost == null ||
         quantity <= 0 ||
         currentPost.status == PostModel.statusInactive ||
@@ -39,7 +94,9 @@ class MaterialDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFE4E1E6),
-      body: LayoutBuilder(
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator()) 
+        : LayoutBuilder(
         builder: (context, constraints) {
           final contentWidth = constraints.maxWidth > 1100
               ? 1100.0
@@ -48,10 +105,10 @@ class MaterialDetailScreen extends StatelessWidget {
               ? (contentWidth - 48).clamp(220.0, 360.0).toDouble()
               : 380.0;
 
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
+          return CustomScrollView(
+            slivers: [
+              // 1. Todo el contenido principal va en su propio Sliver independiente
+              SliverToBoxAdapter(
                 child: Column(
                   children: [
                     const MetroSwapNavbar(
@@ -92,6 +149,7 @@ class MaterialDetailScreen extends StatelessWidget {
                                     isOutOfStock: isOutOfStock,
                                     hasPrice: hasPrice,
                                     currentPost: currentPost,
+                                    isOwner: isOwner,
                                     compact: true,
                                   ),
                                 ],
@@ -122,19 +180,32 @@ class MaterialDetailScreen extends StatelessWidget {
                                       isOutOfStock: isOutOfStock,
                                       hasPrice: hasPrice,
                                       currentPost: currentPost,
+                                      isOwner: isOwner,
                                     ),
                                   ),
                                 ],
                               ),
                       ),
                     ),
-                    const Spacer(),
-                    const SizedBox(height: 24),
-                    const MetroSwapFooter(),
                   ],
                 ),
               ),
-            ),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                fillOverscroll: true,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: const [
+                      SizedBox(height: 24),
+                      MetroSwapFooter(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -200,6 +271,7 @@ class MaterialDetailScreen extends StatelessWidget {
     required bool isOutOfStock,
     required bool hasPrice,
     required PostModel? currentPost,
+    required bool isOwner,
     bool compact = false,
   }) {
     return Column(
@@ -265,8 +337,8 @@ class MaterialDetailScreen extends StatelessWidget {
           spacing: compact ? 12 : 30,
           runSpacing: 14,
           children: [
-            _buildInfoBadge('Categoria', knowledgeArea, compact: compact),
-            _buildInfoBadge('Metodo', method, compact: compact),
+            _buildInfoBadge('Categoría', knowledgeArea, compact: compact),
+            _buildInfoBadge('Método', method, compact: compact),
             if (subject.isNotEmpty)
               _buildInfoBadge('Materia', subject, compact: compact),
           ],
@@ -302,7 +374,7 @@ class MaterialDetailScreen extends StatelessWidget {
         ],
         SizedBox(height: compact ? 24 : 30),
         Text(
-          'Descripcion',
+          'Descripción',
           style: TextStyle(
             fontSize: compact ? 17 : 18,
             fontWeight: FontWeight.bold,
@@ -332,15 +404,15 @@ class MaterialDetailScreen extends StatelessWidget {
           height: compact ? 54 : 60,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: isOutOfStock
-                  ? const Color(0xFF9A969F)
-                  : const Color(0xFFFF6B00),
+              backgroundColor: isOwner
+                  ? const Color(0xFF2196F3) // Azul para indicar que puede editar
+                  : (isOutOfStock ? const Color(0xFF9A969F) : const Color(0xFFFF6B00)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
               elevation: 2,
             ),
-            onPressed: isOutOfStock
+            onPressed: (!isOwner && isOutOfStock)
                 ? null
                 : () {
                     _handleActionPressed(
@@ -348,24 +420,27 @@ class MaterialDetailScreen extends StatelessWidget {
                       currentPost,
                       quantity,
                       hasPrice,
+                      isOwner,
                     );
                   },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.handshake_outlined,
+                  isOwner ? Icons.edit : Icons.handshake_outlined,
                   color: Colors.white,
                   size: compact ? 24 : 28,
                 ),
                 SizedBox(width: compact ? 8 : 10),
                 Flexible(
                   child: Text(
-                    isOutOfStock
-                        ? PostModel.lifecycleOutOfStock
-                        : hasPrice
-                            ? 'Comprar'
-                            : 'Intercambiar',
+                    isOwner
+                        ? 'Editar publicación'
+                        : (isOutOfStock
+                            ? PostModel.lifecycleOutOfStock
+                            : hasPrice
+                                ? 'Comprar'
+                                : 'Intercambiar'),
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -383,12 +458,14 @@ class MaterialDetailScreen extends StatelessWidget {
     );
   }
 
+  // AQUÍ ESTÁ EL CAMBIO CLAVE EN LA NAVEGACIÓN
   void _handleActionPressed(
     BuildContext context,
     PostModel? currentPost,
     int maxQuantity,
     bool hasPrice,
-  ) {
+    bool isOwner,
+  ) async {
     if (currentPost == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo cargar la publicación.')),
@@ -396,13 +473,20 @@ class MaterialDetailScreen extends StatelessWidget {
       return;
     }
 
-    final isOutOfStock = maxQuantity <= 0 ||
-        currentPost.status == PostModel.statusInactive ||
-        currentPost.lifecycleStatus == PostModel.lifecycleOutOfStock;
-    if (isOutOfStock) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Este material está agotado.')),
+    // Lógica si el usuario es el dueño de la publicación
+    if (isOwner) {
+      // 1. Esperamos (await) el resultado de la pantalla de edición
+      final resultado = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditPostScreen(post: currentPost),
+        ),
       );
+
+      // 2. Si el resultado es true, llamamos a recargar los datos
+      if (resultado == true) {
+        _cargarDatosActualizadosDeFirebase();
+      }
       return;
     }
 
@@ -416,11 +500,13 @@ class MaterialDetailScreen extends StatelessWidget {
       return;
     }
 
-    if (currentUser.uid == currentPost.ownerUid) {
+    final isOutOfStock = maxQuantity <= 0 ||
+        currentPost.status == PostModel.statusInactive ||
+        currentPost.lifecycleStatus == PostModel.lifecycleOutOfStock;
+        
+    if (isOutOfStock) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No puedes interactuar con tu propia publicación.'),
-        ),
+        const SnackBar(content: Text('Este material está agotado.')),
       );
       return;
     }
@@ -565,7 +651,7 @@ class MaterialDetailScreen extends StatelessWidget {
         'targetUid': currentPost.ownerUid,
         'requesterUid': currentUser.uid,
         'requesterName': requesterName.isEmpty ? 'Usuario' : requesterName,
-        'requestedQuantity': selectedQuantity, // Guarda la cantidad solicitada.
+        'requestedQuantity': selectedQuantity,
         'priceUsd': currentPost.priceUsd,
         'status': 'requested',
         'createdAt': FieldValue.serverTimestamp(),

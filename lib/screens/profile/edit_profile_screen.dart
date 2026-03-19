@@ -58,7 +58,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    editableUser = widget.user.clone(); // Trabaja sobre una copia del usuario.
+    editableUser = widget.user.clone(); 
 
     nameCtrl = TextEditingController(text: editableUser.name); 
     phoneCtrl = TextEditingController(text: editableUser.phone ?? ""); 
@@ -103,13 +103,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final formatoNombre = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+(\s+[a-zA-ZáéíóúÁÉÍÓÚñÑ]+)+$');
     
     if (!formatoNombre.hasMatch(nombre)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Debe ingresar al menos nombre y apellido, sin dígitos numéricos."),
-          backgroundColor: Colors.red.shade700,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      _showError("Debe ingresar al menos nombre y apellido, sin números.");
       return; 
     }
 
@@ -117,13 +111,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final formatoTelefono = RegExp(r'^[0-9]{10,12}$'); 
     
     if (!formatoTelefono.hasMatch(telefono)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Ingrese un número de teléfono válido (solo 10 o 12 dígitos numéricos, sin puntos ni guiones)."),
-          backgroundColor: Colors.red.shade700,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      _showError("Ingrese un teléfono válido (10 o 12 dígitos).");
       return;
     }
 
@@ -131,13 +119,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final studentIdPattern = RegExp(r'^[0-9]{6,15}$');
     
     if (studentId.isEmpty || !studentIdPattern.hasMatch(studentId)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Ingrese un Student ID válido (entre 6 y 15 dígitos numéricos)."),
-          backgroundColor: Colors.red.shade700,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      _showError("Ingrese un Student ID válido (6-15 dígitos).");
       return;
     }
 
@@ -153,7 +135,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     editableUser.studentId = _normalizeOptional(studentIdCtrl.text);
     
-    // Convierte los materiales separados por coma en una lista.
     editableUser.books = booksCtrl.text 
     .split(",") 
     .map((e) => e.trim()) 
@@ -164,9 +145,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final uploadedUrl = await controller.uploadImage(editableUser.uid, newImage!);
       if (uploadedUrl == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo subir la foto de perfil.')),
-        );
+        _showError('No se pudo subir la foto de perfil.');
         setState(() => _isSaving = false);
         return;
       }
@@ -182,8 +161,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     Navigator.pop(context, true);
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Forzamos reputación a double para evitar errores de tipo int/double
+    final double currentReputation = (editableUser.reputation).toDouble();
+
     return MetroSwapLayout(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -223,30 +215,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   ),
                                   decoration: _fieldDecoration("Nombre de usuario"),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 8),
                                 Row(
                                   children: [
                                     Text(
-                                      '${editableUser.reputation}', 
+                                      currentReputation.toStringAsFixed(1), 
                                       style: const TextStyle(
-                                        fontSize: 22, 
+                                        fontSize: 20, 
                                         fontWeight: FontWeight.bold, 
                                         color: Color(0xFFFF9800)
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.star, 
-                                      color: Color.fromARGB(242, 241, 255, 52), 
-                                      size: 24,
-                                    ),
                                     const SizedBox(width: 6),
+                                    Row(
+                                      children: List.generate(5, (index) {
+                                        if (index < currentReputation.floor()) {
+                                          return const Icon(Icons.star, color: Colors.amber, size: 22);
+                                        } else if (index < currentReputation) {
+                                          return const Icon(Icons.star_half, color: Colors.amber, size: 22);
+                                        } else {
+                                          return const Icon(Icons.star_border, color: Colors.amber, size: 22);
+                                        }
+                                      }),
+                                    ),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      '(${editableUser.tradesCount})', 
+                                      '(${editableUser.tradesCount} calificaciones)', 
                                       style: const TextStyle(
-                                        fontSize: 18, 
+                                        fontSize: 14, 
                                         fontWeight: FontWeight.w500, 
-                                        color: Colors.black
+                                        color: Colors.grey
                                       ),
                                     ),
                                   ],
@@ -366,7 +364,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _buildFieldLabel("Número de teléfono:"),
         _buildEditableField(
           controller: phoneCtrl,
-          hintText: "Ejemplo de número de teléfono",
+          hintText: "Ejemplo: 04121234567",
           keyboardType: TextInputType.phone,
         ),
         const SizedBox(height: 16),
@@ -402,7 +400,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildCareerField() {
     if (_isStudentRole(editableUser.role)) {
       return DropdownButtonFormField<String>(
-        initialValue: selectedCareer,
+        value: selectedCareer,
         isExpanded: true,
         decoration: _fieldDecoration("Selecciona tu carrera"),
         items: _unimetCareers
@@ -417,7 +415,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             )
             .toList(),
         onChanged: (value) {
-          selectedCareer = value;
+          setState(() {
+            selectedCareer = value;
+          });
         },
       );
     }
@@ -465,26 +465,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   String _buildDefaultStudentId(String uid) {
-    if (uid.length <= 8) {
-      return uid.toUpperCase();
-    }
-    return uid.substring(0, 8).toUpperCase();
+    return uid.length <= 8 ? uid.toUpperCase() : uid.substring(0, 8).toUpperCase();
   }
 
   String _fallbackStudentId(String? studentId, String uid) {
     final normalized = _normalizeOptional(studentId);
-    if (normalized == null) {
-      return _buildDefaultStudentId(uid);
-    }
-    return normalized;
+    return normalized ?? _buildDefaultStudentId(uid);
   }
 
   String? _normalizeOptional(String? value) {
     final normalized = value?.trim();
-    if (normalized == null || normalized.isEmpty) {
-      return null;
-    }
-    return normalized;
+    return (normalized == null || normalized.isEmpty) ? null : normalized;
   }
 
   bool _isStudentRole(String? role) {
@@ -501,7 +492,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (normalizedRole == UserModel.roleProfessor) return 'Profesor';
     if (normalizedRole == UserModel.roleStudent) return selectedCareer;
     final normalizedCareer = fallbackCareer?.trim();
-    if (normalizedCareer == null || normalizedCareer.isEmpty) return null;
-    return normalizedCareer;
+    return (normalizedCareer == null || normalizedCareer.isEmpty) ? null : normalizedCareer;
   }
 }
