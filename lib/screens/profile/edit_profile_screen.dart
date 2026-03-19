@@ -173,9 +173,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Forzamos reputación a double para evitar errores de tipo int/double
-    final double currentReputation = (editableUser.reputation).toDouble();
-
     return MetroSwapLayout(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -214,40 +211,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     fontSize: 22,
                                   ),
                                   decoration: _fieldDecoration("Nombre de usuario"),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Text(
-                                      currentReputation.toStringAsFixed(1), 
-                                      style: const TextStyle(
-                                        fontSize: 20, 
-                                        fontWeight: FontWeight.bold, 
-                                        color: Color(0xFFFF9800)
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Row(
-                                      children: List.generate(5, (index) {
-                                        if (index < currentReputation.floor()) {
-                                          return const Icon(Icons.star, color: Colors.amber, size: 22);
-                                        } else if (index < currentReputation) {
-                                          return const Icon(Icons.star_half, color: Colors.amber, size: 22);
-                                        } else {
-                                          return const Icon(Icons.star_border, color: Colors.amber, size: 22);
-                                        }
-                                      }),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '(${editableUser.tradesCount} calificaciones)', 
-                                      style: const TextStyle(
-                                        fontSize: 14, 
-                                        fontWeight: FontWeight.w500, 
-                                        color: Colors.grey
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ],
                             ),
