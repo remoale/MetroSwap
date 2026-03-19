@@ -1,7 +1,7 @@
 # MetroSwap
 
 <a href="https://metroswap-73a05.web.app/">
-  <img width="1704" height="1165" alt="MetroSwap" src="https://github.com/user-attachments/assets/27393aa3-ba56-4269-ac91-c9972113fb5c" />
+  <img width="1604" height="1145" alt="image" src="https://github.com/user-attachments/assets/292a58d0-2e54-4fc1-96e9-8409a6a4f0aa" />
 </a>
 
 Plataforma web y movil para la comunidad de la Universidad Metropolitana que permite publicar, buscar e intercambiar libros y material academico.
