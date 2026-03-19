@@ -7,6 +7,7 @@ import 'package:metroswap/screens/feedback/feedback_screen.dart';
 import 'package:metroswap/screens/home_screen.dart';
 import 'package:metroswap/screens/payments/contribution_payment_screen.dart';
 import 'package:metroswap/screens/payments/payment_confirmation_screen.dart';
+import 'package:metroswap/screens/profile/profile_screen.dart';
 import 'package:metroswap/services/presence_service.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
@@ -309,6 +310,18 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                   : 0),
           exchangeId: widget.tradeId,
         ),
+      ),
+    );
+  }
+
+  Future<void> _openUserProfile(String uid) async {
+    final cleanUid = uid.trim();
+    if (cleanUid.isEmpty || !mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileScreen(uid: cleanUid),
       ),
     );
   }
@@ -935,6 +948,16 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       ],
     );
 
+    Widget buildMetaText(String value) {
+      return Text(
+        value,
+        style: TextStyle(fontSize: compact ? 9 : 10),
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
     final info = Column(
       crossAxisAlignment: isRightAligned ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
@@ -955,21 +978,17 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           ],
         ),
         if (!mobile) ...[
-          Text(
+          buildMetaText(
             user.studentId?.trim().isNotEmpty == true ? user.studentId! : 'Carnet no disponible',
-            style: TextStyle(fontSize: compact ? 9 : 10),
           ),
-          Text(
+          buildMetaText(
             user.email?.trim().isNotEmpty == true ? user.email! : 'Correo no disponible',
-            style: TextStyle(fontSize: compact ? 9 : 10),
           ),
-          Text(
+          buildMetaText(
             user.phone?.trim().isNotEmpty == true ? user.phone! : 'Telefono no disponible',
-            style: TextStyle(fontSize: compact ? 9 : 10),
           ),
-          Text(
+          buildMetaText(
             user.career?.trim().isNotEmpty == true ? user.career! : 'Carrera no disponible',
-            style: TextStyle(fontSize: compact ? 9 : 10),
           ),
         ] else ...[
           if (user.career?.trim().isNotEmpty == true)
@@ -1016,7 +1035,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       ],
     );
 
-    return Row(
+    final userRow = Row(
       mainAxisAlignment: mobile
           ? MainAxisAlignment.start
           : isRightAligned
@@ -1027,6 +1046,19 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           : isRightAligned
               ? [Flexible(child: info), SizedBox(width: compact ? 10 : 16), avatar]
               : [avatar, SizedBox(width: compact ? 10 : 16), Flexible(child: info)],
+    );
+
+    if (user.uid.trim().isEmpty) {
+      return userRow;
+    }
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openUserProfile(user.uid),
+        child: userRow,
+      ),
     );
   }
 
