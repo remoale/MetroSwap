@@ -19,6 +19,7 @@ class PayPalReturnScreen extends StatefulWidget {
 class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
   final PaymentController _paymentController = PaymentController();
   bool _loading = true;
+  bool _didShowCancelMessage = false;
   String? _error;
   double? _capturedAmount;
   String? _exchangeId;
@@ -36,7 +37,9 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
     
     //Caso que se cancele el pago o haya un error en PayPal, se redirige a la pantalla de chat del intercambio sin mostrar error, ya que el usuario podría simplemente haber cancelado el pago.
     if (!widget.success) {
-      if (_exchangeId != null) {
+      setState(() {
+        _loading = false;
+      }); {
         return;
       }
 
@@ -86,7 +89,10 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
     if (!widget.success) {
       if (_exchangeId != null) {
         // Redirige al intercambio y muestra un mensaje de que el pago fue cancelado. No se muestra un error porque el usuario podría haber simplemente cancelado el pago.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_didShowCancelMessage) {
+          _didShowCancelMessage = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Pago cancelado"),
@@ -94,6 +100,7 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
             ),
           );
         });
+      }
         return TradeChatScreen(tradeId: _exchangeId!);
       } else {
         return const HomeScreen();
