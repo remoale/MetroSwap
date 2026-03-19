@@ -37,6 +37,11 @@ flutter run -d chrome --web-port 5000
 
 Nota: para pruebas locales de login web con Google, usar `localhost:5000`.
 
+## Soporte de instalacion
+
+- PWA: usar cuando la app se va a abrir desde el navegador. La version web publicada se puede abrir en Chrome y luego instalar con la opcion `Instalar app`.
+- APK Android: usar cuando se quiere instalar como aplicacion nativa en un telefono Android. Se genera con `flutter build apk --release` y luego se instala el archivo APK en el dispositivo.
+
 Demo: https://metroswap-73a05.web.app/
 
 ## Credenciales de PayPal de prueba
