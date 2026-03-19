@@ -10,7 +10,6 @@ import 'package:metroswap/widgets/metroswap_layout.dart';
 import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'payment_cancel_screen.dart';
 import 'payment_confirmation_screen.dart';
 
 /// Gestiona el flujo de pago de una contribución asociada a un intercambio.
