@@ -4,7 +4,7 @@ import {
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
 import {onValueWritten} from "firebase-functions/v2/database";
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onCall, onRequest, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
@@ -571,6 +571,26 @@ export const onUserSuspensionStatusChangedSyncAuth = onDocumentUpdated(
 
 const PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"; // Cambiar a live en producción
 
+function summarizePayPalError(data: any): string {
+  const message = pickString(data?.message);
+  const description = pickString(data?.error_description);
+  const issue = pickString(data?.details?.[0]?.issue);
+  const field = pickString(data?.details?.[0]?.field);
+  const debugId = pickString(data?.debug_id);
+  const name = pickString(data?.name);
+
+  const parts = [
+    name,
+    message,
+    description,
+    issue ? `issue=${issue}` : "",
+    field ? `field=${field}` : "",
+    debugId ? `debug_id=${debugId}` : "",
+  ];
+
+  return parts.filter((value: string) => value.length > 0).join(" | ");
+}
+
 async function getPayPalAccessToken(): Promise<string> {
   const paypalClientId = process.env.PAYPAL_CLIENT_ID || "";
   const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET || "";
@@ -594,55 +614,125 @@ async function getPayPalAccessToken(): Promise<string> {
   });
 
   const data = await response.json();
+
+  if (!response.ok || !pickString(data?.access_token)) {
+    logger.error("PayPal token error", {
+      status: response.status,
+      data,
+    });
+    throw new HttpsError(
+      "internal",
+      `No se pudo autenticar con PayPal. ${summarizePayPalError(data)}`.trim(),
+      {
+        status: response.status,
+        paypal: data,
+      },
+    );
+  }
+
   return data.access_token;
 }
 
-export const createPayPalOrder = onCall({
+export const createPayPalOrderHttp = onRequest({
   secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
-}, async (request) => {
-  const amount = pickNumber(request.data?.amount);
-  const returnUrl = pickString(request.data?.returnUrl);
-  const cancelUrl = pickString(request.data?.cancelUrl);
+}, async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
 
-  if (!amount || amount <= 0) {
-    throw new HttpsError("invalid-argument", "Monto inválido.");
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
   }
 
-  if (!returnUrl || !cancelUrl) {
-    throw new HttpsError("invalid-argument", "returnUrl y cancelUrl son obligatorios.");
+  if (req.method !== "POST") {
+    res.status(405).json({error: "Metodo no permitido."});
+    return;
   }
 
-  const accessToken = await getPayPalAccessToken();
+  try {
+    const amount = pickNumber(req.body?.amount);
+    const returnUrl = pickString(req.body?.returnUrl);
+    const cancelUrl = pickString(req.body?.cancelUrl);
 
-  const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      intent: "CAPTURE",
-      purchase_units: [
-        {
-          amount: {
-            currency_code: "USD",
-            value: amount.toString(),
-          },
-        },
-      ],
-      application_context: {
-        return_url: returnUrl,
-        cancel_url: cancelUrl,
-        user_action: "PAY_NOW",
+    if (!amount || amount <= 0) {
+      res.status(400).json({error: "Monto inválido."});
+      return;
+    }
+
+    if (!returnUrl || !cancelUrl) {
+      res.status(400).json({
+        error: "returnUrl y cancelUrl son obligatorios.",
+      });
+      return;
+    }
+
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: {
+              currency_code: "USD",
+              value: amount.toString(),
+            },
+          },
+        ],
+        application_context: {
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
+          user_action: "PAY_NOW",
+        },
+      }),
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  logger.info("PayPal order created", data);
+    if (!response.ok) {
+      logger.error("PayPal order creation failed over HTTP", {
+        status: response.status,
+        returnUrl,
+        cancelUrl,
+        data,
+      });
+      res.status(500).json({
+        error: `PayPal rechazo la creacion de la orden. ${summarizePayPalError(data)}`.trim(),
+      });
+      return;
+    }
 
-  return data;
+    logger.info("PayPal order created over HTTP", data);
+
+    const approveUrl = pickString(
+      data?.links?.find?.((link: any) => pickString(link?.rel) === "approve")?.href,
+    );
+    const orderId = pickString(data?.id);
+
+    if (!approveUrl || !orderId) {
+      logger.error("PayPal order missing approval data over HTTP", {data});
+      res.status(500).json({
+        error: "PayPal respondio sin el enlace de aprobacion esperado.",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      orderId,
+      approveUrl,
+      status: pickString(data?.status),
+    });
+  } catch (error) {
+    logger.error("Unexpected createPayPalOrderHttp error", error);
+    res.status(500).json({
+      error: "No se pudo crear la orden de PayPal.",
+    });
+  }
 });
 
 export const capturePayPalOrder = onCall({
@@ -668,6 +758,25 @@ export const capturePayPalOrder = onCall({
   });
 
   const data = await response.json();
+
+  if (!response.ok) {
+    logger.error("PayPal capture failed", {
+      status: response.status,
+      orderId,
+      exchangeId,
+      data,
+    });
+    throw new HttpsError(
+      "internal",
+      `PayPal rechazo la captura de la orden. ${summarizePayPalError(data)}`.trim(),
+      {
+        status: response.status,
+        orderId,
+        exchangeId,
+        paypal: data,
+      },
+    );
+  }
 
   logger.info("PayPal order captured", data);
 

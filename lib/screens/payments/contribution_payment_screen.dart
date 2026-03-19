@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/controllers/payment_controller.dart';
 import 'package:metroswap/screens/payments/paypal_return_screen.dart';
+import 'package:metroswap/utils/browser_redirect.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_layout.dart'; 
@@ -105,28 +106,44 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
         )
         .toString();
 
-    final url = await _paymentController.createPayment(
-      amount: _amount,
-      returnUrl: returnUrl,
-      cancelUrl: cancelUrl,
-    );
+    String? url;
+    String? errorMessage;
+
+    try {
+      url = await _paymentController.createPayment(
+        amount: _amount,
+        returnUrl: returnUrl,
+        cancelUrl: cancelUrl,
+      );
+    } catch (_) {
+      errorMessage = "No se pudo crear la orden de PayPal.";
+    }
 
     if (!mounted) return;
     setState(() => _loadingPayPal = false);
 
     if (url == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error creando orden PayPal")),
+        SnackBar(
+          content: Text(
+            errorMessage?.isNotEmpty == true
+                ? errorMessage!
+                : "Error creando orden PayPal",
+          ),
+        ),
       );
       return;
     }
 
     if (kIsWeb) {
-      await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.platformDefault,
-        webOnlyWindowName: "_self",
-      );
+      final redirected = await redirectInSameTab(url);
+      if (!redirected && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo redirigir a PayPal en esta pestaña.'),
+          ),
+        );
+      }
       return;
     }
 

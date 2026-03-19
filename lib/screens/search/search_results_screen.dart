@@ -247,6 +247,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                                 ...results.map((data) {
                                   final post = PostModel.fromMap(data);
                                   return Padding(
+                                    key: ValueKey('${post.id}:${post.imageUrl}'),
                                     padding: const EdgeInsets.only(bottom: 16),
                                     child: _SearchResultRow(
                                       post: post,
@@ -600,15 +601,14 @@ class _ResultImage extends StatelessWidget {
           child: Container(
           alignment: Alignment.center,
           color: const Color(0xFFF3F1F4),
-          child: imageUrl.trim().isEmpty
+            child: imageUrl.trim().isEmpty
               ? const Icon(Icons.menu_book, size: 54, color: Color(0xFFB7B1BC))
               : Image.network(
+                  key: ValueKey(imageUrl),
                   imageUrl,
                   fit: BoxFit.contain,
                   alignment: Alignment.center,
-                  webHtmlElementStrategy: kIsWeb
-                      ? WebHtmlElementStrategy.prefer
-                      : WebHtmlElementStrategy.never,
+                  webHtmlElementStrategy: WebHtmlElementStrategy.never,
                   errorBuilder: (context, error, stackTrace) {
                     return const Icon(
                       Icons.image_not_supported_outlined,

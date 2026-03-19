@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.capturePayPalOrder = exports.createPayPalOrder = exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onUserPresenceChangedSyncFirestore = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
+exports.capturePayPalOrder = exports.createPayPalOrderHttp = exports.onUserSuspensionStatusChangedSyncAuth = exports.createExchangePayment = exports.onUserPresenceChangedSyncFirestore = exports.onExchangeUpdatedNotifyParticipants = exports.onExchangeCreatedNotifyTarget = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const database_1 = require("firebase-functions/v2/database");
@@ -492,6 +492,24 @@ exports.onUserSuspensionStatusChangedSyncAuth = (0, firestore_1.onDocumentUpdate
     }
 });
 const PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"; // Cambiar a live en producción
+function summarizePayPalError(data) {
+    var _a, _b, _c, _d;
+    const message = pickString(data === null || data === void 0 ? void 0 : data.message);
+    const description = pickString(data === null || data === void 0 ? void 0 : data.error_description);
+    const issue = pickString((_b = (_a = data === null || data === void 0 ? void 0 : data.details) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.issue);
+    const field = pickString((_d = (_c = data === null || data === void 0 ? void 0 : data.details) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.field);
+    const debugId = pickString(data === null || data === void 0 ? void 0 : data.debug_id);
+    const name = pickString(data === null || data === void 0 ? void 0 : data.name);
+    const parts = [
+        name,
+        message,
+        description,
+        issue ? `issue=${issue}` : "",
+        field ? `field=${field}` : "",
+        debugId ? `debug_id=${debugId}` : "",
+    ];
+    return parts.filter((value) => value.length > 0).join(" | ");
+}
 async function getPayPalAccessToken() {
     const paypalClientId = process.env.PAYPAL_CLIENT_ID || "";
     const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET || "";
@@ -508,48 +526,106 @@ async function getPayPalAccessToken() {
         body: "grant_type=client_credentials",
     });
     const data = await response.json();
+    if (!response.ok || !pickString(data === null || data === void 0 ? void 0 : data.access_token)) {
+        logger.error("PayPal token error", {
+            status: response.status,
+            data,
+        });
+        throw new https_1.HttpsError("internal", `No se pudo autenticar con PayPal. ${summarizePayPalError(data)}`.trim(), {
+            status: response.status,
+            paypal: data,
+        });
+    }
     return data.access_token;
 }
-exports.createPayPalOrder = (0, https_1.onCall)({
+exports.createPayPalOrderHttp = (0, https_1.onRequest)({
     secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
-}, async (request) => {
-    var _a, _b, _c;
-    const amount = pickNumber((_a = request.data) === null || _a === void 0 ? void 0 : _a.amount);
-    const returnUrl = pickString((_b = request.data) === null || _b === void 0 ? void 0 : _b.returnUrl);
-    const cancelUrl = pickString((_c = request.data) === null || _c === void 0 ? void 0 : _c.cancelUrl);
-    if (!amount || amount <= 0) {
-        throw new https_1.HttpsError("invalid-argument", "Monto inválido.");
+}, async (req, res) => {
+    var _a, _b, _c, _d, _e, _f;
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    if (req.method === "OPTIONS") {
+        res.status(204).send("");
+        return;
     }
-    if (!returnUrl || !cancelUrl) {
-        throw new https_1.HttpsError("invalid-argument", "returnUrl y cancelUrl son obligatorios.");
+    if (req.method !== "POST") {
+        res.status(405).json({ error: "Metodo no permitido." });
+        return;
     }
-    const accessToken = await getPayPalAccessToken();
-    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            intent: "CAPTURE",
-            purchase_units: [
-                {
-                    amount: {
-                        currency_code: "USD",
-                        value: amount.toString(),
-                    },
-                },
-            ],
-            application_context: {
-                return_url: returnUrl,
-                cancel_url: cancelUrl,
-                user_action: "PAY_NOW",
+    try {
+        const amount = pickNumber((_a = req.body) === null || _a === void 0 ? void 0 : _a.amount);
+        const returnUrl = pickString((_b = req.body) === null || _b === void 0 ? void 0 : _b.returnUrl);
+        const cancelUrl = pickString((_c = req.body) === null || _c === void 0 ? void 0 : _c.cancelUrl);
+        if (!amount || amount <= 0) {
+            res.status(400).json({ error: "Monto inválido." });
+            return;
+        }
+        if (!returnUrl || !cancelUrl) {
+            res.status(400).json({
+                error: "returnUrl y cancelUrl son obligatorios.",
+            });
+            return;
+        }
+        const accessToken = await getPayPalAccessToken();
+        const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
             },
-        }),
-    });
-    const data = await response.json();
-    logger.info("PayPal order created", data);
-    return data;
+            body: JSON.stringify({
+                intent: "CAPTURE",
+                purchase_units: [
+                    {
+                        amount: {
+                            currency_code: "USD",
+                            value: amount.toString(),
+                        },
+                    },
+                ],
+                application_context: {
+                    return_url: returnUrl,
+                    cancel_url: cancelUrl,
+                    user_action: "PAY_NOW",
+                },
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            logger.error("PayPal order creation failed over HTTP", {
+                status: response.status,
+                returnUrl,
+                cancelUrl,
+                data,
+            });
+            res.status(500).json({
+                error: `PayPal rechazo la creacion de la orden. ${summarizePayPalError(data)}`.trim(),
+            });
+            return;
+        }
+        logger.info("PayPal order created over HTTP", data);
+        const approveUrl = pickString((_f = (_e = (_d = data === null || data === void 0 ? void 0 : data.links) === null || _d === void 0 ? void 0 : _d.find) === null || _e === void 0 ? void 0 : _e.call(_d, (link) => pickString(link === null || link === void 0 ? void 0 : link.rel) === "approve")) === null || _f === void 0 ? void 0 : _f.href);
+        const orderId = pickString(data === null || data === void 0 ? void 0 : data.id);
+        if (!approveUrl || !orderId) {
+            logger.error("PayPal order missing approval data over HTTP", { data });
+            res.status(500).json({
+                error: "PayPal respondio sin el enlace de aprobacion esperado.",
+            });
+            return;
+        }
+        res.status(200).json({
+            orderId,
+            approveUrl,
+            status: pickString(data === null || data === void 0 ? void 0 : data.status),
+        });
+    }
+    catch (error) {
+        logger.error("Unexpected createPayPalOrderHttp error", error);
+        res.status(500).json({
+            error: "No se pudo crear la orden de PayPal.",
+        });
+    }
 });
 exports.capturePayPalOrder = (0, https_1.onCall)({
     secrets: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
@@ -571,6 +647,20 @@ exports.capturePayPalOrder = (0, https_1.onCall)({
         },
     });
     const data = await response.json();
+    if (!response.ok) {
+        logger.error("PayPal capture failed", {
+            status: response.status,
+            orderId,
+            exchangeId,
+            data,
+        });
+        throw new https_1.HttpsError("internal", `PayPal rechazo la captura de la orden. ${summarizePayPalError(data)}`.trim(), {
+            status: response.status,
+            orderId,
+            exchangeId,
+            paypal: data,
+        });
+    }
     logger.info("PayPal order captured", data);
     if (data.status === "COMPLETED") {
         const amountValue = ((_h = (_g = (_f = (_e = (_d = (_c = data.purchase_units) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.payments) === null || _e === void 0 ? void 0 : _e.captures) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.amount) === null || _h === void 0 ? void 0 : _h.value) || null;

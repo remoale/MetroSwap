@@ -91,20 +91,22 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
       return;
     }
 
-    final result = await _paymentController.capturePayment(
-      orderId: orderId,
-      exchangeId: _exchangeId,
-    );
-
-    if (!mounted) return;
-
-    if (result == null) {
+    Map<String, dynamic>? result;
+    try {
+      result = await _paymentController.capturePayment(
+        orderId: orderId,
+        exchangeId: _exchangeId,
+      );
+    } catch (_) {
+      if (!mounted) return;
       setState(() {
         _loading = false;
         _error = "No se pudo capturar el pago.";
       });
       return;
     }
+
+    if (!mounted) return;
 
     final parsedAmount = _extractCapturedAmount(result);
     if (parsedAmount == null || parsedAmount <= 0) {
