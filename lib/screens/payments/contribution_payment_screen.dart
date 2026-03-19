@@ -3,14 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/controllers/payment_controller.dart';
-import 'package:metroswap/screens/exchange/exchange.dart';
+import 'package:metroswap/screens/payments/paypal_return_screen.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_layout.dart'; 
 import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import 'payment_confirmation_screen.dart';
 
 /// Gestiona el flujo de pago de una contribución asociada a un intercambio.
 class ContributionPaymentScreen extends StatefulWidget {
@@ -49,25 +47,27 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
       _linkSub = linkStream.listen((String? link) {
         if (link == null || !mounted) return;
 
-        if (link.contains("paypal-success")) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PaymentConfirmationScreen(amount: _amount),
-            ),
-          );
-        } else if (link.contains("paypal-cancel")) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TradeChatScreen(tradeId: widget.tradeId),
-            ),
-          );
+        final callbackUri = Uri.tryParse(link);
+        final callbackPath = callbackUri?.path;
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Pago cancelado"),
-              backgroundColor: Colors.red,
+        if (callbackPath == "/paypal-success") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PayPalReturnScreen(
+                success: true,
+                callbackUri: callbackUri,
+              ),
+            ),
+          );
+        } else if (callbackPath == "/paypal-cancel") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PayPalReturnScreen(
+                success: false,
+                callbackUri: callbackUri,
+              ),
             ),
           );
         }

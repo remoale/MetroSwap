@@ -27,11 +27,17 @@ class MyApp extends StatelessWidget {
     final path = Uri.base.path;
 
     if (path == "/paypal-success") {
-      return const PayPalReturnScreen(success: true);
+      return PayPalReturnScreen(
+        success: true,
+        callbackUri: Uri.base,
+      );
     }
 
     if (path == "/paypal-cancel") {
-      return const PayPalReturnScreen(success: false);
+      return PayPalReturnScreen(
+        success: false,
+        callbackUri: Uri.base,
+      );
     }
 
     return const PresenceBootstrap(child: AuthGate());
@@ -55,13 +61,19 @@ class MyApp extends StatelessWidget {
         if (settings.name == "/paypal-success") {
           return MaterialPageRoute(
             settings: settings,
-            builder: (_) => const PayPalReturnScreen(success: true),
+            builder: (_) => PayPalReturnScreen(
+              success: true,
+              callbackUri: Uri.base,
+            ),
           );
         }
         if (settings.name == "/paypal-cancel") {
           return MaterialPageRoute(
             settings: settings,
-            builder: (_) => const PayPalReturnScreen(success: false),
+            builder: (_) => PayPalReturnScreen(
+              success: false,
+              callbackUri: Uri.base,
+            ),
           );
         }
         return null;

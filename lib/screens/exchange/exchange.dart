@@ -31,6 +31,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   final ScrollController _scrollController = ScrollController();
 
   Future<_ParticipantsData>? _participantsFuture;
+  String? _participantsKey;
+  int _lastRenderedMessageCount = 0;
   bool _isSending = false;
 
   @override
@@ -105,6 +107,49 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     );
 
     return _ParticipantsData(requester: requester, owner: owner);
+  }
+
+  String _participantsCacheKey(ExchangeModel exchange) {
+    final ownerUid =
+        exchange.targetUid.trim().isEmpty ? exchange.ownerUid.trim() : exchange.targetUid.trim();
+    return "${exchange.requesterUid.trim()}|$ownerUid|${exchange.requesterName.trim()}";
+  }
+
+  void _refreshParticipantsIfNeeded(ExchangeModel exchange) {
+    final nextKey = _participantsCacheKey(exchange);
+    if (_participantsKey == nextKey && _participantsFuture != null) {
+      return;
+    }
+
+    _participantsKey = nextKey;
+    _participantsFuture = _loadParticipants(exchange);
+  }
+
+  void _scheduleAutoScroll(int messageCount) {
+    if (messageCount <= 0 || messageCount == _lastRenderedMessageCount) {
+      return;
+    }
+
+    final shouldAutoScroll = !_scrollController.hasClients ||
+        (_scrollController.position.maxScrollExtent - _scrollController.offset) <= 120;
+
+    _lastRenderedMessageCount = messageCount;
+    if (!shouldAutoScroll) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+
+      final targetOffset = _scrollController.position.maxScrollExtent;
+      if (_scrollController.offset == targetOffset) return;
+
+      _scrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Future<String> _resolveSenderName(ExchangeModel exchange) async {
@@ -421,7 +466,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                               }
 
                               final exchange = ExchangeModel.fromDoc(exchangeDoc);
-                              _participantsFuture ??= _loadParticipants(exchange);
+                              _refreshParticipantsIfNeeded(exchange);
                               final isPostOwner = _isPostOwner(exchange);
                               final isRequested =
                                   exchange.status == ExchangeModel.statusRequested;
@@ -483,13 +528,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
                                           final messages =
                                               messagesSnapshot.data ?? const <_ExchangeMessage>[];
-                                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                                            if (_scrollController.hasClients) {
-                                              _scrollController.jumpTo(
-                                                _scrollController.position.maxScrollExtent,
-                                              );
-                                            }
-                                          });
+                                          _scheduleAutoScroll(messages.length);
 
                                           if (messages.isEmpty) {
                                             final emptyMessage =

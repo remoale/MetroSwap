@@ -7,10 +7,12 @@ import 'package:metroswap/screens/payments/payment_confirmation_screen.dart';
 /// Procesa el retorno desde PayPal después de aprobar o cancelar el pago.
 class PayPalReturnScreen extends StatefulWidget {
   final bool success;
+  final Uri? callbackUri;
 
   const PayPalReturnScreen({
     super.key,
     required this.success,
+    this.callbackUri,
   });
 
   @override
@@ -24,6 +26,45 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
   double? _capturedAmount;
   String? _exchangeId;
 
+  double? _extractCapturedAmount(Map<String, dynamic> result) {
+    final purchaseUnits = result["purchase_units"];
+    if (purchaseUnits is! List || purchaseUnits.isEmpty) {
+      return null;
+    }
+
+    final firstUnit = purchaseUnits.first;
+    if (firstUnit is! Map) {
+      return null;
+    }
+
+    final payments = firstUnit["payments"];
+    if (payments is! Map) {
+      return null;
+    }
+
+    final captures = payments["captures"];
+    if (captures is! List || captures.isEmpty) {
+      return null;
+    }
+
+    final firstCapture = captures.first;
+    if (firstCapture is! Map) {
+      return null;
+    }
+
+    final amount = firstCapture["amount"];
+    if (amount is! Map) {
+      return null;
+    }
+
+    final value = amount["value"];
+    if (value == null) {
+      return null;
+    }
+
+    return double.tryParse(value.toString());
+  }
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +72,7 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
   }
 
   Future<void> _handle() async {
-    final uri = Uri.base;
+    final uri = widget.callbackUri ?? Uri.base;
     final exchangeId = uri.queryParameters["tradeId"]?.trim();
     _exchangeId = (exchangeId != null && exchangeId.isNotEmpty) ? exchangeId : null;
 
@@ -65,8 +106,14 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
       return;
     }
 
-    final amountStr = result["purchase_units"]?[0]?["payments"]?["captures"]?[0]?["amount"]?["value"];
-    final parsedAmount = double.tryParse((amountStr ?? "").toString());
+    final parsedAmount = _extractCapturedAmount(result);
+    if (parsedAmount == null || parsedAmount <= 0) {
+      setState(() {
+        _loading = false;
+        _error = "PayPal respondio sin un monto valido para confirmar el pago.";
+      });
+      return;
+    }
 
     setState(() {
       _loading = false;
@@ -149,7 +196,7 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
     }
 
     return PaymentConfirmationScreen(
-      amount: _capturedAmount ?? 0,
+      amount: _capturedAmount!,
       exchangeId: _exchangeId,
     );
   }

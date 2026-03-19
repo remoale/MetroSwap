@@ -23,19 +23,32 @@ class PaymentController {
           });
 
       final data = result.data;
+      if (data is! Map) {
+        debugPrint("Respuesta invalida en createPayment: ${data.runtimeType}");
+        return null;
+      }
 
       // Busca el enlace de aprobación dentro de la respuesta de PayPal.
-      final links = data["links"] as List<dynamic>;
+      final links = data["links"];
+      if (links is! List) {
+        debugPrint("No se encontro la lista de links de PayPal.");
+        return null;
+      }
+
       final approveLink = links.firstWhere(
-        (l) => l["rel"] == "approve",
+        (l) => l is Map && l["rel"] == "approve",
         orElse: () => null,
       );
 
-      if (approveLink == null) return null;
+      if (approveLink is! Map || approveLink["href"] is! String) {
+        debugPrint("No se encontro el link de aprobacion de PayPal.");
+        return null;
+      }
 
-      return approveLink["href"]; // URL de aprobación de PayPal.
-    } catch (e) {
+      return approveLink["href"] as String; // URL de aprobación de PayPal.
+    } catch (e, stackTrace) {
       debugPrint("Error en PaymentController.createPayment: $e");
+      debugPrintStack(stackTrace: stackTrace);
       return null;
     }
   }
@@ -54,9 +67,16 @@ class PaymentController {
               "exchangeId": exchangeId.trim(),
           });
 
-      return Map<String, dynamic>.from(result.data);
-    } catch (e) {
+      final data = result.data;
+      if (data is! Map) {
+        debugPrint("Respuesta invalida en capturePayment: ${data.runtimeType}");
+        return null;
+      }
+
+      return Map<String, dynamic>.from(data);
+    } catch (e, stackTrace) {
       debugPrint("Error en PaymentController.capturePayment: $e");
+      debugPrintStack(stackTrace: stackTrace);
       return null;
     }
   }
