@@ -73,28 +73,17 @@ class AboutScreen extends StatelessWidget {
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                child: Wrap(
+                  spacing: 26,
+                  runSpacing: 40,
+                  alignment: WrapAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTeamMember(name: 'Diego Guzmán', age: '18', ig: '@diego_guzguz', imagePath: 'assets/images/diego.png'),
-                        _buildTeamMember(name: 'Derek Carvajal', age: '22', ig: '@dcarvajal_13', imagePath: 'assets/images/derek.png'),
-                        _buildTeamMember(name: 'Daniela Pacheco', age: '18', ig: '@dpacc_7', imagePath: 'assets/images/daniela.png'),
-                      ],
-                    ),
-                    const SizedBox(height: 50),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTeamMember(name: 'Simón Ananian', age: '20', ig: '@simon_ananian_hurtado', imagePath: 'assets/images/simon.png'),
-                        _buildTeamMember(name: 'Andrés Mujica', age: '20', ig: '@mujica550', imagePath: 'assets/images/andres.png'),
-                        _buildTeamMember(name: 'Remo Agostinelli', age: '21', ig: '@remoax', imagePath: 'assets/images/remo.png'),
-                      ],
-                    ),
+                    _buildTeamMember(name: 'Diego Guzmán', age: '18', ig: '@diego_guzguz', imagePath: 'assets/images/diego.png'),
+                    _buildTeamMember(name: 'Derek Carvajal', age: '22', ig: '@dcarvajal_13', imagePath: 'assets/images/derek.png'),
+                    _buildTeamMember(name: 'Daniela Pacheco', age: '18', ig: '@dpacc_7', imagePath: 'assets/images/daniela.png'),
+                    _buildTeamMember(name: 'Simón Ananian', age: '20', ig: '@simon_ananian_hurtado', imagePath: 'assets/images/simon.png'),
+                    _buildTeamMember(name: 'Andrés Mujica', age: '20', ig: '@mujica550', imagePath: 'assets/images/andres.png'),
+                    _buildTeamMember(name: 'Remo Agostinelli', age: '21', ig: '@remoax', imagePath: 'assets/images/remo.png'),
                   ],
                 ),
               ),
@@ -124,39 +113,45 @@ class AboutScreen extends StatelessWidget {
           fit: BoxFit.cover,
         ),
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 30.0, bottom: 10.0),
-              child: Text(
-                'Conócenos',
-                style: TextStyle(
-                  fontSize: 28, 
-                  fontWeight: FontWeight.bold, 
-                  color: Colors.black87,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cardWidth = ((constraints.maxWidth - 44) / 2).clamp(138.0, 190.0);
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 30.0, bottom: 10.0),
+                  child: Text(
+                    'Conócenos',
+                    style: TextStyle(
+                      fontSize: 28, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 30.0, left: 12.0, right: 12.0),
+                  child: Wrap(
+                    spacing: 20, 
+                    runSpacing: 28, 
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildTeamMember(name: 'Diego Guzmán', age: '18', ig: '@diego_guzguz', imagePath: 'assets/images/diego.png', width: cardWidth),
+                      _buildTeamMember(name: 'Derek Carvajal', age: '22', ig: '@dcarvajal_13', imagePath: 'assets/images/derek.png', width: cardWidth),
+                      _buildTeamMember(name: 'Daniela Pacheco', age: '18', ig: '@dpacc_7', imagePath: 'assets/images/daniela.png', width: cardWidth),
+                      _buildTeamMember(name: 'Simón Ananian', age: '20', ig: '@simon_ananian_hurtado', imagePath: 'assets/images/simon.png', width: cardWidth),
+                      _buildTeamMember(name: 'Andrés Mujica', age: '20', ig: '@mujica550', imagePath: 'assets/images/andres.png', width: cardWidth),
+                      _buildTeamMember(name: 'Remo Agostinelli', age: '21', ig: '@remoax', imagePath: 'assets/images/remo.png', width: cardWidth),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 30.0, left: 10.0, right: 10.0),
-              child: Wrap(
-                spacing: 20, 
-                runSpacing: 40, 
-                alignment: WrapAlignment.center,
-                children: [
-                  _buildTeamMember(name: 'Diego Guzmán', age: '18', ig: '@diego_guzguz', imagePath: 'assets/images/diego.png'),
-                  _buildTeamMember(name: 'Derek Carvajal', age: '22', ig: '@dcarvajal_13', imagePath: 'assets/images/derek.png'),
-                  _buildTeamMember(name: 'Daniela Pacheco', age: '18', ig: '@dpacc_7', imagePath: 'assets/images/daniela.png'),
-                  _buildTeamMember(name: 'Simón Ananian', age: '20', ig: '@simon_ananian_hurtado', imagePath: 'assets/images/simon.png'),
-                  _buildTeamMember(name: 'Andrés Mujica', age: '20', ig: '@mujica550', imagePath: 'assets/images/andres.png'),
-                  _buildTeamMember(name: 'Remo Agostinelli', age: '21', ig: '@remoax', imagePath: 'assets/images/remo.png'),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -166,9 +161,12 @@ class AboutScreen extends StatelessWidget {
     required String age,
     required String ig,
     required String imagePath,
+    double width = 150,
   }) {
+    final imageHeight = width * 1.26;
+
     return SizedBox(
-      width: 150, 
+      width: width, 
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start, 
@@ -177,8 +175,8 @@ class AboutScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             child: Image.asset(
               imagePath,
-              width: 150,
-              height: 190,
+              width: width,
+              height: imageHeight,
               fit: BoxFit.cover,
               filterQuality: FilterQuality.high, 
               isAntiAlias: true, 

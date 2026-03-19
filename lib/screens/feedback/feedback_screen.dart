@@ -209,6 +209,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     final screenTitle = widget.isRequesterReview
         ? 'Calificar propietario'
         : 'Finalizar intercambio';
+    final isMobile = MediaQuery.of(context).size.width < 700;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE6E3E8),
@@ -220,86 +221,95 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               heading: 'Feedback',
             ),
             Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: Container(
-                    margin: const EdgeInsets.all(20),
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFD5D1D9)),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          screenTitle,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF605A66),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(isMobile ? 14 : 20),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Container(
+                      padding: EdgeInsets.all(isMobile ? 16 : 22),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFD5D1D9)),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            screenTitle,
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
                           ),
-                        ),
-                        const SizedBox(height: 22),
-                        const Text(
-                          'Calificación (Obligatorio)', 
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: List.generate(5, (index) {
-                            final star = index + 1;
-                            return IconButton(
-                              onPressed: () => setState(() => _rating = star),
-                              icon: Icon(
-                                star <= _rating ? Icons.star : Icons.star_border,
-                                color: const Color(0xFFFFB300),
-                              ),
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _commentController,
-                          maxLines: 4,
-                          decoration: const InputDecoration(
-                            labelText: 'Comentario (Opcional)',
-                            hintText: 'Cuéntanos cómo fue el intercambio',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _sending ? null : _finishExchange,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF8A4C),
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: Text(
-                              _sending
-                                  ? 'Enviando...'
-                                  : widget.isRequesterReview
-                                      ? 'Enviar feedback'
-                                      : 'Enviar feedback y terminar',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          const SizedBox(height: 8),
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: isMobile ? 15 : 16,
+                              color: const Color(0xFF605A66),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 22),
+                          const Text(
+                            'Calificación (Obligatorio)', 
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: List.generate(5, (index) {
+                              final star = index + 1;
+                              return IconButton(
+                                onPressed: () => setState(() => _rating = star),
+                                constraints: const BoxConstraints(
+                                  minWidth: 44,
+                                  minHeight: 44,
+                                ),
+                                icon: Icon(
+                                  star <= _rating ? Icons.star : Icons.star_border,
+                                  color: const Color(0xFFFFB300),
+                                ),
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _commentController,
+                            maxLines: 4,
+                            decoration: const InputDecoration(
+                              labelText: 'Comentario (Opcional)',
+                              hintText: 'Cuéntanos cómo fue el intercambio',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _sending ? null : _finishExchange,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF8A4C),
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              child: Text(
+                                _sending
+                                    ? 'Enviando...'
+                                    : widget.isRequesterReview
+                                        ? 'Enviar feedback'
+                                        : 'Enviar feedback y terminar',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

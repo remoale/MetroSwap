@@ -275,12 +275,18 @@ class _AdminScreenState extends State<AdminScreen> {
       ];
 
       if (isTablet) {
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: cards
-              .map((card) => SizedBox(width: 260, child: card))
-              .toList(),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = ((constraints.maxWidth - 12) / 2).clamp(220.0, 320.0);
+
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: cards
+                  .map((card) => SizedBox(width: cardWidth, child: card))
+                  .toList(),
+            );
+          },
         );
       }
 

@@ -476,80 +476,76 @@ class _PublishScreenState extends State<PublishScreen> {
             },
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('Tipo de material'),
-                    _buildDropdown(
+          if (isMobile) ...[
+            _buildFieldGroup(
+              label: 'Tipo de material',
+              child: _buildDropdown(
+                value: _selectedMaterialType,
+                items: _materialTypes,
+                onChanged: (val) => setState(() => _selectedMaterialType = val),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildFieldGroup(
+              label: 'Área de conocimiento',
+              child: _buildDropdown(
+                value: _selectedKnowledgeArea,
+                items: _knowledgeAreas,
+                onChanged: (val) => setState(() => _selectedKnowledgeArea = val),
+              ),
+            ),
+          ] else
+            Row(
+              children: [
+                Expanded(
+                  child: _buildFieldGroup(
+                    label: 'Tipo de material',
+                    child: _buildDropdown(
                       value: _selectedMaterialType,
                       items: _materialTypes,
                       onChanged: (val) => setState(() => _selectedMaterialType = val),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('Área de conocimiento'),
-                    _buildDropdown(
-                      value: _selectedKnowledgeArea,
-                      items: _knowledgeAreas,
-                      onChanged: (val) => setState(() => _selectedKnowledgeArea = val),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          
-          if (isMobile) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('Estado de conservación'),
-                      _buildDropdown(
-                        value: _selectedCondition,
-                        items: _conditions,
-                        onChanged: (val) => setState(() => _selectedCondition = val),
-                      ),
-                    ],
                   ),
                 ),
                 const SizedBox(width: 15),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('Método'),
-                      _buildDropdown(
-                        value: _selectedMethod,
-                        items: _methods,
-                        onChanged: (val) => setState(() => _selectedMethod = val),
-                      ),
-                    ],
+                  child: _buildFieldGroup(
+                    label: 'Área de conocimiento',
+                    child: _buildDropdown(
+                      value: _selectedKnowledgeArea,
+                      items: _knowledgeAreas,
+                      onChanged: (val) => setState(() => _selectedKnowledgeArea = val),
+                    ),
                   ),
                 ),
               ],
             ),
+          const SizedBox(height: 20),
+          
+          if (isMobile) ...[
+            _buildFieldGroup(
+              label: 'Estado de conservación',
+              child: _buildDropdown(
+                value: _selectedCondition,
+                items: _conditions,
+                onChanged: (val) => setState(() => _selectedCondition = val),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildFieldGroup(
+              label: 'Método',
+              child: _buildDropdown(
+                value: _selectedMethod,
+                items: _methods,
+                onChanged: (val) => setState(() => _selectedMethod = val),
+              ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
-              width: 150, 
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Cantidad'),
-                  _buildQuantitySelector(),
-                ],
+              width: 180,
+              child: _buildFieldGroup(
+                label: 'Cantidad',
+                child: _buildQuantitySelector(),
               ),
             ),
           ] else ...[
@@ -667,6 +663,19 @@ class _PublishScreenState extends State<PublishScreen> {
           _buildActionButtons(),
         ],
       ),
+    );
+  }
+
+  Widget _buildFieldGroup({
+    required String label,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        child,
+      ],
     );
   }
 

@@ -144,6 +144,9 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
     return Scaffold(
       backgroundColor: const Color(0xFFE8E9EB),
       body: Column(
@@ -158,10 +161,10 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                     : _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.all(30.0),
+                    padding: EdgeInsets.all(isMobile ? 16.0 : 30.0),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(25),
+                      padding: EdgeInsets.all(isMobile ? 16 : 25),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(15),
@@ -175,14 +178,15 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Publicaciones Activas e Históricas',
-                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                              ),
-                              OutlinedButton.icon(
+                          if (isMobile) ...[
+                            const Text(
+                              'Publicaciones Activas e Históricas',
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
                                 onPressed: () => Navigator.pop(context),
                                 icon: const Icon(Icons.arrow_back),
                                 label: const Text('Volver al Dashboard'),
@@ -191,8 +195,27 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                   side: const BorderSide(color: Color(0xFFC93C20)),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ] else ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Publicaciones Activas e Históricas',
+                                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: const Icon(Icons.arrow_back),
+                                  label: const Text('Volver al Dashboard'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFFC93C20),
+                                    side: const BorderSide(color: Color(0xFFC93C20)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           const SizedBox(height: 20),
                           
                           SizedBox(
@@ -207,55 +230,44 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
                                     ),
                                   ),
                                 )
-                              : DataTable(
-                                  headingRowColor: WidgetStateProperty.resolveWith(
-                                    (states) => Colors.grey.withValues(alpha: 0.1),
-                                  ),
-                                  columns: const [
-                                    DataColumn(label: Text('Título / Producto', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    DataColumn(label: Text('Autor (Correo)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  ],
-                                  rows: _posts.map((post) {
-                                    return DataRow(
-                                      cells: [
-                                        DataCell(Text(post['title'])),
-                                        DataCell(Text(post['author'])),
-                                        DataCell(Text(post['date'])),
-                                        DataCell(
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                            decoration: BoxDecoration(
-                                              // Usa el mismo color para cada estado.
-                                              color: post['status'] == 'Activo' 
-                                                  ? Colors.green.withValues(alpha: 0.1) 
-                                                  : Colors.orange.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: Text(
-                                              post['status'],
-                                              style: TextStyle(
-                                                // Usa el mismo color para cada estado.
-                                                color: post['status'] == 'Activo' ? Colors.green[700] : Colors.orange[700],
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
+                              : isMobile
+                                  ? Column(
+                                      children: _posts
+                                          .map((post) => Padding(
+                                                padding: const EdgeInsets.only(bottom: 12),
+                                                child: _buildPostCard(post),
+                                              ))
+                                          .toList(),
+                                    )
+                                  : DataTable(
+                                      headingRowColor: WidgetStateProperty.resolveWith(
+                                        (states) => Colors.grey.withValues(alpha: 0.1),
+                                      ),
+                                      columns: const [
+                                        DataColumn(label: Text('Título / Producto', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(label: Text('Autor (Correo)', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      ],
+                                      rows: _posts.map((post) {
+                                        return DataRow(
+                                          cells: [
+                                            DataCell(Text(post['title'])),
+                                            DataCell(Text(post['author'])),
+                                            DataCell(Text(post['date'])),
+                                            DataCell(_buildStatusChip(post['status'].toString())),
+                                            DataCell(
+                                              IconButton(
+                                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                                tooltip: 'Eliminar publicación',
+                                                onPressed: () => _deletePost(post['id'], post['title']),
                                               ),
                                             ),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          IconButton(
-                                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                            tooltip: 'Eliminar publicación',
-                                            onPressed: () => _deletePost(post['id'], post['title']),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
-                                ),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
                           ),
                         ],
                       ),
@@ -265,6 +277,91 @@ class _ManagePostsScreenState extends State<ManagePostsScreen> {
           
           const MetroSwapFooter(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPostCard(Map<String, dynamic> post) {
+    final title = (post['title'] ?? 'Publicación sin título').toString();
+    final author = (post['author'] ?? 'Autor desconocido').toString();
+    final date = (post['date'] ?? 'Sin fecha').toString();
+    final status = (post['status'] ?? 'Activo').toString();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E2E5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          _buildInfoLine('Autor', author),
+          const SizedBox(height: 6),
+          _buildInfoLine('Fecha', date),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _buildStatusChip(status),
+              OutlinedButton.icon(
+                onPressed: () => _deletePost(post['id'], title),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                label: const Text('Eliminar'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.redAccent),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoLine(String label, String value) {
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(color: Colors.black87, fontSize: 14),
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          TextSpan(text: value),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    final isActive = status == 'Activo';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Colors.green.withValues(alpha: 0.1)
+            : Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: isActive ? Colors.green[700] : Colors.orange[700],
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
       ),
     );
   }

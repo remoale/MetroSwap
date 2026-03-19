@@ -166,6 +166,8 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
     final displayedUsers = _showingSuspended 
         ? _users.where((user) => isSuspendedUserStatus(user['status'])).toList()
         : _users;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE8E9EB),
@@ -179,12 +181,12 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
               : !_isAuthorized
                 ? _buildUnauthorizedState()
                 : _isLoading 
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFC93C20)))
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(30.0),
+                  padding: EdgeInsets.all(isMobile ? 16.0 : 30.0),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(25),
+                    padding: EdgeInsets.all(isMobile ? 16 : 25),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(15),
@@ -195,15 +197,15 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _showingSuspended ? 'Usuarios Suspendidos' : 'Directorio de Miembros',
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                            ),
-                            
-                            OutlinedButton.icon(
+                        if (isMobile) ...[
+                          Text(
+                            _showingSuspended ? 'Usuarios Suspendidos' : 'Directorio de Miembros',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
                               onPressed: () => Navigator.pop(context),
                               icon: const Icon(Icons.arrow_back),
                               label: const Text('Volver al Dashboard'),
@@ -212,8 +214,28 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
                                 side: const BorderSide(color: Color(0xFF2C2C2C)),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ] else ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _showingSuspended ? 'Usuarios Suspendidos' : 'Directorio de Miembros',
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+                              
+                              OutlinedButton.icon(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.arrow_back),
+                                label: const Text('Volver al Dashboard'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF2C2C2C),
+                                  side: const BorderSide(color: Color(0xFF2C2C2C)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 20),
                         
                         if (displayedUsers.isEmpty)
@@ -229,156 +251,151 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
                         else
                           SizedBox(
                             width: double.infinity,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final availableWidth = constraints.maxWidth;
-                                final isCompact = availableWidth < 1200;
-                                final nameCellWidth = isCompact ? 190.0 : 240.0;
-                                final emailCellWidth = isCompact ? 240.0 : 320.0;
-                                final careerCellWidth = isCompact ? 170.0 : 220.0;
-                                const statusCellWidth = 110.0;
-                                const actionCellWidth = 80.0;
-                                const colSpacing = 14.0;
-                                const horizontalMargin = 8.0;
-                                final requiredWidth =
-                                    nameCellWidth +
-                                    emailCellWidth +
-                                    careerCellWidth +
-                                    statusCellWidth +
-                                    actionCellWidth +
-                                    (colSpacing * 4) +
-                                    (horizontalMargin * 2);
+                            child: isMobile
+                                ? Column(
+                                    children: displayedUsers
+                                        .map((user) => Padding(
+                                              padding: const EdgeInsets.only(bottom: 12),
+                                              child: _buildUserCard(user),
+                                            ))
+                                        .toList(),
+                                  )
+                                : LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final availableWidth = constraints.maxWidth;
+                                      final isCompact = availableWidth < 1200;
+                                      final nameCellWidth = isCompact ? 190.0 : 240.0;
+                                      final emailCellWidth = isCompact ? 240.0 : 320.0;
+                                      final careerCellWidth = isCompact ? 170.0 : 220.0;
+                                      const statusCellWidth = 110.0;
+                                      const actionCellWidth = 80.0;
+                                      const colSpacing = 14.0;
+                                      const horizontalMargin = 8.0;
+                                      final requiredWidth =
+                                          nameCellWidth +
+                                          emailCellWidth +
+                                          careerCellWidth +
+                                          statusCellWidth +
+                                          actionCellWidth +
+                                          (colSpacing * 4) +
+                                          (horizontalMargin * 2);
 
-                                return SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: requiredWidth > availableWidth
-                                          ? requiredWidth
-                                          : availableWidth,
-                                    ),
-                                    child: DataTable(
-                                      columnSpacing: colSpacing,
-                                      horizontalMargin: horizontalMargin,
-                                      headingRowColor: WidgetStateProperty.resolveWith(
-                                        (states) => Colors.grey.withValues(alpha: 0.1),
-                                      ),
-                                      columns: [
-                                        const DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                                        const DataColumn(label: Text('Correo Electrónico', style: TextStyle(fontWeight: FontWeight.bold))),
-                                        const DataColumn(label: Text('Carrera', style: TextStyle(fontWeight: FontWeight.bold))),
-                                        const DataColumn(
-                                          label: SizedBox(
-                                            width: statusCellWidth,
-                                            child: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      return SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minWidth: requiredWidth > availableWidth
+                                                ? requiredWidth
+                                                : availableWidth,
                                           ),
-                                        ),
-                                        const DataColumn(
-                                          label: SizedBox(
-                                            width: actionCellWidth,
-                                            child: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold)),
-                                          ),
-                                        ),
-                                      ],
-                                      rows: displayedUsers.map((user) {
-                                        final bool isActive = normalizeUserStatus(user['status']) == 'Activo';
-                                        final String userName = (user['name'] ?? '').toString();
-                                        final String userEmail = (user['email'] ?? '').toString();
-                                        final String userCareer = (user['career'] ?? '').toString();
-                                        final baseStyle = TextStyle(
-                                          color: isActive ? Colors.black : Colors.grey,
-                                        );
+                                          child: DataTable(
+                                            columnSpacing: colSpacing,
+                                            horizontalMargin: horizontalMargin,
+                                            headingRowColor: WidgetStateProperty.resolveWith(
+                                              (states) => Colors.grey.withValues(alpha: 0.1),
+                                            ),
+                                            columns: [
+                                              const DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+                                              const DataColumn(label: Text('Correo Electrónico', style: TextStyle(fontWeight: FontWeight.bold))),
+                                              const DataColumn(label: Text('Carrera', style: TextStyle(fontWeight: FontWeight.bold))),
+                                              const DataColumn(
+                                                label: SizedBox(
+                                                  width: statusCellWidth,
+                                                  child: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                ),
+                                              ),
+                                              const DataColumn(
+                                                label: SizedBox(
+                                                  width: actionCellWidth,
+                                                  child: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                ),
+                                              ),
+                                            ],
+                                            rows: displayedUsers.map((user) {
+                                              final bool isActive = normalizeUserStatus(user['status']) == 'Activo';
+                                              final String userName = (user['name'] ?? '').toString();
+                                              final String userEmail = (user['email'] ?? '').toString();
+                                              final String userCareer = (user['career'] ?? '').toString();
+                                              final baseStyle = TextStyle(
+                                                color: isActive ? Colors.black : Colors.grey,
+                                              );
 
-                                        return DataRow(
-                                          cells: [
-                                            DataCell(
-                                              Row(
-                                                children: [
-                                                  CircleAvatar(
-                                                    backgroundColor: isActive
-                                                        ? const Color(0xFFC93C20).withValues(alpha: 0.2)
-                                                        : Colors.grey.withValues(alpha: 0.3),
-                                                    child: Text(
-                                                      (user['name'] != null && user['name'].toString().trim().isNotEmpty)
-                                                          ? user['name'].toString().trim().substring(0, 1).toUpperCase()
-                                                          : 'U',
-                                                      style: TextStyle(
-                                                        color: isActive ? const Color(0xFFC93C20) : Colors.grey[700],
-                                                        fontWeight: FontWeight.bold,
+                                              return DataRow(
+                                                cells: [
+                                                  DataCell(
+                                                    Row(
+                                                      children: [
+                                                        CircleAvatar(
+                                                          backgroundColor: isActive
+                                                              ? const Color(0xFFC93C20).withValues(alpha: 0.2)
+                                                              : Colors.grey.withValues(alpha: 0.3),
+                                                          child: Text(
+                                                            (user['name'] != null && user['name'].toString().trim().isNotEmpty)
+                                                                ? user['name'].toString().trim().substring(0, 1).toUpperCase()
+                                                                : 'U',
+                                                            style: TextStyle(
+                                                              color: isActive ? const Color(0xFFC93C20) : Colors.grey[700],
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 10),
+                                                        _buildClampedCellText(
+                                                          userName,
+                                                          width: nameCellWidth,
+                                                          style: TextStyle(
+                                                            decoration: isActive ? TextDecoration.none : TextDecoration.lineThrough,
+                                                            color: isActive ? Colors.black : Colors.grey,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    _buildClampedCellText(
+                                                      userEmail,
+                                                      width: emailCellWidth,
+                                                      style: baseStyle,
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    _buildClampedCellText(
+                                                      userCareer,
+                                                      width: careerCellWidth,
+                                                      style: baseStyle,
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    SizedBox(
+                                                      width: statusCellWidth,
+                                                      child: Align(
+                                                        alignment: Alignment.centerLeft,
+                                                        child: _buildStatusChip(user['status'].toString()),
                                                       ),
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 10),
-                                                  _buildClampedCellText(
-                                                    userName,
-                                                    width: nameCellWidth,
-                                                    style: TextStyle(
-                                                      decoration: isActive ? TextDecoration.none : TextDecoration.lineThrough,
-                                                      color: isActive ? Colors.black : Colors.grey,
+                                                  DataCell(
+                                                    SizedBox(
+                                                      width: actionCellWidth,
+                                                      child: Align(
+                                                        alignment: Alignment.centerLeft,
+                                                        child: IconButton(
+                                                          icon: Icon(isActive ? Icons.block : Icons.check_circle_outline),
+                                                          color: isActive ? Colors.orange : Colors.green,
+                                                          tooltip: isActive ? 'Suspender usuario' : 'Reactivar usuario',
+                                                          onPressed: () => _toggleUserStatus(user['id'], user['status']),
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
-                                              ),
-                                            ),
-                                            DataCell(
-                                              _buildClampedCellText(
-                                                userEmail,
-                                                width: emailCellWidth,
-                                                style: baseStyle,
-                                              ),
-                                            ),
-                                            DataCell(
-                                              _buildClampedCellText(
-                                                userCareer,
-                                                width: careerCellWidth,
-                                                style: baseStyle,
-                                              ),
-                                            ),
-                                            DataCell(
-                                              SizedBox(
-                                                width: statusCellWidth,
-                                                child: Align(
-                                                  alignment: Alignment.centerLeft,
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                                    decoration: BoxDecoration(
-                                                      color: isActive ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
-                                                      borderRadius: BorderRadius.circular(10),
-                                                    ),
-                                                    child: Text(
-                                                      normalizeUserStatus(user['status']),
-                                                      style: TextStyle(
-                                                        color: isActive ? Colors.green[700] : Colors.red[700],
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 12,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            DataCell(
-                                              SizedBox(
-                                                width: actionCellWidth,
-                                                child: Align(
-                                                  alignment: Alignment.centerLeft,
-                                                  child: IconButton(
-                                                    icon: Icon(isActive ? Icons.block : Icons.check_circle_outline),
-                                                    color: isActive ? Colors.orange : Colors.green,
-                                                    tooltip: isActive ? 'Suspender usuario' : 'Reactivar usuario',
-                                                    onPressed: () => _toggleUserStatus(user['id'], user['status']),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      }).toList(),
-                                    ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ),
                           ),
                       ],
                     ),
@@ -387,6 +404,115 @@ class _ManageProfilesScreenState extends State<ManageProfilesScreen> {
           ),
           const MetroSwapFooter(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUserCard(Map<String, dynamic> user) {
+    final isActive = normalizeUserStatus(user['status']) == 'Activo';
+    final userName = (user['name'] ?? 'Usuario MetroSwap').toString().trim();
+    final userEmail = (user['email'] ?? 'Sin correo').toString().trim();
+    final userCareer = (user['career'] ?? 'No especificada').toString().trim();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E2E5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: isActive
+                    ? const Color(0xFFC93C20).withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.3),
+                child: Text(
+                  userName.isNotEmpty ? userName.substring(0, 1).toUpperCase() : 'U',
+                  style: TextStyle(
+                    color: isActive ? const Color(0xFFC93C20) : Colors.grey[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  userName.isEmpty ? 'Usuario MetroSwap' : userName,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    decoration: isActive ? TextDecoration.none : TextDecoration.lineThrough,
+                    color: isActive ? Colors.black : Colors.grey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildMobileInfoLine('Correo', userEmail.isEmpty ? '-' : userEmail),
+          const SizedBox(height: 6),
+          _buildMobileInfoLine('Carrera', userCareer.isEmpty ? '-' : userCareer),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _buildStatusChip(user['status'].toString()),
+              OutlinedButton.icon(
+                onPressed: () => _toggleUserStatus(user['id'], user['status']),
+                icon: Icon(isActive ? Icons.block : Icons.check_circle_outline),
+                label: Text(isActive ? 'Suspender' : 'Reactivar'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isActive ? Colors.orange : Colors.green,
+                  side: BorderSide(color: isActive ? Colors.orange : Colors.green),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileInfoLine(String label, String value) {
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(color: Colors.black87, fontSize: 14),
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          TextSpan(text: value),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    final isActive = normalizeUserStatus(status) == 'Activo';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Colors.green.withValues(alpha: 0.1)
+            : Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        normalizeUserStatus(status),
+        style: TextStyle(
+          color: isActive ? Colors.green[700] : Colors.red[700],
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
       ),
     );
   }
