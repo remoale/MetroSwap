@@ -19,7 +19,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Lista las carreras disponibles para el registro.
   final List<String> _carrerasUnimet =[
     'Profesor',
     'Ciencias Administrativas',
@@ -190,7 +189,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Detecta si la vista está en móvil o escritorio.
     final isMobile = MediaQuery.of(context).size.width < 800;
     final columnaIzquierda = [
       _buildInputField("Nombre completo:", _nombreController, false),
@@ -208,7 +206,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: grisFondoPajina,
       body: Column(
         children: [
-          // Muestra el encabezado adaptado al tamaño de pantalla.
           Container(
             color: grisOscuroHeader,
             height: isMobile ? 70 : 85, 
@@ -256,7 +253,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           
-          // Muestra el contenido principal del formulario.
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.symmetric(
@@ -266,12 +262,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 children: [
                   if (isMobile) ...[
-                    // Organiza el formulario en una sola columna.
                     _buildFormCard(columnaIzquierda, isMobile: true),
                     const SizedBox(height: 20),
                     _buildFormCard(columnaDerecha, isMobile: true),
                   ] else ...[
-                    // Organiza el formulario en dos columnas.
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -284,7 +278,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   SizedBox(height: isMobile ? 30 : 50),
 
-                  // Muestra el botón de registro.
                   SizedBox(
                     height: 60,
                     width: isMobile ? double.infinity : null, 
@@ -315,7 +308,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           
-          // Muestra el pie de página.
           Container(
             width: double.infinity,
             color: const Color(0xFF2C2C2C),
@@ -330,8 +322,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-
-  // Widgets del formulario.
 
   Widget _buildDropdownField(String label){
     return Padding (

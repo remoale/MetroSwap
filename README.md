@@ -10,6 +10,7 @@ Plataforma web y movil para la comunidad de la Universidad Metropolitana que per
 
 - Registro e inicio de sesion con Firebase Auth
 - Publicacion de materiales con imagen y descripcion
+- Modalidades: intercambio, venta y donacion
 - Gestion de intercambios entre usuarios
 - Chat, notificaciones y presencia en tiempo real
 - Feedback y calificaciones

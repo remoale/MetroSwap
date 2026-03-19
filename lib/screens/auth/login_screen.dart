@@ -122,8 +122,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Widgets reutilizables.
-  
   Widget _buildBackButton() {
     return IconButton(
       onPressed: () {
@@ -311,8 +309,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ],
     );
   }
-
-  // Layouts para móvil y escritorio.
 
   Widget _buildMobileLayout(BuildContext context) {
     return SafeArea(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/primary_button.dart';
 
+/// Muestra el estado cuando el usuario cancela el proceso de pago.
 class PaymentCancelScreen extends StatelessWidget {
   const PaymentCancelScreen({super.key});
 

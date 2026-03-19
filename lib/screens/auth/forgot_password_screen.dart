@@ -74,8 +74,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  // Widgets reutilizables.
-
   Widget _buildBackButton() {
     return IconButton(
       onPressed: () => Navigator.of(context).pop(),
@@ -160,8 +158,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ],
     );
   }
-
-  // Layouts para móvil y escritorio.
 
   Widget _buildMobileLayout(BuildContext context) {
     return SafeArea(

@@ -74,7 +74,6 @@ class LandingScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Banner principal.
             Container(
               height: isMobile ? 250 : 350, 
               width: double.infinity,
@@ -105,7 +104,6 @@ class LandingScreen extends StatelessWidget {
               ),
             ),
 
-            // Sección de misión, visión y objetivo.
             Container(
               padding: EdgeInsets.symmetric(
                 vertical: isMobile ? 50 : 80, 
@@ -138,7 +136,6 @@ class LandingScreen extends StatelessWidget {
               ),
             ),
 
-            // Sección de funcionamiento.
             Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
@@ -189,7 +186,6 @@ class LandingScreen extends StatelessWidget {
               ),
             ),
 
-            // Pie de página.
             Container(
               width: double.infinity,
               color: const Color(0xFF2C2C2C),
@@ -206,7 +202,6 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  // Menú lateral para móvil.
   Widget _buildMobileDrawer(BuildContext context) {
     return Drawer(
       backgroundColor: const Color(0xFF2C2C2C),
@@ -245,7 +240,6 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  // Widgets auxiliares.
   Widget _buildInfoColumn({required String title, required String text, required bool isMobile, required double screenWidth}) {
     return SizedBox(
       width: isMobile ? screenWidth - 40 : 320, 
