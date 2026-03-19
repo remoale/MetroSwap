@@ -17,6 +17,7 @@ class ExchangeModel {
   final String targetUid;
   final String requesterUid;
   final String requesterName;
+  final int requestedQuantity;
   final String status;
   final String paymentStatus;
   final bool ownerFeedbackSubmitted;
@@ -37,6 +38,7 @@ class ExchangeModel {
     required this.targetUid,
     required this.requesterUid,
     required this.requesterName,
+    required this.requestedQuantity,
     required this.status,
     required this.paymentStatus,
     required this.ownerFeedbackSubmitted,
@@ -67,6 +69,16 @@ class ExchangeModel {
       return null;
     }
 
+    int parseQuantity(dynamic value) {
+      if (value is int && value > 0) return value;
+      if (value is num && value.toInt() > 0) return value.toInt();
+      if (value is String) {
+        final parsed = int.tryParse(value);
+        if (parsed != null && parsed > 0) return parsed;
+      }
+      return 1;
+    }
+
     final normalizedFallbackId = fallbackId.trim();
     final normalizedMapId = (map['id'] ?? '').toString().trim();
 
@@ -80,6 +92,7 @@ class ExchangeModel {
       targetUid: (map['targetUid'] ?? '').toString(),
       requesterUid: (map['requesterUid'] ?? '').toString(),
       requesterName: (map['requesterName'] ?? '').toString(),
+      requestedQuantity: parseQuantity(map['requestedQuantity']),
       status: (map['status'] ?? statusRequested).toString(),
       paymentStatus: (map['paymentStatus'] ?? '').toString(),
       ownerFeedbackSubmitted: map['ownerFeedbackSubmitted'] == true,
@@ -102,6 +115,7 @@ class ExchangeModel {
       'targetUid': targetUid,
       'requesterUid': requesterUid,
       'requesterName': requesterName,
+      'requestedQuantity': requestedQuantity,
       'status': status,
       'paymentStatus': paymentStatus,
       'ownerFeedbackSubmitted': ownerFeedbackSubmitted,

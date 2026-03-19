@@ -205,6 +205,11 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       );
       return;
     }
+
+    final isSale = exchange.priceUsd != null && exchange.priceUsd! > 0;
+    final requiredAmount = isSale
+        ? exchange.priceUsd! * exchange.requestedQuantity
+        : 30.0;
     if (!mounted) return;
     await Navigator.push(
       context,
@@ -213,8 +218,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           tradeId: widget.tradeId,
           title: exchange.postTitle,
           imageUrl: exchange.imageUrl,
-          amount: exchange.priceUsd ?? 0.0,
-
+          amount: requiredAmount,
+          allowCustomAmount: !isSale,
         ),
       ),
     );
@@ -253,7 +258,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => PaymentConfirmationScreen(
-          amount: exchange.priceUsd ?? 0,
+          amount: exchange.paypalAmount ??
+              (exchange.priceUsd != null
+                  ? exchange.priceUsd! * exchange.requestedQuantity
+                  : 0),
           exchangeId: widget.tradeId,
         ),
       ),
@@ -484,11 +492,17 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                                           });
 
                                           if (messages.isEmpty) {
+                                            final emptyMessage =
+                                                exchange.status == ExchangeModel.statusDeclined
+                                                    ? 'Este intercambio fue cancelado. Ya no se pueden enviar mensajes.'
+                                                    : exchange.status == ExchangeModel.statusRejected
+                                                        ? 'Esta solicitud fue rechazada. Ya no se pueden enviar mensajes.'
+                                                        : isPostOwner
+                                                            ? 'Aun no hay mensajes. Escribe primero para coordinar el intercambio con el solicitante.'
+                                                            : 'Aun no hay mensajes. Escribe primero para coordinar el intercambio con el propietario.';
                                             return Center(
                                               child: Text(
-                                                isPostOwner
-                                                    ? 'Aun no hay mensajes. Escribe primero para coordinar el intercambio con el solicitante.'
-                                                    : 'Aun no hay mensajes. Escribe primero para coordinar el intercambio con el propietario.',
+                                                emptyMessage,
                                               ),
                                             );
                                           }
@@ -983,6 +997,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     required bool mobile,
   }) {
     final imageUrl = exchange.imageUrl.trim();
+    final hasAgreedAmount = exchange.priceUsd != null && exchange.priceUsd! > 0;
+    final agreedAmount = hasAgreedAmount
+        ? exchange.priceUsd! * exchange.requestedQuantity
+        : 0.0;
     return mobile
         ? Row(
             children: [
@@ -1036,6 +1054,17 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                         color: Color(0xFF6A6671),
                       ),
                     ),
+                    if (hasAgreedAmount) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Precio: \$${agreedAmount.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A4589),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1090,6 +1119,15 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                   exchange.method.trim().isEmpty ? 'No definido' : exchange.method.trim(),
                   style: TextStyle(fontSize: compact ? 11 : 12),
                 ),
+                if (hasAgreedAmount)
+                  Text(
+                    'Precio: \$${agreedAmount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: compact ? 11 : 12,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A4589),
+                    ),
+                  ),
               ],
             ),
           ],

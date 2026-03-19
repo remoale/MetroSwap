@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:metroswap/controllers/payment_controller.dart';
+import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/widgets/metroswap_footer.dart';
 import 'package:metroswap/widgets/metroswap_navbar.dart';
 import 'package:metroswap/widgets/metroswap_layout.dart'; 
@@ -17,14 +18,16 @@ class ContributionPaymentScreen extends StatefulWidget {
   final String tradeId;
   final String title;
   final String imageUrl;
-  final double amount; // <-- Añadimos el monto exacto requerido
+  final double amount;
+  final bool allowCustomAmount;
 
   const ContributionPaymentScreen({
     super.key,
     required this.tradeId,
     required this.title,
     required this.imageUrl,
-    required this.amount, // <-- Se requiere al llamar a esta pantalla
+    required this.amount,
+    required this.allowCustomAmount,
   });
 
   @override
@@ -33,13 +36,15 @@ class ContributionPaymentScreen extends StatefulWidget {
 
 class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
   final PaymentController _paymentController = PaymentController();
+  double _amount = 30;
   bool _loadingPayPal = false;
   StreamSubscription? _linkSub;
-  // Eliminamos _amount y _quickAmounts porque ahora el precio es fijo
+  static const List<int> _quickAmounts = [1, 5, 10, 25, 50, 100];
 
   @override
   void initState() {
     super.initState();
+    _amount = widget.amount > 0 ? widget.amount : 30;
 
     if (!kIsWeb) {
       _linkSub = linkStream.listen((String? link) {
@@ -49,14 +54,22 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              // Usamos el monto fijo del widget
-              builder: (context) => PaymentConfirmationScreen(amount: widget.amount),
+              builder: (context) => PaymentConfirmationScreen(amount: _amount),
             ),
           );
         } else if (link.contains("paypal-cancel")) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const PaymentCancelScreen()),
+            MaterialPageRoute(
+              builder: (context) => TradeChatScreen(tradeId: widget.tradeId),
+            ),
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Pago cancelado"),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       });
@@ -71,6 +84,12 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
 
   Future<void> _payWithPayPal() async {
     if (_loadingPayPal) return;
+    if (_amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("El monto debe ser mayor a 0")),
+      );
+      return;
+    }
     setState(() => _loadingPayPal = true);
 
     final base = Uri.base;
@@ -88,7 +107,7 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
         .toString();
 
     final url = await _paymentController.createPayment(
-      amount: widget.amount,
+      amount: _amount,
       returnUrl: returnUrl,
       cancelUrl: cancelUrl,
     );
@@ -141,40 +160,57 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 20), 
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1100),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 22),
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2F3035),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: isMobile
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildLeftPanel(resolvedTitle, isMobile: true),
-                                const SizedBox(height: 22),
-                                _buildPaymentPanel(isMobile: true),
-                              ],
-                            )
-                          : IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch, 
-                                children: [
-                                  _buildLeftPanel(resolvedTitle, isMobile: false),
-                                  const SizedBox(width: 22),
-                                  Expanded(child: _buildPaymentPanel(isMobile: false)),
-                                ],
-                              ),
-                            ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final desktopMinHeight = (constraints.maxHeight - 90).clamp(360.0, 620.0);
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      isMobile ? 20 : 34,
+                      0,
+                      isMobile ? 24 : 44,
                     ),
-                  ),
-                ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1100),
+                        child: Container(
+                          constraints: BoxConstraints(
+                            minHeight: isMobile ? 0 : desktopMinHeight,
+                          ),
+                          margin: const EdgeInsets.symmetric(horizontal: 22),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 18 : 22,
+                            vertical: isMobile ? 18 : 24,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2F3035),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: isMobile
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _buildLeftPanel(resolvedTitle, isMobile: true),
+                                    const SizedBox(height: 22),
+                                    _buildPaymentPanel(isMobile: true),
+                                  ],
+                                )
+                              : IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildLeftPanel(resolvedTitle, isMobile: false),
+                                      const SizedBox(width: 26),
+                                      Expanded(child: _buildPaymentPanel(isMobile: false)),
+                                    ],
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
               ),
             ),
             if (!isMobile) const MetroSwapFooter(),
@@ -186,8 +222,8 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
 
   Widget _buildLeftPanel(String resolvedTitle, {required bool isMobile}) {
     return Container(
-      width: isMobile ? double.infinity : 240, 
-      padding: const EdgeInsets.all(14),
+      width: isMobile ? double.infinity : 260,
+      padding: EdgeInsets.all(isMobile ? 14 : 18),
       decoration: BoxDecoration(
         color: const Color(0xFF25262A),
         borderRadius: BorderRadius.circular(10),
@@ -199,13 +235,15 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Container(
-              height: 150,
+              height: isMobile ? 220 : 260,
               color: const Color(0xFF3B3D43),
+              padding: const EdgeInsets.all(10),
               child: widget.imageUrl.trim().isEmpty
                   ? const Icon(Icons.image_outlined, color: Colors.white70, size: 56)
                   : Image.network(
                       widget.imageUrl,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
+                      alignment: Alignment.center,
                       webHtmlElementStrategy: kIsWeb
                           ? WebHtmlElementStrategy.prefer
                           : WebHtmlElementStrategy.never,
@@ -237,14 +275,56 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text('Contribucion', style: TextStyle(color: Colors.white60, fontSize: 14)),
+          Text(
+            widget.allowCustomAmount ? 'Contribucion' : 'Monto requerido',
+            style: const TextStyle(color: Colors.white60, fontSize: 14),
+          ),
           const SizedBox(height: 2),
           Text(
-            // Mostramos el monto fijo
-            '\$${widget.amount.toStringAsFixed(0)}',
+            '\$${_amount.toStringAsFixed(0)}',
             style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
           ),
-          // Se eliminaron los botones de '+' y '-' el Slider y la lista de botones rápidos.
+          if (widget.allowCustomAmount) ...[
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Disminuir',
+                  onPressed: _amount <= 0 ? null : () => setState(() => _amount -= 1),
+                  icon: const Icon(Icons.remove_circle_outline, color: Colors.white70),
+                ),
+                Expanded(
+                  child: Slider(
+                    value: _amount,
+                    min: 0,
+                    max: 100,
+                    divisions: 100,
+                    activeColor: const Color(0xFFEE6F2E),
+                    inactiveColor: const Color(0xFFB8BBC4),
+                    onChanged: (value) => setState(() => _amount = value),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Aumentar',
+                  onPressed: _amount >= 100 ? null : () => setState(() => _amount += 1),
+                  icon: const Icon(Icons.add_circle_outline, color: Colors.white70),
+                ),
+              ],
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: _quickAmounts
+                  .map(
+                    (value) => _QuickAmountButton(
+                      amount: value,
+                      selected: _amount.round() == value,
+                      onPressed: () => setState(() => _amount = value.toDouble()),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -258,9 +338,14 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
       ),
       child: Center(
         child: Container(
-          width: isMobile ? double.infinity : 460,
-          margin: isMobile ? const EdgeInsets.all(16) : EdgeInsets.zero, 
-          padding: const EdgeInsets.fromLTRB(26, 24, 26, 24),
+          width: isMobile ? double.infinity : 560,
+          margin: isMobile ? const EdgeInsets.all(16) : const EdgeInsets.symmetric(vertical: 28),
+          padding: EdgeInsets.fromLTRB(
+            isMobile ? 26 : 34,
+            isMobile ? 24 : 36,
+            isMobile ? 26 : 34,
+            isMobile ? 24 : 36,
+          ),
           decoration: BoxDecoration(
             color: const Color(0xFFF0F0F1),
             borderRadius: BorderRadius.circular(10),
@@ -276,33 +361,37 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(
-                height: 86,
-                child: Center(
-                  child: Image.asset(
-                    'assets/brands/paypal.png',
-                    width: 300,
-                    height: 86,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                    isAntiAlias: true,
-                    cacheWidth: 480,
-                    errorBuilder: (context, error, stackTrace) => const Text(
-                      'PayPal',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF2466B2),
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                      ),
+              Container(
+                height: isMobile ? 120 : 148,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F0F1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Image.asset(
+                  'assets/brands/paypal.png',
+                  width: isMobile ? 260 : 360,
+                  height: isMobile ? 100 : 128,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  isAntiAlias: true,
+                  cacheWidth: isMobile ? 900 : 1400,
+                  errorBuilder: (context, error, stackTrace) => const Text(
+                    'PayPal',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF2466B2),
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
               Text(
-                // Mostramos el monto fijo
-                'Monto a pagar: \$${widget.amount.toStringAsFixed(0)}',
+                widget.allowCustomAmount
+                    ? 'Monto a pagar: \$${_amount.toStringAsFixed(0)}'
+                    : 'Monto requerido: \$${_amount.toStringAsFixed(0)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
@@ -330,4 +419,29 @@ class _ContributionPaymentScreenState extends State<ContributionPaymentScreen> {
   }
 }
 
-// La clase _QuickAmountButton fue eliminada completamente ya que no se usará más.
+class _QuickAmountButton extends StatelessWidget {
+  final int amount;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  const _QuickAmountButton({
+    required this.amount,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        backgroundColor: selected ? const Color(0xFFEE6F2E) : null,
+        foregroundColor: selected ? Colors.white : Colors.white70,
+        side: BorderSide(color: selected ? const Color(0xFFEE6F2E) : Colors.white24),
+        visualDensity: VisualDensity.compact,
+      ),
+      child: Text('\$$amount'),
+    );
+  }
+}

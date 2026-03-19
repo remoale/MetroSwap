@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metroswap/controllers/payment_controller.dart';
+import 'package:metroswap/screens/exchange/exchange.dart';
 import 'package:metroswap/screens/home_screen.dart';
-import 'package:metroswap/screens/payments/payment_cancel_screen.dart';
 import 'package:metroswap/screens/payments/payment_confirmation_screen.dart';
 
 /// Procesa el retorno desde PayPal después de aprobar o cancelar el pago.
@@ -31,15 +31,16 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
   }
 
   Future<void> _handle() async {
+    final uri = Uri.base;
+    final exchangeId = uri.queryParameters["tradeId"]?.trim();
+    _exchangeId = (exchangeId != null && exchangeId.isNotEmpty) ? exchangeId : null;
+
     if (!widget.success) {
       setState(() => _loading = false);
       return;
     }
 
-    final uri = Uri.base;
     final orderId = uri.queryParameters["token"];
-    final exchangeId = uri.queryParameters["tradeId"]?.trim();
-    _exchangeId = (exchangeId != null && exchangeId.isNotEmpty) ? exchangeId : null;
 
     if (orderId == null || orderId.isEmpty) {
       setState(() {
@@ -82,7 +83,38 @@ class _PayPalReturnScreenState extends State<PayPalReturnScreen> {
     }
 
     if (!widget.success) {
-      return const PaymentCancelScreen();
+      final exchangeId = _exchangeId;
+      if (exchangeId != null && exchangeId.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final messenger = ScaffoldMessenger.of(context);
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => TradeChatScreen(tradeId: exchangeId)),
+            (_) => false,
+          );
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Pago cancelado.')),
+          );
+        });
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (_) => false,
+        );
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Pago cancelado.')),
+        );
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_error != null) {

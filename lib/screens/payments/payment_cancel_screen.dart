@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/primary_button.dart';
 
-/// Muestra el estado cuando el usuario cancela el proceso de pago.
 class PaymentCancelScreen extends StatelessWidget {
   const PaymentCancelScreen({super.key});
 
@@ -22,24 +21,19 @@ class PaymentCancelScreen extends StatelessWidget {
               size: 90,
             ),
             const SizedBox(height: 20),
-
             Text(
               "Pago cancelado",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-
             const SizedBox(height: 10),
-
             Text(
               "Has cancelado el proceso de pago. No se ha realizado ningún cargo.",
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-
             const SizedBox(height: 40),
-
             PrimaryButton(
               text: "Volver",
               onPressed: () {
